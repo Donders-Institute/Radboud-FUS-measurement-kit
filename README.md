@@ -31,7 +31,7 @@ After you're finished please remove all the comments and instructions!
 
   <img src="fuslogo.png" alt="fus_logo" width="600" height="auto">
 
-  <img src="igtlogo.jpg" alt="igt_logo" width="600" height="auto">
+  <img src="igtlogo.jpeg" alt="igt_logo" width="600" height="auto">
 
 </div>
 
