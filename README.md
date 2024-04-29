@@ -1,38 +1,15 @@
-# Radboud-FUS-measurement-kit
+# Radboud FUS measurement kit
 <a name="readme-top"></a>
 
-<!--
-HOW TO USE:
-This is an example of how you may give instructions on setting up your project locally.
-
-Modify this file to match your project and remove sections that don't apply.
-
-REQUIRED SECTIONS:
-- Table of Contents
-- About the Project
-  - Built With
-  - Live Demo
-- Getting Started
-- Authors
-- Future Features
-- Contributing
-- Show your support
-- Acknowledgements
-- License
-
-OPTIONAL SECTIONS:
-- FAQ
-
-After you're finished please remove all the comments and instructions!
--->
-
 <div align="center">
-  <img src="Logo_RU_EN_RGB.jpg" alt="ru_logo" width="600"  height="auto" />
+  <img src="Logo_RU_EN_RGB.png" alt="ru_logo" width="300"  height="auto" />
 
-  <img src="fuslogo.png" alt="fus_logo" width="600" height="auto">
+  <img src="fuslogo.png" alt="fus_logo" width="300" height="auto">
 
-  <img src="igtlogo.jpeg" alt="igt_logo" width="600" height="auto">
-
+  <img src="igtlogo.jpeg" alt="igt_logo" width="300" height="auto">
+  
+  <img src="sonorover-one.png" alt="sonorover-one" width="600"  height="auto" />
+  
 </div>
 
 <!-- TABLE OF CONTENTS -->
@@ -40,83 +17,73 @@ After you're finished please remove all the comments and instructions!
 # 📗 Table of Contents
 
 - [📖 About the Project](#about-project)
-  - [🛠 Built With](#built-with)
-    - [Tech Stack](#tech-stack)
-    - [Key Features](#key-features)
-  - [🚀 Live Demo](#live-demo)
+  - [Key Features](#key-features)
+  - [👥 Authors](#authors)
+  - [✒️ How to cite](#how-to-cite)
 - [💻 Getting Started](#getting-started)
   - [Setup](#setup)
   - [Prerequisites](#prerequisites)
   - [Install](#install)
   - [Usage](#usage)
-  - [Run tests](#run-tests)
-  - [Deployment](#deployment)
-- [👥 Authors](#authors)
 - [🔭 Future Features](#future-features)
 - [🤝 Contributing](#contributing)
 - [⭐️ Show your support](#support)
 - [🙏 Acknowledgements](#acknowledgements)
-- [❓ FAQ (OPTIONAL)](#faq)
 - [📝 License](#license)
 
 <!-- PROJECT DESCRIPTION -->
 
-# 📖 [your_project_name] <a name="about-project"></a>
+# 📖 Radboud FUS measurement kit <a name="about-project"></a>
 
 > Describe your project in 1 or 2 sentences.
 
-(Project id: **[Ultimo identifier]** )
+(Project id: **0003429** )
 
-**[your_project__name]** is a...
+**Radboud FUS measurement kit** is a...
 
-## 🛠 Built With <a name="built-with"></a>
-
-### Tech Stack <a name="tech-stack"></a>
-
-> Describe the tech stack and include only the relevant sections that apply to your project.
-
-<details>
-  <summary>Client</summary>
-  <ul>
-    <li><a href="https://reactjs.org/">React.js</a></li>
-  </ul>
-</details>
-
-<details>
-  <summary>Server</summary>
-  <ul>
-    <li><a href="https://expressjs.com/">Express.js</a></li>
-  </ul>
-</details>
-
-<details>
-<summary>Database</summary>
-  <ul>
-    <li><a href="https://www.postgresql.org/">PostgreSQL</a></li>
-  </ul>
-</details>
+This project is facilitated by the Radboud Focused Ultrasound Initiative. For more information, please visit the [website](https://www.ru.nl/en/donders-institute/research/research-facilities/focused-ultrasound-initiative-fus).
 
 <!-- Features -->
 
-### Key Features <a name="key-features"></a>
+## Key Features <a name="key-features"></a>
 
 > Describe between 1-3 key features of the application.
 
-- **[key_feature_1]**
-- **[key_feature_2]**
-- **[key_feature_3]**
+- **Affordable**
+- **High quality**
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-<!-- LIVE DEMO -->
+<!-- AUTHORS -->
 
-## 🚀 Live Demo <a name="live-demo"></a>
+## 👥 Authors <a name="authors"></a>
 
-> Add a link to your deployed project.
+👤 **[Stein Fekkes](https://www.ru.nl/en/people/fekkes-s), [FUS Initiative](https://www.ru.nl/en/donders-institute/research/research-facilities/focused-ultrasound-initiative-fus), Radboud University**
 
-- [Live Demo Link](https://google.com)
+- GitHub: [@githubhandle](https://github.com/githubhandle)
+- LinkedIn: [LinkedIn](https://linkedin.com/in/sfekkes)
+
+👤 **[Margely Cornelissen](https://www.ru.nl/en/people/cornelissen-m), [FUS Initiative](https://www.ru.nl/en/donders-institute/research/research-facilities/focused-ultrasound-initiative-fus), Radboud University**
+
+- GitHub: [@MaCuinea](https://github.com/MaCuinea)
+- LinkedIn: [LinkedIn](https://linkedin.com/in/margely-cornelissen)
+
+👤 **Erik Dumont, [Image Guided Therapy (IGT)](http://www.imageguidedtherapy.com/)**
+
+- GitHub: [@githubhandle](https://github.com/githubhandle)
+- LinkedIn: [LinkedIn](https://linkedin.com/in/erik-dumont-986a814)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+## ✒️ How to cite <a name="how-to-cite"></a>
+
+If you use this hardware in your research or project, please cite it as follows:
+
+[ADD CITATION]
+
+If you use this software in your research or project, please cite it as follows:
+
+Margely Cornelissen (Radboud University, Nijmegen, The Netherlands) & Erik Dumont (Image Guided Therapy, Pessac, France) (2024), Radboud FUS measurement kit software (Version 0.8), [GITHUB-URL]
 
 <!-- GETTING STARTED -->
 
@@ -166,7 +133,7 @@ Example command:
 
 ### Usage
 
-To run the project, execute the following command:
+To run the setup, execute the following command:
 
 <!--
 Example command:
@@ -175,50 +142,6 @@ Example command:
   rails server
 ```
 --->
-
-### Run tests
-
-To run tests, run the following command:
-
-<!--
-Example command:
-
-```sh
-  bin/rails test test/models/article_test.rb
-```
---->
-
-### Deployment
-
-You can deploy this project using:
-
-<!--
-Example:
-
-```sh
-
-```
- -->
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-<!-- AUTHORS -->
-
-## 👥 Authors <a name="authors"></a>
-
-> Mention all of the collaborators of this project.
-
-👤 **Author1**
-
-- gitlab: [@gitlabhandle](https://gitlab.com/gitlabhandle)
-- Twitter: [@twitterhandle](https://twitter.com/twitterhandle)
-- LinkedIn: [LinkedIn](https://linkedin.com/in/linkedinhandle)
-
-👤 **Author2**
-
-- gitlab: [@gitlabhandle](https://gitlab.com/gitlabhandle)
-- Twitter: [@twitterhandle](https://twitter.com/twitterhandle)
-- LinkedIn: [LinkedIn](https://linkedin.com/in/linkedinhandle)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -242,6 +165,9 @@ Contributions, issues, and feature requests are welcome!
 
 Feel free to check the [issues page](../../issues/).
 
+If you have any questions, please feel free to reach out to us via email at fus@ru.nl.
+We'd love to hear from you..
+
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 <!-- SUPPORT -->
@@ -264,29 +190,9 @@ I would like to thank...
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-<!-- FAQ (optional) -->
-
-## ❓ FAQ (OPTIONAL) <a name="faq"></a>
-
-> Add at least 2 questions new developers would ask when they decide to use your project.
-
-- **[Question_1]**
-
-  - [Answer_1]
-
-- **[Question_2]**
-
-  - [Answer_2]
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-<!-- LICENSE -->
-
 ## 📝 License <a name="license"></a>
 
 This project is [MIT](./LICENSE) licensed.
-
-_NOTE: we recommend using the [MIT license](https://choosealicense.com/licenses/mit/) - you can set it up quickly by using templates available on gitlab. You can also use [any other license](https://choosealicense.com/licenses/) if you wish._
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
