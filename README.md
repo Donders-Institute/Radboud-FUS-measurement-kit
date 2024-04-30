@@ -2,17 +2,17 @@
 <a name="readme-top"></a>
 
 <div align="center">
-  <img src="Radboud-logo.jpg" alt="ru_logo" width="auto"  height="80" />
+  <img src="Radboud-logo.jpg" alt="ru_logo" width="auto"  height="70" />
 
-  <img src="fuslogo.png" alt="fus_logo" width="auto" height="80">
+  <img src="fuslogo.png" alt="fus_logo" width="auto" height="70">
 
-  <img src="igtlogo.jpeg" alt="igt_logo" width="auto" height="80">
+  <img src="igtlogo.jpeg" alt="igt_logo" width="auto" height="70">
   
 </div>
 
 <div align="center">
   
-  <img src="sonorover-one.png" alt="sonorover-one" width="800"  height="auto" />
+  <img src="sonorover-one.png" alt="sonorover-one" width="1000"  height="auto" />
   
 </div>
 
