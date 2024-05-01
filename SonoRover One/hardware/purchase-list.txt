@@ -1,0 +1,20 @@
+Purchases ex. tax and ex. shipping and handling
+
+IGT 3D positioning system with water tank and hydrophone holder												5800,00 euro
+IGT Online degassing system, high flow (>2L/min)															6860,00 euro
+
+Onda HGL-0200 Capsule Hydrophone, 200 micron diameter, includes 1-20 MHz EOC Calibration					6720,00 euro
+Onda AG-2010 Hydrophone Preamplifier for HGL Hydrophones													2205,00 euro
+	20 dB
+	50 kHz to 60 MHz
+	submersible
+	Included: calibration, universal power supply, DC block, right angle adapter,
+	1 m coax cable (SMA-BNC), 1.5 m coax cable (BNC-BNC)
+Onda Additional calibration Calibration 0.25 - 1.0 MHz (every 50 kHz)										1600,00 euro
+	
+Picotech Picoscope 5000 Series, 2 channels, 60 MHz bandwidth												959,00 pound
+
+Precision Acoustics F28 absorber - 300 mm x 300 mm x 10 mm													157,30 euro
+
+Atlas Scientific Dissolved Oxygen Probe Kit																	339,95 euro
+Atlas Scientific Surveyor Analog Temperature Kit															29,95 euro
