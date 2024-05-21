@@ -137,34 +137,34 @@ Clone this repository to your desired folder:
 The software is shared being as-is. Due to it being a 0.8 version, the current version of the software is mainly for inspiration purposes. Currently, we are cleaning up, restructuring and rewritting the code to eventually release a 1.0 version. 
 
 The main script is [characterizationPipeline.py](characterizationPipeline.py). When running this script, a GUI pops up to set the following parameters:
-1. 'Path and filename of protocol excel file' - a procotol excel file is required as input. This excel file contains one or multiple sequences ranging from different foci, power outputs, timing parameters and/or coordinate grids. This file is specific for a drivin system-transducer combination.
+1. 'Path and filename of protocol excel file' - a procotol excel file is required as input, see example template here. This excel file contains one or multiple sequences ranging from different foci, power outputs, timing parameters and/or coordinate grids. This file is specific for a drivin system-transducer combination.
   Note: The headers of the excel file can only be changed when the headers used in the code are modified as well.
-  a. Sequence
-  b. Modulation - drop down
-  c. Ramp duration [us]
-  d. Ramp duration step size [us]
-  e. Pulse duration [us]
-  f. Pulse Repetition Frequency [Hz]
-  g. Pulse Repetition Interval [ms]
-  h. Pulse Train Duration [ms]
-  i. Isppa [W/cm2], Global power [mW] or Amplitude [%] - drop down
-  j. Corresponding value
-  k. Path and filename of Isppa to Global power conversion excel
-  l. Focus [mm]
-  m. Coordinates based on excel file or parameters on the right?
-  n. Path and filename of coordinate excel
-  o. max. + x [mm] w.r.t. relative zero
-  p. max. - x [mm] w.r.t. relative zero
-  q. max. + y [mm] w.r.t. relative zero
-  r. max. - y [mm] w.r.t. relative zero
-  s. max. + z [mm] w.r.t. relative zero
-  t. max. - z [mm] w.r.t. relative zero
-  u. direction_slices
-  v. direction_rows
-  w. direction_columns
-  x. step_size_x [mm]
-  y. step_size_y [mm]
-  z. step_size_z [mm]
+  - Sequence
+  - Modulation - drop down
+  - Ramp duration [us]
+  - Ramp duration step size [us]
+  - Pulse duration [us]
+  - Pulse Repetition Frequency [Hz]
+  - Pulse Repetition Interval [ms]
+  - Pulse Train Duration [ms]
+  - Isppa [W/cm2], Global power [mW] or Amplitude [%] - drop down, amplitude for IGT, Isppa or global power for SC
+  - Corresponding value
+  - Path and filename of Isppa to Global power conversion excel
+  - Focus [mm]
+  - Coordinates based on excel file or parameters on the right? coordinate excel or defining your own grid.
+  - Path and filename of coordinate excel - example coordinate files can be found here
+  - max. + x [mm] w.r.t. relative zero
+  - max. - x [mm] w.r.t. relative zero
+  - max. + y [mm] w.r.t. relative zero
+  - max. - y [mm] w.r.t. relative zero
+  - max. + z [mm] w.r.t. relative zero
+  - max. - z [mm] w.r.t. relative zero
+  - direction_slices
+  - direction_rows
+  - direction_columns
+  - step_size_x [mm]
+  - step_size_y [mm]
+  - step_size_z [mm]
 
 ![image](https://github.com/MaCuinea/Radboud-FUS-measurement-kit/assets/134381864/d5067c99-ecb0-47d8-8cb6-f6ff2761c694)
 
@@ -182,12 +182,6 @@ The main script is [characterizationPipeline.py](characterizationPipeline.py). W
 
 ![image](https://github.com/MaCuinea/Radboud-FUS-measurement-kit/assets/134381864/dcc80f2d-cc04-42ec-afbc-a19f55aed547)
 
-input: excel file
-multiple sequences with same equipment
-amplitude for IGT
-Isppa or global power for SC
-
-coordinate excel or defining your own grid.
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 <!-- FUTURE FEATURES -->
