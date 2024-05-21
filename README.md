@@ -25,9 +25,7 @@
   - [👥 Authors](#authors)
   - [✒️ How to cite](#how-to-cite)
 - [💻 Getting Started](#getting-started)
-  - [Setup](#setup)
-  - [Prerequisites](#prerequisites)
-  - [Install](#install)
+  - [Setup](#setup) 
   - [Usage](#usage)
 - [🔭 Future Features](#future-features)
 - [🤝 Contributing](#contributing)
@@ -64,7 +62,7 @@ This project is facilitated by the Radboud Focused Ultrasound Initiative. For mo
 
 👤 **[Stein Fekkes](https://www.ru.nl/en/people/fekkes-s), [FUS Initiative](https://www.ru.nl/en/donders-institute/research/research-facilities/focused-ultrasound-initiative-fus), Radboud University**
 
-- GitHub: [@githubhandle](https://github.com/githubhandle)
+- GitHub: [@StefFek-GIT](https://github.com/githubhandle)
 - LinkedIn: [LinkedIn](https://linkedin.com/in/sfekkes)
 
 👤 **[Margely Cornelissen](https://www.ru.nl/en/people/cornelissen-m), [FUS Initiative](https://www.ru.nl/en/donders-institute/research/research-facilities/focused-ultrasound-initiative-fus), Radboud University**
@@ -111,42 +109,85 @@ Example command:
 
 ### Setup
 
+#### Hardware
+
+#### Software
 Clone this repository to your desired folder:
 
-<!--
-Example commands:
+- Git terminal
 
-```sh
-  cd my-folder
-  git clone git@.com:myaccount/my-project.git
-```
---->
+	``` sh
+		cd my-folder
+		git clone git@github.com:MaCuinea/Radboud-FUS-measurement-kit.git
+	```
 
-### Install
+- GitHub Desktop
+	1. Click on 'Current repository'.
+	2. Click on 'Add' and select 'Clone repository...'.
+	3. Choose 'URL' and paste the following repository URL: [https://gitlab.socsci.ru.nl/fus-initiative/fus-driving-system-software](https://github.com/MaCuinea/Radboud-FUS-measurement-kit.git)
+	4. Choose your desired folder and clone the repository.
 
-Install this project with:
-
-<!--
-Example command:
-
-```sh
-  cd my-project
-  gem install
-```
---->
 
 ### Usage
 
-To run the setup, execute the following command:
+#### Hardware
 
-<!--
-Example command:
+#### Software
 
-```sh
-  rails server
-```
---->
+The software is shared being as-is. Due to it being a 0.8 version, the current version of the software is mainly for inspiration purposes. Currently, we are cleaning up, restructuring and rewritting the code to eventually release a 1.0 version. 
 
+The main script is [characterizationPipeline.py](characterizationPipeline.py). When running this script, a GUI pops up to set the following parameters:
+1. 'Path and filename of protocol excel file' - a procotol excel file is required as input. This excel file contains one or multiple sequences ranging from different foci, power outputs, timing parameters and/or coordinate grids. This file is specific for a drivin system-transducer combination.
+  Note: The headers of the excel file can only be changed when the headers used in the code are modified as well.
+  a. Sequence
+  b. Modulation - drop down
+  c. Ramp duration [us]
+  d. Ramp duration step size [us]
+  e. Pulse duration [us]
+  f. Pulse Repetition Frequency [Hz]
+  g. Pulse Repetition Interval [ms]
+  h. Pulse Train Duration [ms]
+  i. Isppa [W/cm2], Global power [mW] or Amplitude [%] - drop down
+  j. Corresponding value
+  k. Path and filename of Isppa to Global power conversion excel
+  l. Focus [mm]
+  m. Coordinates based on excel file or parameters on the right?
+  n. Path and filename of coordinate excel
+  o. max. + x [mm] w.r.t. relative zero
+  p. max. - x [mm] w.r.t. relative zero
+  q. max. + y [mm] w.r.t. relative zero
+  r. max. - y [mm] w.r.t. relative zero
+  s. max. + z [mm] w.r.t. relative zero
+  t. max. - z [mm] w.r.t. relative zero
+  u. direction_slices
+  v. direction_rows
+  w. direction_columns
+  x. step_size_x [mm]
+  y. step_size_y [mm]
+  z. step_size_z [mm]
+
+![image](https://github.com/MaCuinea/Radboud-FUS-measurement-kit/assets/134381864/d5067c99-ecb0-47d8-8cb6-f6ff2761c694)
+
+2. US Driving System
+3. Transducer
+4. Operating frequency [kHz]
+5. COM port of US driving system
+6. COM port of positioning system
+7. Hydrophone acquisition time [us]
+8. Picoscope sampling frequency multiplication factor
+9. Absolute G code x-coordinate of relative zero
+10. Absolute G code y-coordinate of relative zero
+11. Absolute G code z-coordinate of relative zero
+12. Perform all protocols in sequence without waiting for user input?
+
+![image](https://github.com/MaCuinea/Radboud-FUS-measurement-kit/assets/134381864/dcc80f2d-cc04-42ec-afbc-a19f55aed547)
+
+input: excel file
+multiple sequences with same equipment
+amplitude for IGT
+Isppa or global power for SC
+
+coordinate excel or defining your own grid.
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 <!-- FUTURE FEATURES -->
