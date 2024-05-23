@@ -1,0 +1,23 @@
+{
+	"units": [ { "host": "192.168.0.57", "port": 14442, "channels": 32, "channelsCombiner": 4 } ],
+	
+	"measures": {
+		"vg02": { "adc2phy": [ 8.01089e-05, 0 ] },
+		"vg12": { "adc2phy": [ 5.19913e-05, 0 ] },
+		"vgp2": { "adc2phy": [ 6.67557e-04, 0 ] },
+		"vgb2": { "adc2phy": [ 1.52765e-04, 0 ] },
+
+		"vdp2": { "adc2phy": [ 6.04230e-04, 0 ] },
+		"idp2": { "adc2phy": [ 2.09820e-04, 0 ] },
+		"tem2": { "adc2phy": [ 3.90625e-03, -55 ] },
+
+		"vrt2": { "adc2phy": [ 0.00029, -0.179 ], "minADC": 618 },
+		"irt2": { "adc2phy": [ 6.67e-06, -0.00402 ], "minADC": 604 },
+		"pvi2": { "adc2phy": [ 0.00572385, -0.505922 ] },
+		"prv2": { "adc2phy": [ 0.00548894, -0.404508 ] },
+		"fsc4": { }
+	},
+	
+	"validUntil": "2034-02-01T12:00:00, NO MECH",
+	"cert": "AAAAAUlHVDEIMDAwMDAwMDELTmlqbWVnZW4xMjgH6AIBCjIpAQAAOT8EU0hPVAfyAgEMAABSVVJEB_ICAQwAAEVMSU0H8gIBDAAAQURNMQfyAgEMAAAAAAAAAAECAACOERkJ52xCEn9KG_t_Oub0BE9Ie0qmTuHdBoxAuqaNZomsxObc5OdvzDLY1rfhDTok3VhIkSHpQa2olnsY7glLWg4_1NebgnDM-lqolRfXGP8ES2lL2KVvsJhpLehku-cQB2-cPzrIDIipaPYnggVn0lYSlNtb4KrqNK0UboQMKe1Q289vytIOzCJgl6xAQLi72aRbxGRTobbj12O_x8cX6JaocUUW9aot6RuGemZTnTYJPsPh4l-C3lg1WzRUb3Sl2yr2PJMfx_6drSLVxH8sVqzp_ooHxBPSdMi-Cg1iR8HgJaHWRaOAGW83WvYFbouwrwMdgxb9vTKCfotxkr2Jbgf6Ufx5hCK9N_Q1Ekv18rDe4y_QInBTKp0fVP3UW0o_AYimHMmP_5rW0txrKZcDNK9z9PgoUtgygjZUP3iOzMSBtbkkzSAhz4mkz-XvxAqb1LZvrKlLhHBZnIzSGIndwXdtkUTMNtX3cmuKl3HL7MtHwNTXKsTTb65F72nYIYPaztQ6GExCxJnQXG4hoUjT3PkjHiQF6DMSpyERVvu20nQnx5zUJ2fgj3EAX9H7vAMzuj2Erq0bt-PYKUKejAvzCR5NbWqIyaA-WLsZ1hNq8nlHSLQtKnvPiRjnnCrYHHaFIXe24aiP9-zx6bKnG74z3dGbg2vqy9BV1ex00URd"
+}
