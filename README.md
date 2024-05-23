@@ -168,8 +168,6 @@ The primary script is [characterizationPipeline.py](characterizationPipeline.py)
    - **step_size_y [mm]**: The grid size in the y-direction.
    - **step_size_z [mm]**: The grid size in the z-direction.
 
-![image](https://github.com/MaCuinea/Radboud-FUS-measurement-kit/assets/134381864/d5067c99-ecb0-47d8-8cb6-f6ff2761c694)
-
 2. **US Driving System**
 3. **Transducer**
 4. **Operating frequency [kHz]**
