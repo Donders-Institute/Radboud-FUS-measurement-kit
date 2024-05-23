@@ -134,51 +134,55 @@ Clone this repository to your desired folder:
 
 #### Software
 
-The software is shared being as-is. Due to it being a 0.8 version, the current version of the software is mainly for inspiration purposes. Currently, we are cleaning up, restructuring and rewritting the code to eventually release a 1.0 version. 
+The software is provided as-is. As it is currently version 0.8, it is mainly intended for inspiration and preliminary use. We are actively working on cleaning, restructuring, and rewriting the code for a 1.0 release in the future.
 
-The main script is [characterizationPipeline.py](characterizationPipeline.py). When running this script, a GUI pops up to set the following parameters:
-1. 'Path and filename of protocol excel file' - a procotol excel file is required as input, see example template here. This excel file contains one or multiple sequences ranging from different foci, power outputs, timing parameters and/or coordinate grids. This file is specific for a drivin system-transducer combination.
-  Note: The headers of the excel file can only be changed when the headers used in the code are modified as well.
-  - Sequence
-  - Modulation - drop down
-  - Ramp duration [us]
-  - Ramp duration step size [us]
-  - Pulse duration [us]
-  - Pulse Repetition Frequency [Hz]
-  - Pulse Repetition Interval [ms]
-  - Pulse Train Duration [ms]
-  - Isppa [W/cm2], Global power [mW] or Amplitude [%] - drop down, amplitude for IGT, Isppa or global power for SC
-  - Corresponding value
-  - Path and filename of Isppa to Global power conversion excel
-  - Focus [mm]
-  - Coordinates based on excel file or parameters on the right? coordinate excel or defining your own grid.
-  - Path and filename of coordinate excel - example coordinate files can be found here
-  - max. + x [mm] w.r.t. relative zero
-  - max. - x [mm] w.r.t. relative zero
-  - max. + y [mm] w.r.t. relative zero
-  - max. - y [mm] w.r.t. relative zero
-  - max. + z [mm] w.r.t. relative zero
-  - max. - z [mm] w.r.t. relative zero
-  - direction_slices
-  - direction_rows
-  - direction_columns
-  - step_size_x [mm]
-  - step_size_y [mm]
-  - step_size_z [mm]
+The primary script is [characterizationPipeline.py](characterizationPipeline.py). Running this script launches a GUI to set the following parameters:
+
+1. **Path and filename of protocol excel file**: Select the required protocol Excel file. Refer to the example template [here](SonoRover%20One/software/example%20input/protocol%20template/template_protocol_input.xlsx). This file contains sequences with various foci, power outputs, timing parameters, and/or coordinate grids. It is specific to a driving system-transducer combination.  
+   **Note**: If you change the headers in the Excel file, you must also update the corresponding headers in the code.
+   - **Sequence**: The sequence number, ranging from 1 to the total number of sequences in the Excel file.
+   - **Modulation**: Choose from Square, Linear, or Tukey ramp shapes from the dropdown.
+   - **Ramp duration [us]**
+   - **Ramp duration step size [us]**: Temporal resolution of ramping, applicable only for the IGT system.
+   - **Pulse duration [us]**
+   - **Pulse Repetition Frequency [Hz]**
+   - **Pulse Repetition Interval [ms]**
+   - **Pulse Train Duration [ms]**
+   - **Isppa [W/cm²], Global power [mW], or Amplitude [%]**: Select the applicable power parameter for the chosen driving system from the dropdown. Amplitude is used for the IGT system; Isppa or global power is used for the Sonic Concepts system. It is recommended to use global power for the Sonic Concepts system.  
+     **Note**: If Isppa is chosen, a conversion table in an Excel file (e.g., [here](SonoRover%20One/software/exampleinput/protocol%20template/isppa_to_global_power_template.xlsx)) is required with global power in mW and intensity in W/cm2. If you change the headers in the Excel file, you must also update the corresponding headers in the code.
+   - **Corresponding value**: The value for the selected power parameter.
+   - **Path and filename of Isppa to Global power conversion Excel**: Provide the path to the Isppa-global power conversion table. This parameter is skipped if Isppa is not selected.
+   - **Focus [mm]**
+   - **Coordinates based on Excel file or parameters on the right?**: Choose to define a grid using a coordinate Excel file or by defining grid sizes in this file from the dropdown. Coordinate file examples are [here](SonoRover%20One/software/example%20input/coordinate%20template).  
+     **Note**: Coordinate files allow more flexibility in grid point arrangement. All grids are based on a chosen zero point (for example: focus or exit plane). Headers in the Excel file must match those used in the code.
+   - **Path and filename of coordinate Excel**: Provide the path to the coordinate Excel file. This parameter is skipped if 'Coordinates based on Excel file' is not selected.
+   
+   **Note**: if 'Parameters on the right' is not chosen as input parameter, below parameters are skipped.
+   - **max. ± x [mm] w.r.t. relative zero**: The maximum movement in the ±x direction in mm relative to the chosen zero point.
+   - **max. ± y [mm] w.r.t. relative zero**: The maximum movement in the ±y direction in mm relative to the chosen zero point.
+   - **max. ± z [mm] w.r.t. relative zero**: The maximum movement in the ±z direction in mm relative to the chosen zero point.
+   - **direction_slices**: Choose the direction of the slices from the dropdown. Refer to the example image in the [protocol template](SonoRover%20One/software/example%20input/protocol%20template/template_protocol_input.xlsx).
+   - **direction_rows**: Choose the direction of the rows from the dropdown. Refer to the example image in the [protocol template](SonoRover%20One/software/example%20input/protocol%20template/template_protocol_input.xlsx).
+   - **direction_columns**: Choose the direction of the columns from the dropdown. Refer to the example image in the [protocol template](SonoRover%20One/software/example%20input/protocol%20template/template_protocol_input.xlsx).
+   - **step_size_x [mm]**: The grid size in the x-direction.
+   - **step_size_y [mm]**: The grid size in the y-direction.
+   - **step_size_z [mm]**: The grid size in the z-direction.
 
 ![image](https://github.com/MaCuinea/Radboud-FUS-measurement-kit/assets/134381864/d5067c99-ecb0-47d8-8cb6-f6ff2761c694)
 
-2. US Driving System
-3. Transducer
-4. Operating frequency [kHz]
-5. COM port of US driving system
-6. COM port of positioning system
-7. Hydrophone acquisition time [us]
-8. Picoscope sampling frequency multiplication factor
-9. Absolute G code x-coordinate of relative zero
-10. Absolute G code y-coordinate of relative zero
-11. Absolute G code z-coordinate of relative zero
-12. Perform all protocols in sequence without waiting for user input?
+2. **US Driving System**
+3. **Transducer**
+4. **Operating frequency [kHz]**
+5. **COM port of US driving system**: Required for Sonic Concepts driving system.
+6. **COM port of positioning system**
+7. **Hydrophone acquisition time [us]**
+8. **Picoscope sampling frequency multiplication factor**: Minimum multiplication factor is 2.
+9. **Absolute G code x-coordinate of relative zero**: The x-coordinate of the chosen zero point.
+10. **Absolute G code y-coordinate of relative zero**: The y-coordinate of the chosen zero point.
+11. **Absolute G code z-coordinate of relative zero**: The z-coordinate of the chosen zero point.
+12. **Perform all protocols in sequence without waiting for user input?**: If yes, the characterization will proceed through all sequences in the protocol Excel file without stopping for input between sequences.
+
+After all parameters are set, click 'ok' to start the characterization. Log files and an output folder will be created in the same directory as the protocol Excel file.
 
 ![image](https://github.com/MaCuinea/Radboud-FUS-measurement-kit/assets/134381864/dcc80f2d-cc04-42ec-afbc-a19f55aed547)
 
@@ -188,11 +192,18 @@ The main script is [characterizationPipeline.py](characterizationPipeline.py). W
 
 ## 🔭 Future Features <a name="future-features"></a>
 
-> Describe 1 - 3 features you will add to the project.
+#### Hardware
 
 - [ ] **[new_feature_1]**
 - [ ] **[new_feature_2]**
 - [ ] **[new_feature_3]**
+
+
+#### Software
+
+- [ ] **Implemented driving system abstract class to easily integrate driving systems from other manufacturers**
+- [ ] **Cleaner, restructured and more robust code**
+- [ ] **Compatibility check of chosen equipment**
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -205,7 +216,7 @@ Contributions, issues, and feature requests are welcome!
 Feel free to check the [issues page](../../issues/).
 
 If you have any questions, please feel free to reach out to us via email at fus@ru.nl.
-We'd love to hear from you..
+We'd love to hear from you.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
