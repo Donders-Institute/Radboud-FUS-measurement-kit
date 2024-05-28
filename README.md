@@ -37,8 +37,6 @@
 
 # 📖 Radboud FUS measurement kit <a name="about-project"></a>
 
-> Describe your project in 1 or 2 sentences.
-
 (Project id: **0003429** )
 
 **Radboud FUS measurement kit** is a comprehensive kit alowing precise hydrophone measurements of your TUS transducers for verification, characterization and monitoring overall system performance.    
@@ -48,8 +46,6 @@ This project is facilitated by the Radboud Focused Ultrasound Initiative. For mo
 <!-- Features -->
 
 ## Key Features <a name="key-features"></a>
-
-> Describe between 1-3 key features of the application.
 
 - **Affordable**
 - **High quality**
@@ -63,17 +59,16 @@ This project is facilitated by the Radboud Focused Ultrasound Initiative. For mo
 👤 **[Stein Fekkes](https://www.ru.nl/en/people/fekkes-s), [FUS Initiative](https://www.ru.nl/en/donders-institute/research/research-facilities/focused-ultrasound-initiative-fus), Radboud University**
 
 - GitHub: [@StefFek-GIT](https://github.com/githubhandle)
-- LinkedIn: [LinkedIn](https://linkedin.com/in/sfekkes)
+- [LinkedIn](https://linkedin.com/in/sfekkes)
 
 👤 **[Margely Cornelissen](https://www.ru.nl/en/people/cornelissen-m), [FUS Initiative](https://www.ru.nl/en/donders-institute/research/research-facilities/focused-ultrasound-initiative-fus), Radboud University**
 
 - GitHub: [@MaCuinea](https://github.com/MaCuinea)
-- LinkedIn: [LinkedIn](https://linkedin.com/in/margely-cornelissen)
+- [LinkedIn](https://linkedin.com/in/margely-cornelissen)
 
 👤 **Erik Dumont, [Image Guided Therapy (IGT)](http://www.imageguidedtherapy.com/)**
 
-- GitHub: [@githubhandle](https://github.com/githubhandle)
-- LinkedIn: [LinkedIn](https://linkedin.com/in/erik-dumont-986a814)
+- [LinkedIn](https://linkedin.com/in/erik-dumont-986a814)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -90,22 +85,6 @@ Margely Cornelissen (Radboud University, Nijmegen, The Netherlands) & Erik Dumon
 <!-- GETTING STARTED -->
 
 ## 💻 Getting Started <a name="getting-started"></a>
-
-> Describe how a new developer could make use of your project.
-
-To get a local copy up and running, follow these steps.
-
-### Prerequisites
-
-In order to run this project you need:
-
-<!--
-Example command:
-
-```sh
- gem install rails
-```
- -->
 
 ### Setup
 
@@ -131,10 +110,6 @@ Clone this repository to your desired folder:
 
 
 ### Usage
-
-#### Hardware
-
-
 
 #### Software
 
@@ -194,13 +169,6 @@ After all parameters are set, click 'ok' to start the characterization. Log file
 
 ## 🔭 Future Features <a name="future-features"></a>
 
-#### Hardware
-
-- [ ] **[new_feature_1]**
-- [ ] **[new_feature_2]**
-- [ ] **[new_feature_3]**
-
-
 #### Software
 
 - [ ] **Implemented driving system abstract class to easily integrate driving systems from other manufacturers**
@@ -219,26 +187,6 @@ Feel free to check the [issues page](../../issues/).
 
 If you have any questions, please feel free to reach out to us via email at fus@ru.nl.
 We'd love to hear from you.
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-<!-- SUPPORT -->
-
-## ⭐️ Show your support <a name="support"></a>
-
-> Write a message to encourage readers to support your project
-
-If you like this project...
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-<!-- ACKNOWLEDGEMENTS -->
-
-## 🙏 Acknowledgments <a name="acknowledgements"></a>
-
-> Give credit to everyone who inspired your codebase.
-
-I would like to thank...
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
