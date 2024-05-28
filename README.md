@@ -29,8 +29,6 @@
   - [Usage](#usage)
 - [🔭 Future Features](#future-features)
 - [🤝 Contributing](#contributing)
-- [⭐️ Show your support](#support)
-- [🙏 Acknowledgements](#acknowledgements)
 - [📝 License](#license)
 
 <!-- PROJECT DESCRIPTION -->
