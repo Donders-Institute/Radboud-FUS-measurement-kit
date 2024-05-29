@@ -72,13 +72,9 @@ This project is facilitated by the Radboud Focused Ultrasound Initiative. For mo
 
 ## ✒️ How to cite <a name="how-to-cite"></a>
 
-If you use this hardware in your research or project, please cite it as follows:
+If you use this kit in your research or project, please cite it as follows:
 
-[ADD CITATION]
-
-If you use this software in your research or project, please cite it as follows:
-
-Margely Cornelissen (Radboud University, Nijmegen, The Netherlands) & Erik Dumont (Image Guided Therapy, Pessac, France) (2024), Radboud FUS measurement kit software (Version 0.8), [GITHUB-URL]
+Margely Cornelissen, Stein Fekkes (Radboud University, Nijmegen, The Netherlands) & Erik Dumont (Image Guided Therapy, Pessac, France) (2024), Radboud FUS measurement kit (Version 0.8), [GITHUB-URL]
 
 <!-- GETTING STARTED -->
 
