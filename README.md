@@ -56,7 +56,7 @@ This project is facilitated by the Radboud Focused Ultrasound Initiative. For mo
 
 👤 **[Stein Fekkes](https://www.ru.nl/en/people/fekkes-s), [FUS Initiative](https://www.ru.nl/en/donders-institute/research/research-facilities/focused-ultrasound-initiative-fus), Radboud University**
 
-- GitHub: [@StefFek-GIT](https://github.com/githubhandle)
+- GitHub: [@StefFek-GIT](https://github.com/StefFek-GIT)
 - [LinkedIn](https://linkedin.com/in/sfekkes)
 
 👤 **[Margely Cornelissen](https://www.ru.nl/en/people/cornelissen-m), [FUS Initiative](https://www.ru.nl/en/donders-institute/research/research-facilities/focused-ultrasound-initiative-fus), Radboud University**
