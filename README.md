@@ -74,7 +74,7 @@ This project is facilitated by the Radboud Focused Ultrasound Initiative. For mo
 
 If you use this kit in your research or project, please cite it as follows:
 
-Margely Cornelissen, Stein Fekkes (Radboud University, Nijmegen, The Netherlands) & Erik Dumont (Image Guided Therapy, Pessac, France) (2024), Radboud FUS measurement kit (Version 0.8), [GITHUB-URL]
+Margely Cornelissen, Stein Fekkes (Radboud University, Nijmegen, The Netherlands) & Erik Dumont (Image Guided Therapy, Pessac, France) (2024), Radboud FUS measurement kit (Version 0.8), [GITHUB-URL](https://github.com/Donders-Institute/Radboud-FUS-measurement-kit)
 
 <!-- GETTING STARTED -->
 
@@ -93,13 +93,13 @@ Clone this repository to your desired folder:
 
 	``` sh
 		cd my-folder
-		git clone git@github.com:MaCuinea/Radboud-FUS-measurement-kit.git
+		git clone git@github.com:Donders-Institute/Radboud-FUS-measurement-kit.git
 	```
 
 - GitHub Desktop
 	1. Click on 'Current repository'.
 	2. Click on 'Add' and select 'Clone repository...'.
-	3. Choose 'URL' and paste the following repository URL: [https://gitlab.socsci.ru.nl/fus-initiative/fus-driving-system-software](https://github.com/MaCuinea/Radboud-FUS-measurement-kit.git)
+	3. Choose 'URL' and paste the following repository URL: [https://gitlab.socsci.ru.nl/fus-initiative/fus-driving-system-software](https://github.com/Donders-Institute/Radboud-FUS-measurement-kit.git)
 	4. Choose your desired folder and clone the repository.
 
 
@@ -155,7 +155,7 @@ The primary script is [characterizationPipeline.py](characterizationPipeline.py)
 
 After all parameters are set, click 'ok' to start the characterization. Log files and an output folder will be created in the same directory as the protocol Excel file.
 
-![image](https://github.com/MaCuinea/Radboud-FUS-measurement-kit/assets/134381864/dcc80f2d-cc04-42ec-afbc-a19f55aed547)
+![image](https://github.com/Donders-Institute/Radboud-FUS-measurement-kit/assets/134381864/dcc80f2d-cc04-42ec-afbc-a19f55aed547)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
