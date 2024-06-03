@@ -99,7 +99,7 @@ Clone this repository to your desired folder:
 - GitHub Desktop
 	1. Click on 'Current repository'.
 	2. Click on 'Add' and select 'Clone repository...'.
-	3. Choose 'URL' and paste the following repository URL: [https://gitlab.socsci.ru.nl/fus-initiative/fus-driving-system-software](https://github.com/Donders-Institute/Radboud-FUS-measurement-kit.git)
+	3. Choose 'URL' and paste the following repository URL: [https://github.com/Donders-Institute/Radboud-FUS-measurement-kit.git](https://github.com/Donders-Institute/Radboud-FUS-measurement-kit.git)
 	4. Choose your desired folder and clone the repository.
 
 
