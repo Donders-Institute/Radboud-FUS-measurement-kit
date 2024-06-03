@@ -18,7 +18,7 @@
 
 <!-- TABLE OF CONTENTS -->
 
-# 📗 Table of Content
+# 📗 Table of Contents 
 
 - [📖 About the Project](#about-project)
   - [Key Features](#key-features)
