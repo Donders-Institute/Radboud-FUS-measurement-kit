@@ -328,7 +328,7 @@ class Acquisition:
             if self.config['Equipment.Manufacturer.IS']['Name'] == self.transducer.manufact:
                 ini_path = os.path.join(os.getcwd(), self.transducer.steer_info)
 
-                trans = transducerXYZ.Transducer()
+                trans = transducerXYZ.Transducer(self.logger)
                 if not trans.load(ini_path):
                     self.logger.error(f'Error: can not load the transducer definition from {ini_path}')
                     sys.exit()
@@ -339,7 +339,7 @@ class Acquisition:
                 aim_wrt_natural_focus = self.transducer.natural_foc - focus_mm
 
                 # Aim n mm away from the natural focal spot, on main axis (Z)
-                trans.computePhases(pulse, (0, 0, aim_wrt_natural_focus))
+                trans.computePhases(pulse, (0, 0, aim_wrt_natural_focus), focus_mm)
 
             # Assume NeuroFUS transducers are used
             else:
@@ -678,6 +678,8 @@ class Acquisition:
         params['General']['Path and filename of protocol excel file'] = inputValues.path_protocol_excel_file
         params['General']['Path of output'] = inputValues.dir_output
         params['General']['Perform all protocols in sequence without waiting for user input?'] = str(inputValues.perform_all_protocols)
+        params['General']['Temperature of water [°C]'] = str(inputValues.temp)
+        params['General']['Dissolved oxygen level of water [mg/L]'] = str(inputValues.dis_oxy)
 
         params['Equipment'] = {}
         params['Equipment']['Driving system.serial_number'] = self.driving_system.serial

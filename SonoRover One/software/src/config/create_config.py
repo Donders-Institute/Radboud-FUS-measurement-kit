@@ -115,7 +115,7 @@ config['Equipment.Manufacturer.IS'] = {}
 config['Equipment.Manufacturer.IS']['Name'] = IMASONIC
 config['Equipment.Manufacturer.IS']['Config. file folder transducers'] = CONFIG_FILE_FOLDER_IS_TRAN
 
-IS_TRANS = ['IS PCD15287_01001', 'IS PCD15473_01001']
+IS_TRANS = ['IS PCD15287_01001', 'IS PCD15287_01002', 'IS PCD15473_01001', 'IS PCD15473_01002']
 
 
 #######################################################################################
@@ -422,26 +422,51 @@ config['Equipment.Transducer.' + IS_TRANS[0]]['Manufacturer'] = IMASONIC
 config['Equipment.Transducer.' + IS_TRANS[0]]['Elements'] = str(10)
 config['Equipment.Transducer.' + IS_TRANS[0]]['Fund. freq.'] = str(300)  # [kHz]
 config['Equipment.Transducer.' + IS_TRANS[0]]['Natural focus'] = str(75)  # [mm]
-config['Equipment.Transducer.' + IS_TRANS[0]]['Min. focus'] = str(14.2)  # [mm]
-config['Equipment.Transducer.' + IS_TRANS[0]]['Max. focus'] = str(92.6)  # [mm]
+config['Equipment.Transducer.' + IS_TRANS[0]]['Min. focus'] = str(10)  # [mm]
+config['Equipment.Transducer.' + IS_TRANS[0]]['Max. focus'] = str(150)  # [mm]
 config['Equipment.Transducer.' + IS_TRANS[0]]['Steer information'] = str(os.path.join(
     CONFIG_FILE_FOLDER_IS_TRAN,
     'transducer_15287_10_300kHz.ini'))  # should be in the same directory as code
 config['Equipment.Transducer.' + IS_TRANS[0]]['Active?'] = str(True)
 
 config['Equipment.Transducer.' + IS_TRANS[1]] = {}
-config['Equipment.Transducer.' + IS_TRANS[1]]['Name'] = IMASONIC + ' 10 ch. PCD15473_01001'
+config['Equipment.Transducer.' + IS_TRANS[1]]['Name'] = IMASONIC + ' 10 ch. PCD15287_01002'
 config['Equipment.Transducer.' + IS_TRANS[1]]['Manufacturer'] = IMASONIC
 config['Equipment.Transducer.' + IS_TRANS[1]]['Elements'] = str(10)
 config['Equipment.Transducer.' + IS_TRANS[1]]['Fund. freq.'] = str(300)  # [kHz]
-config['Equipment.Transducer.' + IS_TRANS[1]]['Natural focus'] = str(100)  # [mm]
-config['Equipment.Transducer.' + IS_TRANS[1]]['Min. focus'] = str(14.2)  # [mm]
-config['Equipment.Transducer.' + IS_TRANS[1]]['Max. focus'] = str(92.6)  # [mm]
+config['Equipment.Transducer.' + IS_TRANS[1]]['Natural focus'] = str(75)  # [mm]
+config['Equipment.Transducer.' + IS_TRANS[1]]['Min. focus'] = str(10)  # [mm]
+config['Equipment.Transducer.' + IS_TRANS[1]]['Max. focus'] = str(150)  # [mm]
 config['Equipment.Transducer.' + IS_TRANS[1]]['Steer information'] = str(os.path.join(
     CONFIG_FILE_FOLDER_IS_TRAN,
-    'transducer_15473_10_300kHz.ini'))  # should be in the same directory as code
+    'transducer_15287_10_300kHz.ini'))  # should be in the same directory as code
 config['Equipment.Transducer.' + IS_TRANS[1]]['Active?'] = str(True)
 
+config['Equipment.Transducer.' + IS_TRANS[2]] = {}
+config['Equipment.Transducer.' + IS_TRANS[2]]['Name'] = IMASONIC + ' 10 ch. PCD15473_01001'
+config['Equipment.Transducer.' + IS_TRANS[2]]['Manufacturer'] = IMASONIC
+config['Equipment.Transducer.' + IS_TRANS[2]]['Elements'] = str(10)
+config['Equipment.Transducer.' + IS_TRANS[2]]['Fund. freq.'] = str(300)  # [kHz]
+config['Equipment.Transducer.' + IS_TRANS[2]]['Natural focus'] = str(100)  # [mm]
+config['Equipment.Transducer.' + IS_TRANS[2]]['Min. focus'] = str(10)  # [mm]
+config['Equipment.Transducer.' + IS_TRANS[2]]['Max. focus'] = str(150)  # [mm]
+config['Equipment.Transducer.' + IS_TRANS[2]]['Steer information'] = str(os.path.join(
+    CONFIG_FILE_FOLDER_IS_TRAN,
+    'transducer_15473_10_300kHz.ini'))  # should be in the same directory as code
+config['Equipment.Transducer.' + IS_TRANS[2]]['Active?'] = str(True)
+
+config['Equipment.Transducer.' + IS_TRANS[3]] = {}
+config['Equipment.Transducer.' + IS_TRANS[3]]['Name'] = IMASONIC + ' 10 ch. PCD15473_01002'
+config['Equipment.Transducer.' + IS_TRANS[3]]['Manufacturer'] = IMASONIC
+config['Equipment.Transducer.' + IS_TRANS[3]]['Elements'] = str(10)
+config['Equipment.Transducer.' + IS_TRANS[3]]['Fund. freq.'] = str(300)  # [kHz]
+config['Equipment.Transducer.' + IS_TRANS[3]]['Natural focus'] = str(100)  # [mm]
+config['Equipment.Transducer.' + IS_TRANS[3]]['Min. focus'] = str(10)  # [mm]
+config['Equipment.Transducer.' + IS_TRANS[3]]['Max. focus'] = str(150)  # [mm]
+config['Equipment.Transducer.' + IS_TRANS[3]]['Steer information'] = str(os.path.join(
+    CONFIG_FILE_FOLDER_IS_TRAN,
+    'transducer_15473_10_300kHz.ini'))  # should be in the same directory as code
+config['Equipment.Transducer.' + IS_TRANS[3]]['Active?'] = str(True)
 
 #######################################################################################
 # Dummy tranducer

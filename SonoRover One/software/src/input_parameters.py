@@ -138,6 +138,10 @@ class InputParameters:
 
         self.acquisition_time = 500  # microseconds
         self.sampl_freq_multi = 50
+
+        self.temp = 20.1  # temperature in celsius
+        self.dis_oxy = 4.02  # dissolved oxygen in mg/L
+
         self.coord_focus = [-50, -50, -150]
         self.perform_all_protocols = True
 
@@ -175,6 +179,9 @@ class InputParameters:
 
         cached_input['Input parameters']['Hydrophone acquisition time [us]'] = str(self.acquisition_time)
         cached_input['Input parameters']['Picoscope sampling frequency multiplication factor'] = str(self.sampl_freq_multi)
+
+        cached_input['Input parameters']['Temperature of water [°C]'] = str(self.temp)
+        cached_input['Input parameters']['Dissolved oxygen level of water [mg/L]'] = str(self.dis_oxy)
 
         cached_input['Input parameters']['Absolute G code x-coordinate of relative zero'] = str(self.coord_focus[0])
         cached_input['Input parameters']['Absolute G code y-coordinate of relative zero'] = str(self.coord_focus[1])
@@ -218,6 +225,9 @@ class InputParameters:
         self.acquisition_time = float(cached_input['Input parameters']['Hydrophone acquisition time [us]'])
         self.sampl_freq_multi = float(cached_input['Input parameters']['Picoscope sampling frequency multiplication factor'])
 
+        self.temp = float(cached_input['Input parameters']['Temperature of water [°C]'])
+        self.dis_oxy = float(cached_input['Input parameters']['Dissolved oxygen level of water [mg/L]'])
+
         self.coord_focus[0] = float(cached_input['Input parameters']['Absolute G code x-coordinate of relative zero'])
         self.coord_focus[1] = float(cached_input['Input parameters']['Absolute G code y-coordinate of relative zero'])
         self.coord_focus[2] = float(cached_input['Input parameters']['Absolute G code z-coordinate of relative zero'])
@@ -254,6 +264,9 @@ class InputParameters:
         info = info + f"Hydrophone acquisition time [us]: {self.acquisition_time} \n "
         info = info + f"Picoscope sampling frequency multiplication factor: {self.sampl_freq_multi} \n "
 
+        info = info + f"Temperature of water [°C]: {self.temp} \n "
+        info = info + f"Dissolved oxygen level of water [mg/L]: {self.dis_oxy} \n "
+
         info = info + f"Absolute G code xyz-coordinates of relative zero: [{self.coord_focus[0]}, {self.coord_focus[1]}, {self.coord_focus[2]}] \n "
         info = info + f"Perform all protocols in sequence without waiting for user input?: {self.perform_all_protocols} \n "
 
@@ -281,7 +294,7 @@ class InputDialog():
             ctk.set_appearance_mode("System")
 
             # Set the geometry of tkinter frame
-            self.win.geometry("920x540")
+            self.win.geometry("920x600")
             self.win.title('Set input parameters')
 
             # Check if cached data exists
@@ -380,6 +393,24 @@ class InputDialog():
             self.sampl_freq.bind('<1>', self.event_handling)
             self.sampl_freq.insert(0, self.inputParam.sampl_freq_multi)
             self.sampl_freq.grid(row=row_nr, column=1, pady=5)
+
+            row_nr = row_nr + 1
+            ctk.CTkLabel(master=self.win, text="Temperature of water [°C]"
+                         ).grid(row=row_nr, column=0, padx=20, sticky='w')
+            self.temp_ent = ctk.CTkEntry(master=self.win, width=500)
+            self.temp_ent.bind('<Return>', self.event_handling)
+            self.temp_ent.bind('<1>', self.event_handling)
+            self.temp_ent.insert(0, self.inputParam.temp)
+            self.temp_ent.grid(row=row_nr, column=1, pady=5)
+
+            row_nr = row_nr + 1
+            ctk.CTkLabel(master=self.win, text="Dissolved oxygen level of water [mg/L]"
+                         ).grid(row=row_nr, column=0, padx=20, sticky='w')
+            self.oxy_entry = ctk.CTkEntry(master=self.win, width=500)
+            self.oxy_entry.bind('<Return>', self.event_handling)
+            self.oxy_entry.bind('<1>', self.event_handling)
+            self.oxy_entry.insert(0, self.inputParam.dis_oxy)
+            self.oxy_entry.grid(row=row_nr, column=1, pady=5)
 
             row_nr = row_nr + 1
             ctk.CTkLabel(master=self.win, text="Absolute G code x-coordinate of relative zero"
@@ -560,6 +591,14 @@ class InputDialog():
             else:
                 self.sampl_freq.configure(text_color=def_color)
 
+        # Check if temperature is a number
+        error_message, isFloat = checkIfNumAndPos(error_message, self.temp_ent, True,
+                                                  'temperature of water')
+
+        # Check if dissolved oxygen level is a number
+        error_message, isFloat = checkIfNumAndPos(error_message, self.oxy_entry, True,
+                                                  'dissolved oxygen level of water')
+
         # Check if x coord is a number
         error_message, isFloat = checkIfNumAndPos(error_message, self.x_coord, False,
                                                   'x-coordinate')
@@ -628,6 +667,9 @@ class InputDialog():
         self.inputParam.pos_com_port = 'COM' + self.com_pos.get()
         self.inputParam.acquisition_time = float(self.acq_time.get())
         self.inputParam.sampl_freq_multi = float(self.sampl_freq.get())
+
+        self.inputParam.temp = float(self.temp_ent.get())
+        self.inputParam.dis_oxy = float(self.oxy_entry.get())
 
         self.inputParam.coord_focus = [float(self.x_coord.get()), float(self.y_coord.get()),
                                        float(self.z_coord.get())]
