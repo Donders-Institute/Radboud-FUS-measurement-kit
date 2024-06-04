@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-Copyright (c) 2024 Margely Cornelissen (Radboud University) and Erik Dumont (Image Guided Therapy)
+Copyright (c) 2024 Margely Cornelissen, Stein Fekkes (Radboud University) and Erik Dumont (Image
+Guided Therapy)
 
 MIT License
 
@@ -23,10 +24,10 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 **Attribution Notice**:
-If you use this software in your project, please include the following attribution:
-Margely Cornelissen (Radboud University, Nijmegen, The Netherlands) & Erik Dumont (Image Guided
-Therapy, Pessac, France) (2024), Radboud FUS measurement kit, SonoRover One Software (Version 0.8),
-https://github.com/MaCuinea/Radboud-FUS-measurement-kit
+If you use this kit in your research or project, please include the following attribution:
+Margely Cornelissen, Stein Fekkes (Radboud University, Nijmegen, The Netherlands) & Erik Dumont
+(Image Guided Therapy, Pessac, France) (2024), Radboud FUS measurement kit (version 0.8),
+https://github.com/Donders-Institute/Radboud-FUS-measurement-kit
 """
 
 import configparser
