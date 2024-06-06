@@ -521,7 +521,7 @@ class Acquisition:
         self.logger.debug(f'scan: {scan}')
         self.grid = Scan_Iter(self.nsl,self.nrow,self.ncol,scan=scan)
 
-    def acquire_data(self):
+    def acquire_data(self, attempt=0):
         """
         acquire data will:
             start acquisition on the picoscope (wait for trigger)
@@ -532,7 +532,13 @@ class Acquisition:
         self.scope.startAcquisitionTB (self.sample_count, self.timebase) # start picoscope acquisition on trigger
         time.sleep(0.025)
         self.exec_pulse_sequence()                    # execute pulse sequence
-        self.scope.waitAcquisition()                # wait for acquisition to complete
+        ok = self.scope.waitAcquisition()                # wait for acquisition to complete
+
+        if not ok and attempt < 5:
+            # redo acquisition
+            attempt += 1
+            self.acquire_data(attempt)
+
         self.signalA = self.scope.readVolts()[0]     # transfer data from picoscope
         msg = f'signalA size: {self.signalA.size}, dtype: {self.signalA.dtype}'
         self.logger.debug(msg)
