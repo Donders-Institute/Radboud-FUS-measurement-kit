@@ -140,8 +140,8 @@ class InputParameters:
         self.acquisition_time = 500  # microseconds
         self.sampl_freq_multi = 50
 
-        self.temp = 20.1  # temperature in celsius
-        self.dis_oxy = 4.02  # dissolved oxygen in mg/L
+        self.temp = ''  # temperature in celsius
+        self.dis_oxy = ''  # dissolved oxygen in mg/L
 
         self.coord_focus = [-50, -50, -150]
         self.perform_all_protocols = True
