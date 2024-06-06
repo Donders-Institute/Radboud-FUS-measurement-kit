@@ -166,7 +166,7 @@ config['Equipment.Driving system.' + SC_DS[1]]['Active?'] = str(True)
 # # 128 ch. # #
 
 config['Equipment.Driving system.' + IGT_DS[0]] = {}
-config['Equipment.Driving system.' + IGT_DS[0]]['Name'] = IGT + ' 128 ch. all channels'
+config['Equipment.Driving system.' + IGT_DS[0]]['Name'] = IGT + ' 128 ch. - all channels'
 config['Equipment.Driving system.' + IGT_DS[0]]['Manufacturer'] = IGT
 config['Equipment.Driving system.' + IGT_DS[0]]['Available channels'] = str(128)
 config['Equipment.Driving system.' + IGT_DS[0]]['Connection info'] = str(os.path.join(
@@ -177,7 +177,7 @@ config['Equipment.Driving system.' + IGT_DS[0]]['Transducer compatibility'] = st
 config['Equipment.Driving system.' + IGT_DS[0]]['Active?'] = str(True)
 
 config['Equipment.Driving system.' + IGT_DS[1]] = {}
-config['Equipment.Driving system.' + IGT_DS[1]]['Name'] = IGT + ' 128 ch. combined into 2 x 10 ch.'
+config['Equipment.Driving system.' + IGT_DS[1]]['Name'] = IGT + ' 128 ch. - 2 x 10 ch.'
 config['Equipment.Driving system.' + IGT_DS[1]]['Manufacturer'] = IGT
 config['Equipment.Driving system.' + IGT_DS[1]]['Available channels'] = str(20)
 config['Equipment.Driving system.' + IGT_DS[1]]['Connection info'] = str(os.path.join(
@@ -188,7 +188,7 @@ config['Equipment.Driving system.' + IGT_DS[1]]['Transducer compatibility'] = st
 config['Equipment.Driving system.' + IGT_DS[1]]['Active?'] = str(False)
 
 config['Equipment.Driving system.' + IGT_DS[2]] = {}
-config['Equipment.Driving system.' + IGT_DS[2]]['Name'] = IGT + ' 128 ch. combined into 1 x 10 ch.'
+config['Equipment.Driving system.' + IGT_DS[2]]['Name'] = IGT + ' 128 ch. - 1 x 10 ch.'
 config['Equipment.Driving system.' + IGT_DS[2]]['Manufacturer'] = IGT
 config['Equipment.Driving system.' + IGT_DS[2]]['Available channels'] = str(10)
 config['Equipment.Driving system.' + IGT_DS[2]]['Connection info'] = str(os.path.join(
@@ -199,7 +199,7 @@ config['Equipment.Driving system.' + IGT_DS[2]]['Transducer compatibility'] = st
 config['Equipment.Driving system.' + IGT_DS[2]]['Active?'] = str(True)
 
 config['Equipment.Driving system.' + IGT_DS[3]] = {}
-config['Equipment.Driving system.' + IGT_DS[3]]['Name'] = IGT + ' 128 ch. combined into 1 x 8 ch.'
+config['Equipment.Driving system.' + IGT_DS[3]]['Name'] = IGT + ' 128 ch. - 1 x 8 ch.'
 config['Equipment.Driving system.' + IGT_DS[3]]['Manufacturer'] = IGT
 config['Equipment.Driving system.' + IGT_DS[3]]['Available channels'] = str(8)
 config['Equipment.Driving system.' + IGT_DS[3]]['Connection info'] = str(os.path.join(
@@ -210,7 +210,7 @@ config['Equipment.Driving system.' + IGT_DS[3]]['Transducer compatibility'] = st
 config['Equipment.Driving system.' + IGT_DS[3]]['Active?'] = str(False)
 
 config['Equipment.Driving system.' + IGT_DS[4]] = {}
-config['Equipment.Driving system.' + IGT_DS[4]]['Name'] = IGT + ' 128 ch. combined into 4 ch.'
+config['Equipment.Driving system.' + IGT_DS[4]]['Name'] = IGT + ' 128 ch. - 4 ch.'
 config['Equipment.Driving system.' + IGT_DS[4]]['Manufacturer'] = IGT
 config['Equipment.Driving system.' + IGT_DS[4]]['Available channels'] = str(4)
 config['Equipment.Driving system.' + IGT_DS[4]]['Connection info'] = str(os.path.join(
@@ -221,7 +221,7 @@ config['Equipment.Driving system.' + IGT_DS[4]]['Transducer compatibility'] = st
 config['Equipment.Driving system.' + IGT_DS[4]]['Active?'] = str(False)
 
 config['Equipment.Driving system.' + IGT_DS[5]] = {}
-config['Equipment.Driving system.' + IGT_DS[5]]['Name'] = IGT + ' 128 ch. combined into 2 ch.'
+config['Equipment.Driving system.' + IGT_DS[5]]['Name'] = IGT + ' 128 ch. - 2 ch.'
 config['Equipment.Driving system.' + IGT_DS[5]]['Manufacturer'] = IGT
 config['Equipment.Driving system.' + IGT_DS[5]]['Available channels'] = str(2)
 config['Equipment.Driving system.' + IGT_DS[5]]['Connection info'] = str(os.path.join(
@@ -235,7 +235,7 @@ config['Equipment.Driving system.' + IGT_DS[5]]['Active?'] = str(False)
 # # 32 ch. # #
 
 config['Equipment.Driving system.' + IGT_DS[6]] = {}
-config['Equipment.Driving system.' + IGT_DS[6]]['Name'] = IGT + ' 32 ch. all channels'
+config['Equipment.Driving system.' + IGT_DS[6]]['Name'] = IGT + ' 32 ch. - all channels'
 config['Equipment.Driving system.' + IGT_DS[6]]['Manufacturer'] = IGT
 config['Equipment.Driving system.' + IGT_DS[6]]['Available channels'] = str(32)
 config['Equipment.Driving system.' + IGT_DS[6]]['Connection info'] = str(os.path.join(
@@ -246,7 +246,7 @@ config['Equipment.Driving system.' + IGT_DS[6]]['Transducer compatibility'] = st
 config['Equipment.Driving system.' + IGT_DS[6]]['Active?'] = str(True)
 
 config['Equipment.Driving system.' + IGT_DS[7]] = {}
-config['Equipment.Driving system.' + IGT_DS[7]]['Name'] = IGT + ' 32 ch. combined into 2 x 10 ch.'
+config['Equipment.Driving system.' + IGT_DS[7]]['Name'] = IGT + ' 32 ch. - 2 x 10 ch.'
 config['Equipment.Driving system.' + IGT_DS[7]]['Manufacturer'] = IGT
 config['Equipment.Driving system.' + IGT_DS[7]]['Available channels'] = str(20)
 config['Equipment.Driving system.' + IGT_DS[7]]['Connection info'] = str(os.path.join(
@@ -257,7 +257,7 @@ config['Equipment.Driving system.' + IGT_DS[7]]['Transducer compatibility'] = st
 config['Equipment.Driving system.' + IGT_DS[7]]['Active?'] = str(False)
 
 config['Equipment.Driving system.' + IGT_DS[8]] = {}
-config['Equipment.Driving system.' + IGT_DS[8]]['Name'] = IGT + ' 32 ch. combined into 1 x 10 ch.'
+config['Equipment.Driving system.' + IGT_DS[8]]['Name'] = IGT + ' 32 ch. - 1 x 10 ch.'
 config['Equipment.Driving system.' + IGT_DS[8]]['Manufacturer'] = IGT
 config['Equipment.Driving system.' + IGT_DS[8]]['Available channels'] = str(10)
 config['Equipment.Driving system.' + IGT_DS[8]]['Connection info'] = str(os.path.join(
@@ -271,7 +271,7 @@ config['Equipment.Driving system.' + IGT_DS[8]]['Active?'] = str(True)
 # # 8 ch. # #
 
 config['Equipment.Driving system.' + IGT_DS[9]] = {}
-config['Equipment.Driving system.' + IGT_DS[9]]['Name'] = IGT + ' 8 ch. combined into 2 x 4 ch.'
+config['Equipment.Driving system.' + IGT_DS[9]]['Name'] = IGT + ' 8 ch. - 2 x 4 ch.'
 config['Equipment.Driving system.' + IGT_DS[9]]['Manufacturer'] = IGT
 config['Equipment.Driving system.' + IGT_DS[9]]['Available channels'] = str(8)
 config['Equipment.Driving system.' + IGT_DS[9]]['Connection info'] = str(os.path.join(
@@ -282,7 +282,7 @@ config['Equipment.Driving system.' + IGT_DS[9]]['Transducer compatibility'] = st
 config['Equipment.Driving system.' + IGT_DS[9]]['Active?'] = str(False)
 
 config['Equipment.Driving system.' + IGT_DS[10]] = {}
-config['Equipment.Driving system.' + IGT_DS[10]]['Name'] = IGT + ' 8 ch. combined into 1 x 4 ch.'
+config['Equipment.Driving system.' + IGT_DS[10]]['Name'] = IGT + ' 8 ch. - 1 x 4 ch.'
 config['Equipment.Driving system.' + IGT_DS[10]]['Manufacturer'] = IGT
 config['Equipment.Driving system.' + IGT_DS[10]]['Available channels'] = str(4)
 config['Equipment.Driving system.' + IGT_DS[10]]['Connection info'] = str(os.path.join(
@@ -293,7 +293,7 @@ config['Equipment.Driving system.' + IGT_DS[10]]['Transducer compatibility'] = s
 config['Equipment.Driving system.' + IGT_DS[10]]['Active?'] = str(False)
 
 config['Equipment.Driving system.' + IGT_DS[11]] = {}
-config['Equipment.Driving system.' + IGT_DS[11]]['Name'] = IGT + ' 8 ch. combined into 2 x 2 ch.'
+config['Equipment.Driving system.' + IGT_DS[11]]['Name'] = IGT + ' 8 ch. - 2 x 2 ch.'
 config['Equipment.Driving system.' + IGT_DS[11]]['Manufacturer'] = IGT
 config['Equipment.Driving system.' + IGT_DS[11]]['Available channels'] = str(4)
 config['Equipment.Driving system.' + IGT_DS[11]]['Connection info'] = str(os.path.join(
@@ -304,7 +304,7 @@ config['Equipment.Driving system.' + IGT_DS[11]]['Transducer compatibility'] = s
 config['Equipment.Driving system.' + IGT_DS[11]]['Active?'] = str(False)
 
 config['Equipment.Driving system.' + IGT_DS[12]] = {}
-config['Equipment.Driving system.' + IGT_DS[12]]['Name'] = IGT + ' 8 ch. combined into 1 x 2 ch.'
+config['Equipment.Driving system.' + IGT_DS[12]]['Name'] = IGT + ' 8 ch. - 1 x 2 ch.'
 config['Equipment.Driving system.' + IGT_DS[12]]['Manufacturer'] = IGT
 config['Equipment.Driving system.' + IGT_DS[12]]['Available channels'] = str(2)
 config['Equipment.Driving system.' + IGT_DS[12]]['Connection info'] = str(os.path.join(
@@ -418,7 +418,7 @@ config['Equipment.Transducer.' + SC_TRANS[6]]['Active?'] = str(True)
 
 
 config['Equipment.Transducer.' + IS_TRANS[0]] = {}
-config['Equipment.Transducer.' + IS_TRANS[0]]['Name'] = IMASONIC + ' 10 ch. PCD15287_01001'
+config['Equipment.Transducer.' + IS_TRANS[0]]['Name'] = IMASONIC + ' 10 ch. PCD15287_01001 ROC 75 mm'
 config['Equipment.Transducer.' + IS_TRANS[0]]['Manufacturer'] = IMASONIC
 config['Equipment.Transducer.' + IS_TRANS[0]]['Elements'] = str(10)
 config['Equipment.Transducer.' + IS_TRANS[0]]['Fund. freq.'] = str(300)  # [kHz]
@@ -431,7 +431,7 @@ config['Equipment.Transducer.' + IS_TRANS[0]]['Steer information'] = str(os.path
 config['Equipment.Transducer.' + IS_TRANS[0]]['Active?'] = str(True)
 
 config['Equipment.Transducer.' + IS_TRANS[1]] = {}
-config['Equipment.Transducer.' + IS_TRANS[1]]['Name'] = IMASONIC + ' 10 ch. PCD15287_01002'
+config['Equipment.Transducer.' + IS_TRANS[1]]['Name'] = IMASONIC + ' 10 ch. PCD15287_01002 ROC 75 mm'
 config['Equipment.Transducer.' + IS_TRANS[1]]['Manufacturer'] = IMASONIC
 config['Equipment.Transducer.' + IS_TRANS[1]]['Elements'] = str(10)
 config['Equipment.Transducer.' + IS_TRANS[1]]['Fund. freq.'] = str(300)  # [kHz]
@@ -444,7 +444,7 @@ config['Equipment.Transducer.' + IS_TRANS[1]]['Steer information'] = str(os.path
 config['Equipment.Transducer.' + IS_TRANS[1]]['Active?'] = str(True)
 
 config['Equipment.Transducer.' + IS_TRANS[2]] = {}
-config['Equipment.Transducer.' + IS_TRANS[2]]['Name'] = IMASONIC + ' 10 ch. PCD15473_01001'
+config['Equipment.Transducer.' + IS_TRANS[2]]['Name'] = IMASONIC + ' 10 ch. PCD15473_01001 ROC 100 mm'
 config['Equipment.Transducer.' + IS_TRANS[2]]['Manufacturer'] = IMASONIC
 config['Equipment.Transducer.' + IS_TRANS[2]]['Elements'] = str(10)
 config['Equipment.Transducer.' + IS_TRANS[2]]['Fund. freq.'] = str(300)  # [kHz]
@@ -457,7 +457,7 @@ config['Equipment.Transducer.' + IS_TRANS[2]]['Steer information'] = str(os.path
 config['Equipment.Transducer.' + IS_TRANS[2]]['Active?'] = str(True)
 
 config['Equipment.Transducer.' + IS_TRANS[3]] = {}
-config['Equipment.Transducer.' + IS_TRANS[3]]['Name'] = IMASONIC + ' 10 ch. PCD15473_01002'
+config['Equipment.Transducer.' + IS_TRANS[3]]['Name'] = IMASONIC + ' 10 ch. PCD15473_01002 ROC 100 mm'
 config['Equipment.Transducer.' + IS_TRANS[3]]['Manufacturer'] = IMASONIC
 config['Equipment.Transducer.' + IS_TRANS[3]]['Elements'] = str(10)
 config['Equipment.Transducer.' + IS_TRANS[3]]['Fund. freq.'] = str(300)  # [kHz]
