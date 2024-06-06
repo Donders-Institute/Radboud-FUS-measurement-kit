@@ -418,7 +418,8 @@ config['Equipment.Transducer.' + SC_TRANS[6]]['Active?'] = str(True)
 
 
 config['Equipment.Transducer.' + IS_TRANS[0]] = {}
-config['Equipment.Transducer.' + IS_TRANS[0]]['Name'] = IMASONIC + ' 10 ch. PCD15287_01001 ROC 75 mm'
+config['Equipment.Transducer.' + IS_TRANS[0]]['Name'] = (IMASONIC +
+                                                         ' 10 ch. PCD15287_01001 ROC 75 mm')
 config['Equipment.Transducer.' + IS_TRANS[0]]['Manufacturer'] = IMASONIC
 config['Equipment.Transducer.' + IS_TRANS[0]]['Elements'] = str(10)
 config['Equipment.Transducer.' + IS_TRANS[0]]['Fund. freq.'] = str(300)  # [kHz]
@@ -431,7 +432,8 @@ config['Equipment.Transducer.' + IS_TRANS[0]]['Steer information'] = str(os.path
 config['Equipment.Transducer.' + IS_TRANS[0]]['Active?'] = str(True)
 
 config['Equipment.Transducer.' + IS_TRANS[1]] = {}
-config['Equipment.Transducer.' + IS_TRANS[1]]['Name'] = IMASONIC + ' 10 ch. PCD15287_01002 ROC 75 mm'
+config['Equipment.Transducer.' + IS_TRANS[1]]['Name'] = (IMASONIC +
+                                                         ' 10 ch. PCD15287_01002 ROC 75 mm')
 config['Equipment.Transducer.' + IS_TRANS[1]]['Manufacturer'] = IMASONIC
 config['Equipment.Transducer.' + IS_TRANS[1]]['Elements'] = str(10)
 config['Equipment.Transducer.' + IS_TRANS[1]]['Fund. freq.'] = str(300)  # [kHz]
@@ -444,7 +446,8 @@ config['Equipment.Transducer.' + IS_TRANS[1]]['Steer information'] = str(os.path
 config['Equipment.Transducer.' + IS_TRANS[1]]['Active?'] = str(True)
 
 config['Equipment.Transducer.' + IS_TRANS[2]] = {}
-config['Equipment.Transducer.' + IS_TRANS[2]]['Name'] = IMASONIC + ' 10 ch. PCD15473_01001 ROC 100 mm'
+config['Equipment.Transducer.' + IS_TRANS[2]]['Name'] = (IMASONIC +
+                                                         ' 10 ch. PCD15473_01001 ROC 100 mm')
 config['Equipment.Transducer.' + IS_TRANS[2]]['Manufacturer'] = IMASONIC
 config['Equipment.Transducer.' + IS_TRANS[2]]['Elements'] = str(10)
 config['Equipment.Transducer.' + IS_TRANS[2]]['Fund. freq.'] = str(300)  # [kHz]
@@ -457,7 +460,8 @@ config['Equipment.Transducer.' + IS_TRANS[2]]['Steer information'] = str(os.path
 config['Equipment.Transducer.' + IS_TRANS[2]]['Active?'] = str(True)
 
 config['Equipment.Transducer.' + IS_TRANS[3]] = {}
-config['Equipment.Transducer.' + IS_TRANS[3]]['Name'] = IMASONIC + ' 10 ch. PCD15473_01002 ROC 100 mm'
+config['Equipment.Transducer.' + IS_TRANS[3]]['Name'] = (IMASONIC +
+                                                         ' 10 ch. PCD15473_01002 ROC 100 mm')
 config['Equipment.Transducer.' + IS_TRANS[3]]['Manufacturer'] = IMASONIC
 config['Equipment.Transducer.' + IS_TRANS[3]]['Elements'] = str(10)
 config['Equipment.Transducer.' + IS_TRANS[3]]['Fund. freq.'] = str(300)  # [kHz]

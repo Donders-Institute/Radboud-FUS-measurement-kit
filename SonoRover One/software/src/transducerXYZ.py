@@ -140,7 +140,7 @@ class Transducer(object):
         return len(self.elements)
 
 
-    def computePhases (self, pulse, point_mm, set_focus_mm):
+    def computePhases (self, pulse, point_mm, set_focus_mm, is_sham):
         """
         Computes the phases necessary to aim at the specified point, and writes them directly in the given pulse.
         :param pulse: the pulse to modify, its frequencies must be set before, its phases are modified (and resized)
@@ -168,7 +168,13 @@ class Transducer(object):
             dist = math.sqrt (math.pow(elem[0]-x,2) + math.pow(elem[1]-y,2) + math.pow(elem[2]-z,2))
             rem = math.modf (dist / wavelen)[0]  # take fractional part
             phases[i] = rem * 360.0
-        phases_str = ', '.join(phases)
+
+        if is_sham:
+            for i in range(len(phases)):
+                if i % 2 == 0:
+                    phases[i] = phases[i] + 180  # add 180 degrees to dephase signal
+
+        phases_str = ', '.join([format(x,'.2f') for x in phases])
         self.logger.info(f'Computed phases for set focus of {set_focus_mm} and aim w.r.t. natural focus of {point_mm[2]}: {phases_str}')
         pulse.setPhases (phases)
         return True

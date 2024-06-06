@@ -135,6 +135,8 @@ class InputParameters:
 
         self.oper_freq = int(self.transducer.fund_freq) * 1e+3  # operating frequency in Hz
 
+        self.is_sham = False
+
         self.pos_com_port = 'COM4'
 
         self.acquisition_time = 500  # microseconds
@@ -175,6 +177,8 @@ class InputParameters:
         cached_input['Input parameters']['Transducer.is_active'] = str(self.transducer.is_active)
 
         cached_input['Input parameters']['Operating frequency [Hz]'] = str(int(self.oper_freq))
+
+        cached_input['Input parameters']['Sham condition?'] = str(self.is_sham)
 
         cached_input['Input parameters']['COM port of positioning system'] = str(self.pos_com_port)
 
@@ -221,6 +225,8 @@ class InputParameters:
 
         self.oper_freq = int(cached_input['Input parameters']['Operating frequency [Hz]'])
 
+        self.is_sham = (cached_input['Input parameters']['Sham condition?'] == 'True')
+
         self.pos_com_port = cached_input['Input parameters']['COM port of positioning system']
 
         self.acquisition_time = float(cached_input['Input parameters']['Hydrophone acquisition time [us]'])
@@ -261,6 +267,8 @@ class InputParameters:
 
         info = info + f"Operating frequency [Hz]: {self.oper_freq} \n "
 
+        info = info + f"Sham condition?: {self.is_sham} \n "
+
         info = info + f"COM port of positioning system: {self.pos_com_port} \n "
         info = info + f"Hydrophone acquisition time [us]: {self.acquisition_time} \n "
         info = info + f"Picoscope sampling frequency multiplication factor: {self.sampl_freq_multi} \n "
@@ -295,7 +303,7 @@ class InputDialog():
             ctk.set_appearance_mode("System")
 
             # Set the geometry of tkinter frame
-            self.win.geometry("920x600")
+            self.win.geometry("920x645")
             self.win.title('Set input parameters')
 
             # Check if cached data exists
@@ -351,6 +359,20 @@ class InputDialog():
             self.oper_freq_entr.bind('<1>', self.event_handling)
             self.oper_freq_entr.insert(0, int(self.inputParam.oper_freq/1000))
             self.oper_freq_entr.grid(row=row_nr, column=1, pady=5)
+
+            row_nr = row_nr + 1
+            ctk.CTkLabel(master=self.win, text="Sham condition?"
+                         ).grid(row=row_nr, column=0, padx=20, sticky='w')
+            sham_bool = self.inputParam.is_sham
+            sham_int = 0
+            if sham_bool:
+                sham_int = 1
+
+            sham_var = tk.IntVar(value=sham_int)
+            self.sham_check = ctk.CTkCheckBox(master=self.win, text='', variable=sham_var)
+            self.sham_check.bind('<Return>', self.event_handling)
+            self.sham_check.bind('<1>', self.event_handling)
+            self.sham_check.grid(row=row_nr, column=1, padx=100)
 
             if self.inputParam.is_ds_com_port:
                 row_nr = row_nr + 1
@@ -661,6 +683,8 @@ class InputDialog():
             os.makedirs(self.inputParam.dir_output)
 
         self.inputParam.oper_freq = int(self.oper_freq_entr.get())*1e+3
+
+        self.inputParam.is_sham = (self.sham_check.get() == 1)
 
         if self.inputParam.is_ds_com_port:
             self.inputParam.driving_system.connect_info = 'COM' + self.com_us.get()
