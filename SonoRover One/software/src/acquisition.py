@@ -286,7 +286,7 @@ class Acquisition:
 
             self.gen = self.fus.gen()
 
-    def init_pulse_sequence(self):
+    def init_pulse_sequence(self, is_sham):
         """
         initialize the pulse sequence
         duration = duration of the pulse in us. Usually 120us is a good duration
@@ -340,7 +340,7 @@ class Acquisition:
                 aim_wrt_natural_focus = self.transducer.natural_foc - focus_mm
 
                 # Aim n mm away from the natural focal spot, on main axis (Z)
-                trans.computePhases(pulse, (0, 0, aim_wrt_natural_focus), focus_mm)
+                trans.computePhases(pulse, (0, 0, aim_wrt_natural_focus), focus_mm, is_sham)
 
             # Assume NeuroFUS transducers are used
             else:
@@ -877,7 +877,7 @@ class Acquisition:
         with open(self.outputACD, 'wb') as outacd:
             self.cplx_data.tofile(outacd)
 
-    def pulse_only(self, performAllProtocols, repetitions=1, delay_s=1.0, log_dir=''):
+    def pulse_only(self, performAllProtocols, repetitions=1, delay_s=1.0, log_dir='', is_sham = False):
         """
         execute the pulse sequence without having the pico connected and without motion
         use this with the picoscope software to acquire data with identical generator settings
@@ -885,7 +885,7 @@ class Acquisition:
         """
         try:
             self.init_generator(performAllProtocols, log_dir)
-            self.init_pulse_sequence()
+            self.init_pulse_sequence(is_sham)
             for i in range(repetitions):
                 self.exec_pulse_sequence()
                 time.sleep(delay_s)
@@ -1062,7 +1062,7 @@ def acquire(outfile, protocol, config, inputParam):
 
     try:
         my_acquisition.init_generator(inputParam.perform_all_protocols, inputParam.main_dir)
-        my_acquisition.init_pulse_sequence()
+        my_acquisition.init_pulse_sequence(inputParam.is_sham)
         my_acquisition.logger.info('All driving system parameters are set')
 
         my_acquisition.init_scope(inputParam.sampl_freq_multi)
@@ -1112,7 +1112,7 @@ def simul_acquire(outfile, protocol, config, inputParam):
 
     try:
         my_acquisition.init_generator(inputParam.perform_all_protocols, inputParam.main_dir)
-        my_acquisition.init_pulse_sequence()
+        my_acquisition.init_pulse_sequence(inputParam.is_sham)
         my_acquisition.init_scope_params(inputParam.sampl_freq_multi)
         my_acquisition.init_aquisition(inputParam.acquisition_time)
         my_acquisition.init_processing_parameters()
@@ -1164,7 +1164,7 @@ def check_generator(protocol, config, inputParam, repetitions=1, delay_s=1.0):
 
     my_acquisition.pulse_only(inputParam.performAllProtocols, repetitions=repetitions,
                               delay_s=delay_s,
-                              log_dir=inputParam.main_dir)
+                              log_dir=inputParam.main_dir, is_sham=inputParam.is_sham)
 
 
 def check_acquisition(outfile, protocol, config, inputParam):
@@ -1193,7 +1193,7 @@ def check_acquisition(outfile, protocol, config, inputParam):
 
     try:
         my_acquisition.init_generator(inputParam.performAllProtocols, inputParam.main_dir)
-        my_acquisition.init_pulse_sequence()
+        my_acquisition.init_pulse_sequence(inputParam.is_sham)
 
         my_acquisition.init_scope(inputParam.sampl_freq_multi)
         my_acquisition.init_aquisition(inputParam.acquisition_time)
