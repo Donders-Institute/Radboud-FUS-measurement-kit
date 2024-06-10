@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-Copyright (c) 2024 Margely Cornelissen (Radboud University) and Erik Dumont (Image Guided Therapy)
+Copyright (c) 2024 Margely Cornelissen, Stein Fekkes (Radboud University) and Erik Dumont (Image
+Guided Therapy)
 
 MIT License
 
@@ -23,10 +24,10 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 **Attribution Notice**:
-If you use this software in your project, please include the following attribution:
-Margely Cornelissen (Radboud University, Nijmegen, The Netherlands) & Erik Dumont (Image Guided
-Therapy, Pessac, France) (2024), Radboud FUS measurement kit, SonoRover One Software (Version 0.8),
-https://github.com/MaCuinea/Radboud-FUS-measurement-kit
+If you use this kit in your research or project, please include the following attribution:
+Margely Cornelissen, Stein Fekkes (Radboud University, Nijmegen, The Netherlands) & Erik Dumont
+(Image Guided Therapy, Pessac, France) (2024), Radboud FUS measurement kit (version 0.8),
+https://github.com/Donders-Institute/Radboud-FUS-measurement-kit
 """
 
 # -------------------------------------------------------------------------------
@@ -328,7 +329,7 @@ class Acquisition:
             if self.config['Equipment.Manufacturer.IS']['Name'] == self.transducer.manufact:
                 ini_path = os.path.join(os.getcwd(), self.transducer.steer_info)
 
-                trans = transducerXYZ.Transducer()
+                trans = transducerXYZ.Transducer(self.logger)
                 if not trans.load(ini_path):
                     self.logger.error(f'Error: can not load the transducer definition from {ini_path}')
                     sys.exit()
@@ -339,7 +340,7 @@ class Acquisition:
                 aim_wrt_natural_focus = self.transducer.natural_foc - focus_mm
 
                 # Aim n mm away from the natural focal spot, on main axis (Z)
-                trans.computePhases(pulse, (0, 0, aim_wrt_natural_focus))
+                trans.computePhases(pulse, (0, 0, aim_wrt_natural_focus), focus_mm)
 
             # Assume NeuroFUS transducers are used
             else:
@@ -366,7 +367,9 @@ class Acquisition:
             #             nPulseTrainRep = math.floor(self.protocol.pulse_train_rep_dur / self.protocol.pulse_train_rep_int)     # number of executions of one pulse train
             # =============================================================================
 
-            self.execFlags = unifus.ExecFlag.MeasureTimings  ## | unifus.ExecFlag.MeasureBoards
+            # # | unifus.ExecFlag.MeasureBoards
+            self.execFlags = unifus.ExecFlag.MeasureTimings | unifus.ExecFlag.DisableMonitoringChannelCombiner | unifus.ExecFlag.DisableMonitoringChannelCurrentOut
+            # flags to disable checking the current limit
 
             # Define a complete sequence
             self.seqBuffer = 0
@@ -518,7 +521,7 @@ class Acquisition:
         self.logger.debug(f'scan: {scan}')
         self.grid = Scan_Iter(self.nsl,self.nrow,self.ncol,scan=scan)
 
-    def acquire_data(self):
+    def acquire_data(self, attempt=0):
         """
         acquire data will:
             start acquisition on the picoscope (wait for trigger)
@@ -529,7 +532,13 @@ class Acquisition:
         self.scope.startAcquisitionTB (self.sample_count, self.timebase) # start picoscope acquisition on trigger
         time.sleep(0.025)
         self.exec_pulse_sequence()                    # execute pulse sequence
-        self.scope.waitAcquisition()                # wait for acquisition to complete
+        ok = self.scope.waitAcquisition()                # wait for acquisition to complete
+
+        if not ok and attempt < 5:
+            # redo acquisition
+            attempt += 1
+            self.acquire_data(attempt)
+
         self.signalA = self.scope.readVolts()[0]     # transfer data from picoscope
         msg = f'signalA size: {self.signalA.size}, dtype: {self.signalA.dtype}'
         self.logger.debug(msg)
@@ -678,6 +687,8 @@ class Acquisition:
         params['General']['Path and filename of protocol excel file'] = inputValues.path_protocol_excel_file
         params['General']['Path of output'] = inputValues.dir_output
         params['General']['Perform all protocols in sequence without waiting for user input?'] = str(inputValues.perform_all_protocols)
+        params['General']['Temperature of water [°C]'] = str(inputValues.temp)
+        params['General']['Dissolved oxygen level of water [mg/L]'] = str(inputValues.dis_oxy)
 
         params['Equipment'] = {}
         params['Equipment']['Driving system.serial_number'] = self.driving_system.serial
