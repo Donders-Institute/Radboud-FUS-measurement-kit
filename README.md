@@ -37,7 +37,7 @@
 
 (Project id: **0003429** )
 
-**Radboud FUS measurement kit** is a comprehensive kit alowing precise hydrophone measurements of your TUS transducers for verification, characterization and monitoring overall system performance.    
+**Radboud FUS measurement kit** is a comprehensive kit allowing precise hydrophone measurements of your TUS transducers for verification, characterization and monitoring overall system performance.    
 
 This project is facilitated by the Radboud Focused Ultrasound Initiative. For more information, please visit the [website](https://www.ru.nl/en/donders-institute/research/research-facilities/focused-ultrasound-initiative-fus).
 
