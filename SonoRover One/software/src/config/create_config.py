@@ -47,7 +47,12 @@ config['General']['Logger name'] = 'equipment_characterization_pipeline'
 config['General']['Configuration file folder'] = CONFIG_FOLDER
 config['General']['Filename of input parameters cache'] = 'characterization_input_cache.ini'
 
-config['General']['Temporary output path'] = 'C:\\Temp'
+config['General']['Temporary output path'] = 'C:\\Temp\\General output folder'
+config['General']['Default protocol directory'] = ('//ru.nl//WrkGrp//FUS_Hub//' +
+                                                   'Hydrophone measurements//Measurements//2024')
+config['General']['Default output directory'] = ('//ru.nl//WrkGrp//FUS_Hub//' +
+                                                 'Hydrophone measurements//Measurements//2024' +
+                                                 '//General output folder')
 
 MAX_ALLOWED_PRESSURE = 1.2  # MPa
 config['General']['Maximum pressure allowed in free water [MPa]'] = str(MAX_ALLOWED_PRESSURE)

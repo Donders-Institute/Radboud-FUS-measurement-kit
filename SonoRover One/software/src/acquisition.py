@@ -1062,7 +1062,7 @@ def acquire(outfile, protocol, config, inputParam):
 
     try:
         my_acquisition.init_generator(inputParam.perform_all_protocols, inputParam.main_dir)
-        my_acquisition.init_pulse_sequence(inputParam.is_sham)
+        my_acquisition.init_pulse_sequence(protocol.is_sham)
         my_acquisition.logger.info('All driving system parameters are set')
 
         my_acquisition.init_scope(inputParam.sampl_freq_multi)
@@ -1112,7 +1112,7 @@ def simul_acquire(outfile, protocol, config, inputParam):
 
     try:
         my_acquisition.init_generator(inputParam.perform_all_protocols, inputParam.main_dir)
-        my_acquisition.init_pulse_sequence(inputParam.is_sham)
+        my_acquisition.init_pulse_sequence(protocol.is_sham)
         my_acquisition.init_scope_params(inputParam.sampl_freq_multi)
         my_acquisition.init_aquisition(inputParam.acquisition_time)
         my_acquisition.init_processing_parameters()
@@ -1164,7 +1164,7 @@ def check_generator(protocol, config, inputParam, repetitions=1, delay_s=1.0):
 
     my_acquisition.pulse_only(inputParam.performAllProtocols, repetitions=repetitions,
                               delay_s=delay_s,
-                              log_dir=inputParam.main_dir, is_sham=inputParam.is_sham)
+                              log_dir=inputParam.main_dir, is_sham=protocol.is_sham)
 
 
 def check_acquisition(outfile, protocol, config, inputParam):
@@ -1193,7 +1193,7 @@ def check_acquisition(outfile, protocol, config, inputParam):
 
     try:
         my_acquisition.init_generator(inputParam.performAllProtocols, inputParam.main_dir)
-        my_acquisition.init_pulse_sequence(inputParam.is_sham)
+        my_acquisition.init_pulse_sequence(protocol.is_sham)
 
         my_acquisition.init_scope(inputParam.sampl_freq_multi)
         my_acquisition.init_aquisition(inputParam.acquisition_time)
