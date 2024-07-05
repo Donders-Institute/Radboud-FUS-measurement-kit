@@ -31,7 +31,6 @@ https://github.com/Donders-Institute/Radboud-FUS-measurement-kit
 """
 
 # Basic packages
-import os
 
 # Miscellaneous packages
 import configparser
@@ -42,7 +41,7 @@ from datetime import datetime
 from fus_driving_systems import driving_system as ds
 from fus_driving_systems import transducer as td
 
-from config import config
+from fus_driving_systems.config.config import config_info as config
 
 
 class InputParameters:
@@ -78,9 +77,9 @@ class InputParameters:
         Initialize input parameters with default values and configurations.
         """
 
-        self.temp_dir_output = config['General']['Temporary output path']
-        self.main_dir = config['General']['Default protocol directory']
-        self.dir_output = config['General']['Default output directory']
+        self.temp_dir_output = config['Characterization']['Temporary output path']
+        self.main_dir = config['Characterization']['Default protocol directory']
+        self.dir_output = config['Characterization']['Default output directory']
         self.path_protocol_excel_file = self.main_dir
 
         # Get available driving systems and use the first one as default
@@ -154,9 +153,8 @@ class InputParameters:
 
         cached_input['Input parameters']['Perform all protocols in sequence without waiting for user input?'] = str(self.perform_all_protocols)
 
-        config_fold = config['General']['Configuration file folder']
-        cached_filename = config['General']['Filename of input parameters cache']
-        with open(os.path.join(config_fold, cached_filename), 'w') as inputfile:
+        cached_path = config['Characterization']['Path of input parameters cache']
+        with open(cached_path, 'w') as inputfile:
             cached_input.write(inputfile)
 
     def convert_ini_to_object(self, cached_input):

@@ -36,12 +36,10 @@ import os
 # Miscellaneous packages
 
 # Own packages
-from config import config
-from logging_config import initialize_logger, logger
+from fus_driving_systems.config.config import config_info as config, read_additional_config
+from fus_driving_systems.config.logging_config import initialize_logger, logger as global_logger
 
-import sequence
-
-from input_dialog import InputDialog
+from frontend.input_dialog import InputDialog
 
 from distutils.dir_util import copy_tree
 import shutil
@@ -54,44 +52,53 @@ def main():
     """
     Main function to run the characterization pipeline.
     """
+    # Read additional configuration file if needed
+    read_additional_config('config//characterization_config.ini')
 
     # Create dialog to retrieve input values
     input_dialog = InputDialog()
     input_param = input_dialog.input_param
 
     if input_param is not None:
-        # Initialize the logger
-        logger = initialize_logger(input_param)
+        # Initialize logger
+        base_path = input_param.main_dir
 
-        version = config['Versions']['Equipment characterization pipeline software']
-        logger.info(f'Characterization performed with the following software: {version}')
-        logger.info(f'Characterization performed with the following parameters: \n {input_param}')
+        head, tail = os.path.split(input_param.path_protocol_excel_file)
+        protocol_excel, ext = os.path.splitext(tail)
+        global_logger = initialize_logger(base_path, protocol_excel)
+
+        version = config['Versions']['SonoRover One software']
+        global_logger.info(f'Characterization performed with the following software: {version}')
+        global_logger.info(f'Characterization performed with the following parameters: \n {input_param}')
 
         # Import sequences of excel
+        from backend import sequence
         sequence_list = sequence.generate_sequence_list(input_param)
 
-        for seq in sequence_list:
-            logger.info(f'Performing the following sequence: \n {seq}')
+        from backend import acquisition as aq
+        try:
+            # Initialize acquisition by initializing all equipment
+            acquisition = aq.Acquisition(input_param)
+            for seq in sequence_list:
+                global_logger.info(f'Performing the following sequence: \n {seq}')
 
-            # Check existance of directory
-            outfile = os.path.join(input_param.temp_dir_output, 'sequence_' + str(seq.seq_number)
-                                   + '_output_data.raw')
+                if not is_testing:
+                    acquisition.acquire_sequence(seq)
+                else:
+                    # Test functions
+                    if test_scanner_only:
+                        acquisition.check_scan(seq)
 
-            if not is_testing:
-                acquisition.acquire(outfile, seq, input_param)
-            else:
-                # Test functions
-                if test_scanner_only:
-                    acquisition.check_scan(seq, input_param)
-
-        # All sequences are finished, so move data
-        move_output_data(input_param.temp_dir_output, input_param.dir_output)
+            # All sequences are finished, so move data
+            move_output_data(global_logger, input_param.temp_dir_output, input_param.dir_output)
+        finally:
+            acquisition.close_all()
 
     else:
         print('No input parameters found.')
 
 
-def move_output_data(from_dir, to_dir):
+def move_output_data(logger, from_dir, to_dir):
     """
     Move output data to the final directory in case it is a internet drive to save acquisition time.
 
@@ -103,9 +110,9 @@ def move_output_data(from_dir, to_dir):
     try:
         copy_tree(from_dir, to_dir)
         shutil.rmtree(from_dir)
-        logger.info(f'Output files have been moved to {to_dir}')
+        global_logger.info(f'Output files have been moved to {to_dir}')
     except Exception as e:
-        logger.info(f'Moving output files failed: {e}. Output files can be found in {from_dir}.')
+        global_logger.info(f'Moving output files failed: {e}. Output files can be found in {from_dir}.')
 
 
 if __name__ == '__main__':

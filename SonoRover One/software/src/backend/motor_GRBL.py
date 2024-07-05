@@ -33,8 +33,11 @@ https://github.com/Donders-Institute/Radboud-FUS-measurement-kit
 import serial
 import serial.tools.list_ports as list_ports
 import time
-import logging
 import re
+
+# Own packages
+# Access the logger
+from fus_driving_systems.config.logging_config import logger
 
 MotorErrorCode = {
 0 : 'Connection Error',
@@ -46,9 +49,7 @@ MotorErrorCode = {
 
 
 class MotorError(Exception):
-    def __init__(self, logger_name, code=0, message="MotorError"):
-        self.logger = logging.getLogger(logger_name)
-
+    def __init__(self, code=0, message="MotorError"):
         self.code = code
         self.message = message
         super().__init__(self.message)
@@ -60,11 +61,7 @@ class MotorsXYZ:
     """
     class to communicate with the motors at baudrate speed
     """
-    def __init__(self, logger_name, baudrate=115200, timeout=4):
-        self.logger = logging.getLogger(logger_name)
-
-        self.logger_name = logger_name
-
+    def __init__(self, baudrate=115200, timeout=4):
         self._timeout = timeout
         self._baudrate = baudrate
         self._current_position =[-1.0,-1.0,-1.0]
@@ -102,7 +99,7 @@ class MotorsXYZ:
         print(all_port_tuples)
         for port,desc, hwid in all_port_tuples:
             dev,vid,pid = self._parse_hwid(hwid)
-            self.logger.info(f"port={port}\ndesc={desc}\ndev:{dev}, vid={vid},pid={pid}")
+            logger.info(f"port={port}\ndesc={desc}\ndev:{dev}, vid={vid},pid={pid}")
             if dev=='USB' and vid=='2341' and (pid=='0043' or pid=='0042'): # ARDUINO
                 return port
         return None
@@ -125,11 +122,11 @@ class MotorsXYZ:
                     self._com = ser
                     self.com_port = port
                     self.connected =True
-                    self.logger.info('connected: {}, port: {}'.format(self.connected,port))
+                    logger.info('connected: {}, port: {}'.format(self.connected,port))
             else:
                 ser.close()
         else:
-            self.logger.error('error, no port detected')
+            logger.error('error, no port detected')
         print('ok: ',ok,' error: ',error, ' tooLong: ',tooLong)
         print('Motor connected: ', self.connected)
 
@@ -181,7 +178,7 @@ class MotorsXYZ:
     def initialize(self):
         if not self.initialized:
             self.home()
-            self.logger.debug('initialize')
+            logger.debug('initialize')
             self._send_cmd('G91')
             ok=self._wait_for_ok()
             self._send_cmd('G21')
@@ -189,7 +186,7 @@ class MotorsXYZ:
             self._send_cmd('F900')
             self._wait_for_ok()
             ok=self._read_params()
-            self.logger.debug('rangeXYZ: {}'.format(self.rangeXYZ))
+            logger.debug('rangeXYZ: {}'.format(self.rangeXYZ))
             if ok and not self._alarm:
                 self.initialized = True
                 self.ready = True
@@ -197,13 +194,13 @@ class MotorsXYZ:
                 print('state: ', self._read_ans())
 
     def home(self,axis=['X','Y', 'Z'], together=True):
-        self.logger.info('homing: $H')
+        logger.info('homing: $H')
         if self.connected:
             self._busy = True
             cmd_home="$H"
             if together:
                 self._send_cmd(cmd_home)
-                self.logger.debug(f'cmd_home: {cmd_home}')
+                logger.debug(f'cmd_home: {cmd_home}')
                 self._wait_for_ok(timeout=30)
             else:
                 for axe in axis:
@@ -224,7 +221,7 @@ class MotorsXYZ:
         self.zero()
 
     def zero(self):
-            self.logger.info('zeroing: G10 P0 L20 X0 Y0 Z0')
+            logger.info('zeroing: G10 P0 L20 X0 Y0 Z0')
             self._send_cmd('G10 P0 L20 X0 Y0 Z0')
             self._wait_for_ok()
 
@@ -233,7 +230,7 @@ class MotorsXYZ:
             self._send_cmd("?")
             status_answer=self._com.readline()
             line = status_answer.decode('ascii')
-            self.logger.debug('readPos: ' + line)
+            logger.debug('readPos: ' + line)
             
             try:
                 split_str=re.split("[,:|]+", line[1:])
@@ -241,17 +238,17 @@ class MotorsXYZ:
                 mpos = split_str[1]
                 self._current_position = [float(x) for x in split_str[2:5]]
             except:
-                self.logger.debug('split_str: ' + ' '.join(split_str))
-                self.logger.debug('Reading position failed. Try again.')
+                logger.debug('split_str: ' + ' '.join(split_str))
+                logger.debug('Reading position failed. Try again.')
                 
                 if attempt < 5:
                     self.readPosition(attempt = attempt + 1)
                 else:
-                    self.logger.error('Reading position failed multiple times. Quitting.')
+                    logger.error('Reading position failed multiple times. Quitting.')
                 
             self._wait_for_ok()
             msg = "Read current_position: {} ".format(self._current_position)
-            self.logger.debug(msg)
+            logger.debug(msg)
         return self._current_position
 
     def _wait_for_ok(self,timeout=1):
@@ -260,7 +257,7 @@ class MotorsXYZ:
         ok = False
         while ( not finished ):
             line=self._com.readline().decode('ascii').strip()
-            self.logger.debug('line: {}'.format(line))
+            logger.debug('line: {}'.format(line))
             if line == 'ok':
                 ok=True
                 break
@@ -268,7 +265,7 @@ class MotorsXYZ:
                 self._alarm= True
                 break
             finished = (time.time()-start_time)>timeout
-        self.logger.debug('ok: {}'.format(ok))
+        logger.debug('ok: {}'.format(ok))
         return ok
 
     def _wait_for_done(self,timeout=30):
@@ -279,7 +276,7 @@ class MotorsXYZ:
             self._send_cmd('G4 P0')
             if(self._wait_for_ok(timeout=timeout)):
                 done=True
-        self.logger.debug('done: {}'.format(done))
+        logger.debug('done: {}'.format(done))
         return done
 
     def wait_for_idle(self,timeout=30):
@@ -288,43 +285,43 @@ class MotorsXYZ:
         ok = False
         while ( not finished ):
             pos=self.readPosition()
-#            self.logger.debug('position: {:.3f}, {:.3f}, {:.3f} ; status: {}'.format(*pos,self.status))
+#            logger.debug('position: {:.3f}, {:.3f}, {:.3f} ; status: {}'.format(*pos,self.status))
             if self.status == 'Idle':
                 ok=True
             time.sleep(0.05)
             timeout_error = (time.time()-start_time)>timeout
             finished = timeout_error or ok
-        self.logger.debug('finished wait_for_idle; ok: {}, timeout_error: {}'.format(ok, timeout_error))
+        logger.debug('finished wait_for_idle; ok: {}, timeout_error: {}'.format(ok, timeout_error))
         return ok
 
     def moveAsync(self, XYZ, relative = True):
-        if not self.ready :
-            raise MotorError(self.logger_name, message="Motor not ready.")
+        if not self.ready:
+            raise MotorError(message="Motor not ready.")
         if relative:
             offsetXYZ=XYZ
             targetXYZ = [x+y for x,y in zip(self._current_position,offsetXYZ)]
         else:
             targetXYZ = XYZ
             offsetXYZ = [x-y for x,y in zip(targetXYZ,self._current_position)]
-        self.logger.debug('target: {:.3f},{:.3f},{:.3f}; offset: {:.3f},{:.3f},{:.3f}'.format(*targetXYZ,*offsetXYZ))
+        logger.debug('target: {:.3f},{:.3f},{:.3f}; offset: {:.3f},{:.3f},{:.3f}'.format(*targetXYZ,*offsetXYZ))
         if self.isWithinRange(targetXYZ):
             offset = [round(x,3) if abs(x)>0.005 else 0.0 for x in offsetXYZ]
             move_cmd = 'G1 '
             for axe in range(len(offset)):
                 if abs(offset[axe])>0.0:
                     move_cmd += "{}{:.3f}".format(self._axisLetter[axe], offset[axe])
-            self.logger.debug('offset: {}, move_cmd: {}'.format(offset,move_cmd))
+            logger.debug('offset: {}, move_cmd: {}'.format(offset,move_cmd))
             self._send_cmd(move_cmd)
             ok=self._wait_for_ok()
             if not ok:
-                raise MotorError(self.logger_name, message="error in motion: {}".format(move_cmd))
+                raise MotorError(message="error in motion: {}".format(move_cmd))
             self.readPosition()
         else:
-            raise MotorError(self.logger_name, message="motion out of range: {}".format(targetXYZ))
+            raise MotorError(message="motion out of range: {}".format(targetXYZ))
 
     def move(self, XYZ, relative = True):
         if not self.ready :
-            raise MotorError(self.logger_name, message="Motor not ready.")
+            raise MotorError(message="Motor not ready.")
         if relative:
             offsetXYZ=XYZ
             targetXYZ = [x+y for x,y in zip(self._current_position,offsetXYZ)]
@@ -337,15 +334,15 @@ class MotorsXYZ:
             for axe in range(len(offset)):
                 if abs(offset[axe])>0.0:
                     move_cmd += " {}{:.3f}".format(self._axisLetter[axe], offset[axe])
-            self.logger.debug('offset: {}, move_cmd: {}'.format(offset,move_cmd))
+            logger.debug('offset: {}, move_cmd: {}'.format(offset,move_cmd))
             self._send_cmd(move_cmd)
             ok=self._wait_for_ok()
             done=self.wait_for_idle()
             if not done:
-                raise MotorError(self.logger_name, message="error in motion: {}".format(move_cmd))
+                raise MotorError(message="error in motion: {}".format(move_cmd))
             self.readPosition()
         else:
-            raise MotorError(self.logger_name, message="motion out of range: {}".format(targetXYZ))
+            raise MotorError(message="motion out of range: {}".format(targetXYZ))
 
     def isWithinRange(self,destXYZ):
         ok = True
@@ -358,7 +355,7 @@ class MotorsXYZ:
             print(line.decode('ascii'))
 
     def raise_exception(self,i):
-        raise MotorError(self.logger_name, i, MotorErrorCode[i])
+        raise MotorError(i, MotorErrorCode[i])
 
 
     def disconnect(self):

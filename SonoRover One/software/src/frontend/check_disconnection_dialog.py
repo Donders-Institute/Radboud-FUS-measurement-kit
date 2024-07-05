@@ -31,59 +31,26 @@ https://github.com/Donders-Institute/Radboud-FUS-measurement-kit
 """
 
 # Basic packages
-import os
-import sys
 
 # Miscellaneous packages
-from datetime import datetime
-import logging
+from CTkMessagebox import CTkMessagebox
 
 # Own packages
-from config import config
+from fus_driving_systems.config.config import config_info as config
+from fus_driving_systems.config.logging_config import logger
 
-logger = None
 
+class CheckDisconnectionDialog():
+    def __init__(self, add_message):
+        self.add_message = add_message
 
-def initialize_logger(input_param):
-    global logger
+        self._build_dialog()
 
-    base_path = input_param.main_dir
+    def _build_dialog(self):
 
-    head, tail = os.path.split(input_param.path_protocol_excel_file)
-    protocol_excel, ext = os.path.splitext(tail)
+        message = config['Characterization']['Disconnection message']
+        message += self.add_message
 
-    # reset logging
-    logger = logging.getLogger(config['General']['Logger name'])
-    handlers = logger.handlers[:]
-    for handler in handlers:
-        logger.removeHandler(handler)
-        handler.close()
+        CTkMessagebox(title="Attention", message=message, icon="warning", option_1="Confirm")
 
-    logging.basicConfig(level=logging.INFO)
-
-    # create logger
-    logger = logging.getLogger(config['General']['Logger name'])
-    logger.setLevel(logging.INFO)
-
-    # Get current date and time for logging
-    date_time = datetime.now()
-    timestamp = date_time.strftime('%Y-%m-%d_%H-%M-%S')
-
-    # create file handler
-    file_handler = logging.FileHandler(os.path.join(base_path, f'log_{timestamp}_' + protocol_excel
-                                                    + '.txt'), mode='w')
-
-    # create console handler
-    console_handler = logging.StreamHandler(sys.stdout)
-
-    # create formatter and add it to the handlers
-    formatterCompact = logging.Formatter("%(asctime)s - %(levelname)s - %(module)s - %(funcName)s "
-                                         + "line %(lineno)d %(message)s")
-    file_handler.setFormatter(formatterCompact)
-    console_handler.setFormatter(formatterCompact)
-
-    # add the handlers to the logger
-    logger.addHandler(file_handler)
-    logger.addHandler(console_handler)
-
-    return logger
+        logger.info("Disconnection confirmed.")

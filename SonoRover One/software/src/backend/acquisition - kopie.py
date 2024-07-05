@@ -99,7 +99,7 @@ class Acquisition:
         self.motors = MotorsXYZ(config['General']['Logger name'])
         self.gen = None
         self.fus = None
-        self.scope = pico.getScope("5244D")
+
         self.sampling_freq = 0
         self.sampling_period = 0
         self.sampling_duration_us = 0

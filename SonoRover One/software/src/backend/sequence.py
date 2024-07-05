@@ -41,9 +41,8 @@ import numpy
 import pandas as pd
 
 # Own packages
-from logging_config import logger
-
 from fus_driving_systems import sequence
+from fus_driving_systems.config.logging_config import logger
 
 
 class CharacSequence(sequence.Sequence):
@@ -192,8 +191,8 @@ class CharacSequence(sequence.Sequence):
         """
 
         # Global characterization parameters
-        self.driving_sys = input_param.driving_sys
-        self.transducer = input_param.transducer
+        self.driving_sys = input_param.driving_sys.serial
+        self.transducer = input_param.tran.serial
         self.oper_freq = input_param.oper_freq  # [kHz]
 
         # Sequence specific characterization parameters

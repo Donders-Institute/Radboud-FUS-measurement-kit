@@ -40,9 +40,9 @@ import configparser
 import customtkinter as ctk
 
 # Own packages
-from config import config
+from fus_driving_systems.config.config import config_info as config
 
-from input_parameters import InputParameters
+from backend.input_parameters import InputParameters
 
 
 class InputDialog():
@@ -85,9 +85,7 @@ class InputDialog():
         self.input_param = InputParameters()
 
         # Check if cached data exists and load if valid
-        config_fold = config['General']['Configuration file folder']
-        cached_file = config['General']['filename of input parameters cache']
-        config_path = os.path.join(config_fold, cached_file)
+        config_path = config['Characterization']['Path of input parameters cache']
         if os.path.exists(config_path):
             cached_input = configparser.ConfigParser()
             cached_input.read(config_path)
@@ -529,7 +527,7 @@ class InputDialog():
             # Define temporary and main output directories based on selected parameters
             folder_struct = f'Output of T [{td_name}] - DS [{ds_name}]'
             self.input_param.temp_dir_output = os.path.join(
-                config['General']['Temporary output path'], folder_struct,
+                config['Characterization']['Temporary output path'], folder_struct,
                 f'P [{protocol_excel_filename}]')
             self.input_param.dir_output = os.path.join(self.input_param.main_dir, folder_struct,
                                                        f'P [{protocol_excel_filename}]')
@@ -539,7 +537,7 @@ class InputDialog():
             os.makedirs(self.input_param.dir_output, exist_ok=True)
 
             # Save numeric and boolean parameters
-            self.input_param.oper_freq = int(self.oper_freq_entr.get())*1e+3
+            self.input_param.oper_freq = int(self.oper_freq_entr.get())
 
             # Save COM port of US driving system if applicable
             if self.input_param.is_ds_com_port:
