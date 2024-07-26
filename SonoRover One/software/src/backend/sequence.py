@@ -42,7 +42,7 @@ import pandas as pd
 
 # Own packages
 from fus_driving_systems import sequence
-from fus_driving_systems.config.logging_config import logger
+from config.logging_config import logger
 
 
 class CharacSequence(sequence.Sequence):
@@ -405,5 +405,6 @@ def generate_sequence_list(input_param):
 
         return sequence_list
     else:
-        logger.error(f'Pipeline is cancelled. The following direction cannot be found: {excel_path}')
+        logger.error('Pipeline is cancelled. The following direction cannot be found:' +
+                     f' {excel_path}')
         sys.exit()

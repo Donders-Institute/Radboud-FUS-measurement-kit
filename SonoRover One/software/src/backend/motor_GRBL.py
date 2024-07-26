@@ -37,7 +37,7 @@ import re
 
 # Own packages
 # Access the logger
-from fus_driving_systems.config.logging_config import logger
+from config.logging_config import logger
 
 MotorErrorCode = {
 0 : 'Connection Error',

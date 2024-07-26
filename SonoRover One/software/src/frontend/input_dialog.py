@@ -40,7 +40,7 @@ import configparser
 import customtkinter as ctk
 
 # Own packages
-from fus_driving_systems.config.config import config_info as config
+from config.config import config_info as config
 
 from backend.input_parameters import InputParameters
 
@@ -93,7 +93,10 @@ class InputDialog():
             # Check if cached data exists and load if valid
             now = datetime.now()
             if cached_input['Input parameters']['Date'] == str(now.strftime("%Y/%m/%d")):
-                self.input_param.convert_ini_to_object(cached_input)
+                try:
+                    self.input_param.convert_ini_to_object(cached_input)
+                except KeyError:
+                    print('Cached data cannot be read. Use default parameters')
 
     def _init_body(self):
         """
@@ -198,8 +201,8 @@ class InputDialog():
 
         # Checkbox for performing all protocols in sequence without waiting for user input
         self.perform_check = self._create_checkbox(
-            "Perform all protocols in sequence without waiting for user input?",
-            self.input_param.perform_all_protocols, is_event=True,
+            "Perform all sequences in sequence without waiting for user input?",
+            self.input_param.perform_all_seqs, is_event=True,
             event_handling=self._event_handling)
 
         # Error message label
@@ -550,7 +553,7 @@ class InputDialog():
             self.input_param.dis_oxy = float(self.oxy_entry.get())
             self.input_param.coord_zero = [float(self.x_coord.get()), float(self.y_coord.get()),
                                            float(self.z_coord.get())]
-            self.input_param.perform_all_protocols = self.perform_check.get() == 1
+            self.input_param.perform_all_seqs = self.perform_check.get() == 1
 
             # Cache data by writing to ini file
             self.input_param.write_to_ini()

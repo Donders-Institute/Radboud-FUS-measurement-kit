@@ -41,7 +41,7 @@ from datetime import datetime
 from fus_driving_systems import driving_system as ds
 from fus_driving_systems import transducer as td
 
-from fus_driving_systems.config.config import config_info as config
+from config.config import config_info as config
 
 
 class InputParameters:
@@ -68,7 +68,7 @@ class InputParameters:
         temp (float): Temperature of water in Celsius.
         dis_oxy (float): Dissolved oxygen level of water in mg/L.
         coord_zero (list): List of x, y, z coordinates of relative zero point.
-        perform_all_protocols (bool): Flag indicating if all protocols should be performed in
+        perform_all_seqs (bool): Flag indicating if all sequences should be performed in
                                       sequence.
     """
 
@@ -104,7 +104,7 @@ class InputParameters:
         self.dis_oxy = ''  # dissolved oxygen in mg/L
 
         self.coord_zero = [-50, -50, -150]
-        self.perform_all_protocols = True
+        self.perform_all_seqs = True
 
     def write_to_ini(self):
         """
@@ -151,7 +151,7 @@ class InputParameters:
         cached_input['Input parameters']['Absolute G code y-coordinate of relative zero'] = str(self.coord_zero[1])
         cached_input['Input parameters']['Absolute G code z-coordinate of relative zero'] = str(self.coord_zero[2])
 
-        cached_input['Input parameters']['Perform all protocols in sequence without waiting for user input?'] = str(self.perform_all_protocols)
+        cached_input['Input parameters']['Perform all sequences in sequence without waiting for user input?'] = str(self.perform_all_seqs)
 
         cached_path = config['Characterization']['Path of input parameters cache']
         with open(cached_path, 'w') as inputfile:
@@ -202,7 +202,7 @@ class InputParameters:
         self.coord_zero[1] = float(cached_input['Input parameters']['Absolute G code y-coordinate of relative zero'])
         self.coord_zero[2] = float(cached_input['Input parameters']['Absolute G code z-coordinate of relative zero'])
 
-        self.perform_all_protocols = cached_input['Input parameters']['Perform all protocols in sequence without waiting for user input?'] == 'True'
+        self.perform_all_seqs = cached_input['Input parameters']['Perform all sequences in sequence without waiting for user input?'] == 'True'
 
     def __str__(self):
         '''
@@ -233,6 +233,6 @@ class InputParameters:
 
         info += f"Absolute G code xyz-coordinates of relative zero: [{self.coord_zero[0]}, {self.coord_zero[1]}, {self.coord_zero[2]}] \n "
 
-        info += f"Perform all protocols in sequence without waiting for user input?: {self.perform_all_protocols} \n "
+        info += f"Perform all sequences in sequence without waiting for user input?: {self.perform_all_seqs} \n "
 
         return info

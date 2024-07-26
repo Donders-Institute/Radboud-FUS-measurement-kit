@@ -37,6 +37,9 @@ CONFIG_FILE = 'characterization_config.ini'
 
 config = configparser.ConfigParser(interpolation=None)
 
+config['General'] = {}
+config['General']['Logger name'] = 'characterization'
+
 config['Versions'] = {}
 config['Versions']['SonoRover One software'] = '1.0'
 
@@ -57,6 +60,9 @@ config['Characterization']['Disconnection message'] = ('Ensure the following: \n
                                                        'PicoScope in use. \n - Universal Gcode ' +
                                                        'Sender is not connected to the ' +
                                                        'positioning system.')
+
+config['Characterization']['Continue acquisition message'] = ('Continue acquisition with the ' +
+                                                              'following sequence: ')
 
 with open(CONFIG_FILE, 'w') as configfile:
     config.write(configfile)

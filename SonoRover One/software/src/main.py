@@ -36,8 +36,9 @@ import os
 # Miscellaneous packages
 
 # Own packages
-from fus_driving_systems.config.config import config_info as config, read_additional_config
-from fus_driving_systems.config.logging_config import initialize_logger, logger as global_logger
+
+from config.config import config_info as config
+from config.logging_config import initialize_logger
 
 from frontend.input_dialog import InputDialog
 
@@ -52,8 +53,6 @@ def main():
     """
     Main function to run the characterization pipeline.
     """
-    # Read additional configuration file if needed
-    read_additional_config('config//characterization_config.ini')
 
     # Create dialog to retrieve input values
     input_dialog = InputDialog()
@@ -65,22 +64,28 @@ def main():
 
         head, tail = os.path.split(input_param.path_protocol_excel_file)
         protocol_excel, ext = os.path.splitext(tail)
-        global_logger = initialize_logger(base_path, protocol_excel)
+        logger = initialize_logger(base_path, protocol_excel)
 
         version = config['Versions']['SonoRover One software']
-        global_logger.info(f'Characterization performed with the following software: {version}')
-        global_logger.info(f'Characterization performed with the following parameters: \n {input_param}')
+        logger.info(f'Characterization performed with the following software: {version}')
+        logger.info(f'Characterization performed with the following parameters: \n {input_param}')
 
-        # Import sequences of excel
+        # Import sequences of excel, delay import due to initialization of logger
         from backend import sequence
         sequence_list = sequence.generate_sequence_list(input_param)
 
+        # Initialize acquisition by initializing all equipment
+        # Delay import due to initialization of logger
         from backend import acquisition as aq
+        from frontend import check_dialogs
+        acquisition = aq.Acquisition(input_param)
         try:
-            # Initialize acquisition by initializing all equipment
-            acquisition = aq.Acquisition(input_param)
             for seq in sequence_list:
-                global_logger.info(f'Performing the following sequence: \n {seq}')
+                if not input_param.perform_all_seqs:
+                    # Wait for user input before continuing
+                    check_dialogs.continue_acquisition_dialog(seq)
+
+                logger.info(f'Performing the following sequence: \n {seq}')
 
                 if not is_testing:
                     acquisition.acquire_sequence(seq)
@@ -90,7 +95,7 @@ def main():
                         acquisition.check_scan(seq)
 
             # All sequences are finished, so move data
-            move_output_data(global_logger, input_param.temp_dir_output, input_param.dir_output)
+            move_output_data(logger, input_param.temp_dir_output, input_param.dir_output)
         finally:
             acquisition.close_all()
 
@@ -110,9 +115,9 @@ def move_output_data(logger, from_dir, to_dir):
     try:
         copy_tree(from_dir, to_dir)
         shutil.rmtree(from_dir)
-        global_logger.info(f'Output files have been moved to {to_dir}')
+        logger.info(f'Output files have been moved to {to_dir}')
     except Exception as e:
-        global_logger.info(f'Moving output files failed: {e}. Output files can be found in {from_dir}.')
+        logger.info(f'Moving output files failed: {e}. Output files can be found in {from_dir}.')
 
 
 if __name__ == '__main__':

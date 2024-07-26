@@ -31,26 +31,54 @@ https://github.com/Donders-Institute/Radboud-FUS-measurement-kit
 """
 
 # Basic packages
+import os
+import sys
 
 # Miscellaneous packages
-from CTkMessagebox import CTkMessagebox
+from datetime import datetime
+import logging
 
 # Own packages
-from fus_driving_systems.config.config import config_info as config
-from fus_driving_systems.config.logging_config import logger
+from config.config import config_info as config
+
+logger = None
 
 
-class CheckDisconnectionDialog():
-    def __init__(self, add_message):
-        self.add_message = add_message
+def initialize_logger(log_dir, filename):
+    global logger
 
-        self._build_dialog()
+    # reset logging
+    logger = logging.getLogger(config['General']['Logger name'])
+    handlers = logger.handlers[:]
+    for handler in handlers:
+        logger.removeHandler(handler)
+        handler.close()
 
-    def _build_dialog(self):
+    logging.basicConfig(level=logging.INFO)
 
-        message = config['Characterization']['Disconnection message']
-        message += self.add_message
+    # create logger
+    logger = logging.getLogger(config['General']['Logger name'])
+    logger.setLevel(logging.INFO)
 
-        CTkMessagebox(title="Attention", message=message, icon="warning", option_1="Confirm")
+    # Get current date and time for logging
+    date_time = datetime.now()
+    timestamp = date_time.strftime('%Y-%m-%d_%H-%M-%S')
 
-        logger.info("Disconnection confirmed.")
+    # create file handler
+    file_handler = logging.FileHandler(os.path.join(log_dir, f'log_{timestamp}_' + filename
+                                                    + '.txt'), mode='w')
+
+    # create console handler
+    console_handler = logging.StreamHandler(sys.stdout)
+
+    # create formatter and add it to the handlers
+    formatterCompact = logging.Formatter("%(asctime)s - %(levelname)s - %(module)s - " +
+                                         "%(funcName)s line %(lineno)d %(message)s")
+    file_handler.setFormatter(formatterCompact)
+    console_handler.setFormatter(formatterCompact)
+
+    # add the handlers to the logger
+    logger.addHandler(file_handler)
+    logger.addHandler(console_handler)
+
+    return logger
