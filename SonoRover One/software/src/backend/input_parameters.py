@@ -41,6 +41,7 @@ from datetime import datetime
 from fus_driving_systems import driving_system as ds
 from fus_driving_systems import transducer as td
 
+import backend.picoscope as ps
 from config.config import config_info as config
 
 
@@ -97,7 +98,15 @@ class InputParameters:
 
         self.pos_com_port = 'COM4'
 
+        # Get available hydrophones, for logging purposes only
+        self.hydro_list = get_hydro_list()
+        self.hydrophone = self.hydro_list[0]
         self.acquisition_time = 500  # microseconds
+
+        # Get available PicoScope list
+        self.pico_list = ps.get_pico_list()
+        self.picoscope = self.pico_list[0]
+        self.pico_names = ps.get_pico_names()
         self.sampl_freq_multi = 50
 
         self.temp = ''  # temperature in celsius
@@ -225,7 +234,11 @@ class InputParameters:
         info += f"Operating frequency [kHz]: {self.oper_freq} \n "
 
         info += f"COM port of positioning system: {self.pos_com_port} \n "
+
+        info = str(self.hydrophone)
         info += f"Hydrophone acquisition time [us]: {self.acquisition_time} \n "
+
+        info = str(self.picoscope)
         info += f"Picoscope sampling frequency multiplication factor: {self.sampl_freq_multi} \n "
 
         info += f"Temperature of water [°C]: {self.temp} \n "
@@ -236,3 +249,16 @@ class InputParameters:
         info += f"Perform all sequences in sequence without waiting for user input?: {self.perform_all_seqs} \n "
 
         return info
+
+
+def get_hydro_list():
+    """
+    Returns a list of available hydrophones.
+
+    Returns:
+        List[str]: Names of available hydrophones.
+    """
+
+    hydrophones = config['Characterization.Equipment']['Hydrophones'].split(', ')
+
+    return hydrophones

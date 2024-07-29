@@ -64,5 +64,30 @@ config['Characterization']['Disconnection message'] = ('Ensure the following: \n
 config['Characterization']['Continue acquisition message'] = ('Continue acquisition with the ' +
                                                               'following sequence: ')
 
+config['Characterization.Equipment'] = {}
+
+HYDROPHONES = ['\'Golden Lipstick\' HGL-0200', '\'Needle\' HNR-0500']
+config['Characterization.Equipment']['Hydrophones'] = ', '.join(HYDROPHONES)
+
+PICO_SERIALS = ['5442D', '5242D', '5244D']
+config['Characterization.Equipment']['PicoScopes'] = ', '.join(PICO_SERIALS)
+
+config['Characterization.Equipment.' + PICO_SERIALS[0]] = {}
+config['Characterization.Equipment.' + PICO_SERIALS[0]]['Name'] = ('PicoScope ' + PICO_SERIALS[0] +
+                                                                   ' - embedded in IGT driving ' +
+                                                                   'system (128 ch.)')
+config['Characterization.Equipment.' + PICO_SERIALS[0]]['Pico.py identification'] = PICO_SERIALS[0]
+
+config['Characterization.Equipment.' + PICO_SERIALS[1]] = {}
+config['Characterization.Equipment.' + PICO_SERIALS[1]]['Name'] = ('PicoScope ' + PICO_SERIALS[1])
+config['Characterization.Equipment.' + PICO_SERIALS[1]]['Pico.py identification'] = PICO_SERIALS[1]
+
+config['Characterization.Equipment.' + PICO_SERIALS[2]] = {}
+config['Characterization.Equipment.' + PICO_SERIALS[2]]['Name'] = ('PicoScope ' + PICO_SERIALS[2] +
+                                                                   ' - embedded in ' +
+                                                                   'characterization setup')
+config['Characterization.Equipment.' + PICO_SERIALS[2]]['Pico.py identification'] = PICO_SERIALS[2]
+
+
 with open(CONFIG_FILE, 'w') as configfile:
     config.write(configfile)

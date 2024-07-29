@@ -34,9 +34,11 @@ https://github.com/Donders-Institute/Radboud-FUS-measurement-kit
 import time
 
 # Miscellaneous packages
+import numpy as np
 
 # Own packages
-import acquisition as acq
+import backend.acquisition as acq
+from config.config import config_info as config
 from scan_iter import Scan_Iter
 
 
@@ -48,7 +50,7 @@ class TestAcquisition(acq.Acquisition):
         Alt: (0,0), (0,1), (0,2), (0,3), (1,3), (1,3), (1,1), (1,0)
         """
         self.logger.debug(f'scan: {scan}')
-        self.grid = Scan_Iter(self.nsl,self.nrow,self.ncol,scan=scan)
+        self.grid = Scan_Iter(self.nsl, self.nrow, self.ncol, scan=scan)
 
     def init_scope_params(self, sampl_freq_multi):
         """
@@ -158,7 +160,7 @@ class TestAcquisition(acq.Acquisition):
 # ######                              TEST FUNCTIONS                               ###### #
 ###########################################################################################
 
-def simul_acquire(outfile, protocol, config, inputParam):
+def simul_acquire(outfile, protocol, input_param):
     """
     simulate the entire acquisition process:
         check file output
@@ -167,12 +169,12 @@ def simul_acquire(outfile, protocol, config, inputParam):
         prepare acquisition and processing
         save the acquisition parameters
     """
-    my_acquisition = Acquisition(config)
+    my_acquisition = TestAcquisition(input_param)
 
     # Save protocol, config, used driving system and used transducer
     my_acquisition.protocol = protocol
-    my_acquisition.driving_system = inputParam.driving_system
-    my_acquisition.transducer = inputParam.transducer
+    my_acquisition.driving_system = input_param.driving_system
+    my_acquisition.transducer = input_param.transducer
 
     my_acquisition.check_file(outfile)
 
@@ -182,26 +184,26 @@ def simul_acquire(outfile, protocol, config, inputParam):
         my_acquisition.init_grid()
 
     try:
-        my_acquisition.init_generator(inputParam.perform_all_protocols, inputParam.main_dir)
+        my_acquisition.init_generator(input_param.perform_all_protocols, input_param.main_dir)
         my_acquisition.init_pulse_sequence(protocol.is_sham)
-        my_acquisition.init_scope_params(inputParam.sampl_freq_multi)
-        my_acquisition.init_aquisition(inputParam.acquisition_time)
+        my_acquisition.init_scope_params(input_param.sampl_freq_multi)
+        my_acquisition.init_aquisition(input_param.acquisition_time)
         my_acquisition.init_processing_parameters()
-        my_acquisition.save_params_ini(inputParam)
+        my_acquisition.save_params_ini(input_param)
     finally:
         my_acquisition.close_all()
 
 
-def check_scan(protocol, config, inputParam, scan='Dir'):
+def check_scan(protocol, input_param, scan='Dir'):
     """
     perform a scan of the defined grid to check scanning path
     """
-    my_acquisition = Acquisition(config)
+    my_acquisition = TestAcquisition(input_param)
 
     # Save protocol, config, used driving system and used transducer
     my_acquisition.protocol = protocol
-    my_acquisition.driving_system = inputParam.driving_system
-    my_acquisition.transducer = inputParam.transducer
+    my_acquisition.driving_system = input_param.driving_system
+    my_acquisition.transducer = input_param.transducer
 
     if protocol.use_coord_excel:
         my_acquisition.init_grid_excel()
@@ -210,15 +212,16 @@ def check_scan(protocol, config, inputParam, scan='Dir'):
 
     try:
         # determine the COM port used by the motors using the Device manager
-        my_acquisition.init_motor(inputParam.pos_com_port)
-        duration = my_acquisition.scan_only(inputParam.coord_focus, delay_s=0.0, scan=scan)
-        print(f'duration: {duration}: ns: {my_acquisition.nsl},  nr: {my_acquisition.nrow}, nc: {my_acquisition.ncol},')
+        my_acquisition.init_motor(input_param.pos_com_port)
+        duration = my_acquisition.scan_only(input_param.coord_focus, delay_s=0.0, scan=scan)
+        print(f'duration: {duration}: ns: {my_acquisition.nsl},  nr: {my_acquisition.nrow}, ' +
+              f'nc: {my_acquisition.ncol},')
     finally:
         if my_acquisition.motors.connected:
             my_acquisition.motors.disconnect()
 
 
-def check_generator(protocol, config, inputParam, repetitions=1, delay_s=1.0):
+def check_generator(protocol, input_param, repetitions=1, delay_s=1.0):
     """
     initialize the generator and prepare the pulse sequence
     repeat the pulse sequence a number of time given by the repetitions parameter
@@ -226,19 +229,19 @@ def check_generator(protocol, config, inputParam, repetitions=1, delay_s=1.0):
     This is use dtho check the picoscope settings with the chosen generator amplitude
     using the picoscope software
     """
-    my_acquisition = Acquisition(config)
+    my_acquisition = TestAcquisition(input_param)
 
     # Save protocol, config, used driving system and used transducer
     my_acquisition.protocol = protocol
-    my_acquisition.driving_system = inputParam.driving_system
-    my_acquisition.transducer = inputParam.transducer
+    my_acquisition.driving_system = input_param.driving_system
+    my_acquisition.transducer = input_param.transducer
 
-    my_acquisition.pulse_only(inputParam.performAllProtocols, repetitions=repetitions,
+    my_acquisition.pulse_only(input_param.performAllProtocols, repetitions=repetitions,
                               delay_s=delay_s,
-                              log_dir=inputParam.main_dir, is_sham=protocol.is_sham)
+                              log_dir=input_param.main_dir, is_sham=protocol.is_sham)
 
 
-def check_acquisition(outfile, protocol, config, inputParam):
+def check_acquisition(outfile, protocol, input_param):
     """
     perform the entire acquisition process without any motion:
         check file output
@@ -248,12 +251,12 @@ def check_acquisition(outfile, protocol, config, inputParam):
         acquire the data ncol x nrow number of time
         this is usefull to check acquisition parameters (picoscope) and processing
     """
-    my_acquisition = Acquisition(config)
+    my_acquisition = TestAcquisition(input_param)
 
     # Save protocol, config, used driving system and used transducer
     my_acquisition.protocol = protocol
-    my_acquisition.driving_system = inputParam.driving_system
-    my_acquisition.transducer = inputParam.transducer
+    my_acquisition.driving_system = input_param.driving_system
+    my_acquisition.transducer = input_param.transducer
 
     my_acquisition.check_file(outfile)
 
@@ -263,12 +266,12 @@ def check_acquisition(outfile, protocol, config, inputParam):
         my_acquisition.init_grid()
 
     try:
-        my_acquisition.init_generator(inputParam.performAllProtocols, inputParam.main_dir)
+        my_acquisition.init_generator(input_param.performAllProtocols, input_param.main_dir)
         my_acquisition.init_pulse_sequence(protocol.is_sham)
 
-        my_acquisition.init_scope(inputParam.sampl_freq_multi)
-        my_acquisition.init_aquisition(inputParam.acquisition_time)
+        my_acquisition.init_scope(input_param.sampl_freq_multi)
+        my_acquisition.init_aquisition(input_param.acquisition_time)
         my_acquisition.init_processing()
-        my_acquisition.scan_noMotion(inputParam.coord_focus)
+        my_acquisition.scan_noMotion(input_param.coord_focus)
     finally:
         my_acquisition.close_all()

@@ -39,6 +39,8 @@ import tkinter as tk
 import configparser
 import customtkinter as ctk
 
+import logging
+
 # Own packages
 from config.config import config_info as config
 
@@ -107,7 +109,6 @@ class InputDialog():
         try:
             self.win = ctk.CTk()
             ctk.set_appearance_mode("System")
-            self.win.geometry("920x645")
             self.win.title('Set input parameters')
 
             self._create_entries()
@@ -115,12 +116,29 @@ class InputDialog():
 
             self._event_handling(None)  # perform initial event handling
 
-            self.win.lift()
+            self._resize_window()
+
             self.win.mainloop()
 
-        finally:
+        except AttributeError:
+            print(logging.exception())
             if self.not_exited_flag:
                 self.win.destroy()
+
+    def _resize_window(self):
+        """
+        Resizes window according to content and displays the window on top of all windows.
+        """
+        # Update window to calculate required size
+        self.win.update_idletasks()
+
+        # Automatic resizing
+        self.win.geometry(f"{self.win.winfo_reqwidth()}x{self.win.winfo_reqheight()}")
+
+        # Display this window on top of all windows
+        self.win.lift()
+        self.win.attributes('-topmost', True)
+        self.win.after(5000, lambda: self.win.attributes('-topmost', False))  # stay for 5s
 
     def _create_entries(self):
         """
@@ -135,7 +153,7 @@ class InputDialog():
 
         # Browse button to select protocol excel file
         button = ctk.CTkButton(master=self.win, text="Browse", command=self._get_filename)
-        button.grid(row=self.row_nr, column=1, sticky="e")
+        button.grid(row=self.row_nr, column=1, padx=10, sticky="e")
 
         # Dropdown for selecting US Driving System
         self.ds_combo = self._create_combo("US Driving System", self.input_param.ds_names,
@@ -153,24 +171,37 @@ class InputDialog():
                                                  is_event=True, event_handling=self._event_handling)
 
         # Entry field for COM port of US driving system if applicable
-        if self.input_param.is_ds_com_port:
-            com_us_num = self.input_param.driving_sys.connect_info.removeprefix('COM')
-            self.com_us_label, self.com_us = self._create_entry(
-                "COM port of US driving system", com_us_num, is_event=True,
-                event_handling=self._event_handling, return_label=True)
+        com_us_num = self.input_param.driving_sys.connect_info.removeprefix('COM')
+        self.com_us_label, self.com_us = self._create_entry(
+            "COM port of US driving system", com_us_num, is_event=True,
+            event_handling=self._event_handling, return_label=True)
 
-            self.com_us_label.grid()
-            self.com_us.grid()
+        self.com_us_label.grid()
+        self.com_us.grid()
+
+        # Save location for the entry, but hide it when other equipment is chosen
+        if not self.input_param.is_ds_com_port:
+            self.com_us_label.grid_remove()
+            self.com_us.grid_remove()
 
         # Entry field for COM port of positioning system
         com_pos_num = self.input_param.pos_com_port.removeprefix('COM')
         self.com_pos = self._create_entry("COM port of positioning system", com_pos_num,
                                           is_event=True, event_handling=self._event_handling)
+        # Dropdown for selecting hydrophone
+        self.hydro_combo = self._create_combo("Hydrophone", self.input_param.hydro_list,
+                                              self.input_param.hydrophone,
+                                              self._event_handling)
 
         # Entry field for hydrophone acquisition time
         self.acq_time = self._create_entry("Hydrophone acquisition time [us]",
                                            self.input_param.acquisition_time,
                                            is_event=True, event_handling=self._event_handling)
+
+        # Dropdown for selecting picoscope
+        self.pico_combo = self._create_combo("PicoScope", self.input_param.pico_names,
+                                             self.input_param.picoscope,
+                                             self._event_handling)
 
         # Entry field for Picoscope sampling frequency multiplication factor
         self.sampl_freq = self._create_entry("Picoscope sampling frequency multiplication factor",
@@ -219,12 +250,12 @@ class InputDialog():
 
         # Ok button
         self.ok_button = ctk.CTkButton(master=self.win, text="Ok", command=self._ok_action)
-        self.ok_button.grid(row=self.row_nr, column=1, sticky='w', ipadx=53)
+        self.ok_button.grid(row=self.row_nr, column=1, sticky='w', ipadx=53, padx=10, pady=10)
         self.ok_button.configure(state=tk.DISABLED)
 
         # Cancel button
         button = ctk.CTkButton(master=self.win, text="Cancel", command=self._cancel_action)
-        button.grid(row=self.row_nr, column=1, sticky='e', ipadx=53)
+        button.grid(row=self.row_nr, column=1, sticky='e', ipadx=53, padx=10, pady=10)
 
     def _add_row(self):
         """
@@ -261,7 +292,7 @@ class InputDialog():
             entry.bind('<1>', event_handling)
 
         entry.insert(0, def_value)
-        entry.grid(row=self.row_nr, column=1, pady=5, sticky="w")
+        entry.grid(row=self.row_nr, column=1, padx=10, pady=5, sticky="w")
 
         if return_label:
             return label, entry
@@ -290,7 +321,7 @@ class InputDialog():
         combo = ctk.CTkComboBox(master=self.win, width=500, values=value_list, command=combo_action)
 
         combo.set(def_value)
-        combo.grid(row=self.row_nr, column=1, pady=5, sticky="w")
+        combo.grid(row=self.row_nr, column=1, padx=10, pady=5, sticky="w")
 
         return combo
 
@@ -352,8 +383,15 @@ class InputDialog():
                 if 'COM' in ds.connect_info:
                     self.input_param.is_ds_com_port = True
 
+                    self.com_us.delete(0, tk.END)
+                    com_us_num = ds.connect_info.removeprefix('COM')
+                    self.com_us.insert(0, com_us_num)
+
                     self.com_us_label.grid()
                     self.com_us.grid()
+
+                    self._resize_window()
+
                 else:
                     self.input_param.is_ds_com_port = False
 
@@ -375,8 +413,6 @@ class InputDialog():
             if tran.name == new_tran_name:
                 self.oper_freq_entr.delete(0, tk.END)
                 self.oper_freq_entr.insert(0, int(tran.fund_freq))
-
-        self._event_handling(event)
 
     def _event_handling(self, event):
         """
@@ -412,31 +448,36 @@ class InputDialog():
         error_message = ''
 
         fields_to_validate = {
-            'path_protocol_excel_file': (self.path_prot, False, False, '.xlsx or .xls extension'),
-            'driving system': (self.ds_combo, False, False, None),
-            'transducer': (self.trans_combo, False, False, None),
-            'operating frequency': (self.oper_freq_entr, True, True, None),
-            'COM port number of positioning system': (self.com_pos, True, True, None),
-            'acquisition time': (self.acq_time, True, True, None),
-            'sampling frequency multiplication factor': (self.sampl_freq, True, True, None),
-            'temperature of water': (self.temp_ent, True, True, None),
-            'dissolved oxygen level of water': (self.oxy_entry, True, True, None),
-            'x-coordinate': (self.x_coord, True, False, None),
-            'y-coordinate': (self.y_coord, True, False, None),
-            'z-coordinate': (self.z_coord, True, False, None),
+            'path_protocol_excel_file': (self.path_prot, False, False, '.xlsx or .xls extension',
+                                         False),
+            'driving system': (self.ds_combo, False, False, None, True),
+            'transducer': (self.trans_combo, False, False, None, True),
+            'operating frequency': (self.oper_freq_entr, True, True, None, False),
+            'COM port number of positioning system': (self.com_pos, True, True, None, False),
+            'hydrophone': (self.hydro_combo, False, False, None, True),
+            'acquisition time': (self.acq_time, True, True, None, False),
+            'picoscope': (self.pico_combo, False, False, None, True),
+            'sampling frequency multiplication factor': (self.sampl_freq, True, True, None, False),
+            'temperature of water': (self.temp_ent, True, True, None, False),
+            'dissolved oxygen level of water': (self.oxy_entry, True, True, None, False),
+            'x-coordinate': (self.x_coord, True, False, None, False),
+            'y-coordinate': (self.y_coord, True, False, None, False),
+            'z-coordinate': (self.z_coord, True, False, None, False),
         }
 
         if self.input_param.is_ds_com_port:
             fields_to_validate.update({'COM port number of driving system':
-                                       (self.com_us, True, True, None)})
+                                       (self.com_us, True, True, None, False)})
 
-        for field_name, (widget, is_float, check_positive, ext) in fields_to_validate.items():
+        for field_name, (widget, is_float, check_positive, ext,
+                         selected_combo) in fields_to_validate.items():
             error_message = self._check_field(error_message, widget, is_float,
-                                              check_positive, field_name, ext)
+                                              check_positive, field_name, ext, selected_combo)
 
         return error_message
 
-    def _check_field(self, error_message, widget, is_float, check_positive, field_name, ext):
+    def _check_field(self, error_message, widget, is_float, check_positive, field_name, ext,
+                     selected_combo):
         """
         Checks validity of a specific input field.
 
@@ -447,6 +488,8 @@ class InputDialog():
             check_positive (bool): Flag indicating if the field value should be positive.
             field_name (str): Name of the field being validated.
             ext (str or None): Expected file extension if the field represents a file.
+            selected_combo (bool): Flag indicating if the field is a combobox. If so, it is checked
+            if a value is selected.
 
         Returns:
             str: Updated error message.
@@ -471,7 +514,7 @@ class InputDialog():
                 widget.configure(text_color="red")
                 error_message += 'Error: File doesn\'t exist. Please change value. \n '
                 return error_message
-        elif field_name in ['driving system', 'transducer']:
+        elif selected_combo:
             if value == '':
                 widget.configure(text_color="red")
                 error_message += f'Error: A {field_name} must be selected. Please change value. \n '
@@ -547,8 +590,19 @@ class InputDialog():
                 self.input_param.driving_sys.connect_info = f'COM{self.com_us.get()}'
 
             self.input_param.pos_com_port = f'COM{self.com_pos.get()}'
+
+            # Save selected hydrophone
+            self.input_param.hydrophone = self.hydro_combo.get()
             self.input_param.acquisition_time = float(self.acq_time.get())
+
+            # Save selected transducer object
+            pico_name = self.pico_combo.get()
+            for pico in self.input_param.pico_list:
+                if pico.name == pico_name:
+                    self.input_param.picoscope = pico
+
             self.input_param.sampl_freq_multi = float(self.sampl_freq.get())
+
             self.input_param.temp = float(self.temp_ent.get())
             self.input_param.dis_oxy = float(self.oxy_entry.get())
             self.input_param.coord_zero = [float(self.x_coord.get()), float(self.y_coord.get()),
@@ -569,4 +623,4 @@ class InputDialog():
 
         if self.not_exited_flag:
             self.not_exited_flag = False
-            self.win.quit()
+            self.win.destroy()
