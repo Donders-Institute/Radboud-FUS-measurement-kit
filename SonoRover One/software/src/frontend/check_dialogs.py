@@ -34,6 +34,7 @@ https://github.com/Donders-Institute/Radboud-FUS-measurement-kit
 
 # Miscellaneous packages
 from CTkMessagebox import CTkMessagebox
+import tkinter
 
 # Own packages
 from config.config import config_info as config
@@ -43,6 +44,9 @@ from config.logging_config import logger
 def continue_acquisition_dialog(sequence):
     message = config['Characterization']['Continue acquisition message']
     message += '\n' + str(sequence)
+
+    master = tkinter.Tk()
+    master.withdraw()
 
     message_box = CTkMessagebox(title="Ready to continue acquisition?", message=message,
                                 icon="question", option_1="Confirm")
@@ -54,6 +58,9 @@ def continue_acquisition_dialog(sequence):
 def check_disconnection_dialog(add_message):
     message = config['Characterization']['Disconnection message']
     message += add_message
+
+    master = tkinter.Tk()
+    master.withdraw()
 
     message_box = CTkMessagebox(title="Attention", message=message, icon="warning",
                                 option_1="Confirm")

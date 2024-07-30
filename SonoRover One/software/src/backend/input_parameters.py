@@ -41,6 +41,7 @@ from datetime import datetime
 from fus_driving_systems import driving_system as ds
 from fus_driving_systems import transducer as td
 
+import backend.hydrophone as hp
 import backend.picoscope as ps
 from config.config import config_info as config
 
@@ -64,13 +65,26 @@ class InputParameters:
         tran_names (list): Names of available transducers.
         oper_freq (int): Operating frequency in [kHz].
         pos_com_port (str): COM port of positioning system.
+        hydro_list (list): List of available hydrophones.
+        hydrophone (hp.Hydrophone): Selected hydrophone object.
+        hydro_names (list): Names of available hydrophones.
         acquisition_time (float): Hydrophone acquisition time in microseconds.
+        pico_list (list): List of available PicoScopes.
+        picoscope (ps.PicoScope): Selected PicoScope object.
+        pico_names (list): Names of available PicoScopes.
         sampl_freq_multi (float): Picoscope sampling frequency multiplication factor.
         temp (float): Temperature of water in Celsius.
         dis_oxy (float): Dissolved oxygen level of water in mg/L.
         coord_zero (list): List of x, y, z coordinates of relative zero point.
         perform_all_seqs (bool): Flag indicating if all sequences should be performed in
                                       sequence.
+        begus (float): Beginning time of processing window in microseconds.
+        endus (float): End time of processing window in microseconds.
+        adjust (int): Adjustment parameter for time of flight. It will adjust the windows [beg..end]
+        with the time of flight when the row is along US propagation.
+                adjust=-1 if top-left corner is far from transducer (decrease beg)
+                adjust=+1 if top-left corner is close to the transducer (increase beg)
+                adjust=0 : no adjustment
     """
 
     def __init__(self):
@@ -99,8 +113,9 @@ class InputParameters:
         self.pos_com_port = 'COM4'
 
         # Get available hydrophones, for logging purposes only
-        self.hydro_list = get_hydro_list()
+        self.hydro_list = hp.get_hydro_list()
         self.hydrophone = self.hydro_list[0]
+        self.hydro_names = hp.get_hydro_names()
         self.acquisition_time = 500  # microseconds
 
         # Get available PicoScope list
@@ -114,6 +129,13 @@ class InputParameters:
 
         self.coord_zero = [-50, -50, -150]
         self.perform_all_seqs = True
+
+        self.adjust_param = config['Characterization']['ACD adjustment'].split(', ')
+        self.acd_param = {
+            "adjust": self.adjust_param[0],
+            "begus": 0,
+            "endus": 0,
+            }
 
     def write_to_ini(self):
         """
@@ -161,6 +183,15 @@ class InputParameters:
         cached_input['Input parameters']['Absolute G code z-coordinate of relative zero'] = str(self.coord_zero[2])
 
         cached_input['Input parameters']['Perform all sequences in sequence without waiting for user input?'] = str(self.perform_all_seqs)
+
+        cached_input['Input parameters.ACD processing'] = {}
+        cached_input['Input parameters.ACD processing']['Beginning time of processing window [us]'] = str(self.acd_param["begus"])
+        cached_input['Input parameters.ACD processing']['End time of processing window [us]'] = (
+            str(self.acd_param["endus"])
+            )
+        cached_input['Input parameters.ACD processing']['Moving processing window along?'] = (
+            str(self.acd_param["adjust"])
+            )
 
         cached_path = config['Characterization']['Path of input parameters cache']
         with open(cached_path, 'w') as inputfile:
@@ -213,6 +244,10 @@ class InputParameters:
 
         self.perform_all_seqs = cached_input['Input parameters']['Perform all sequences in sequence without waiting for user input?'] == 'True'
 
+        self.acd_param["begus"] = float(cached_input['Input parameters.ACD processing']['Beginning time of processing window [us]'])
+        self.acd_param["endus"] = float(cached_input['Input parameters.ACD processing']['End time of processing window [us]'])
+        self.acd_param["adjust"] = cached_input['Input parameters.ACD processing']['Moving processing window along?']
+
     def __str__(self):
         '''
         Returns a formatted string containing information about the input parameters.
@@ -248,17 +283,8 @@ class InputParameters:
 
         info += f"Perform all sequences in sequence without waiting for user input?: {self.perform_all_seqs} \n "
 
+        info += f"Beginning time of processing window [us]: {self.acd_param['begus']} \n "
+        info += f"End time of processing window [us]: {self.acd_param['endus']} \n "
+        info += f"Moving processing window along?: {self.acd_param['adjust']} \n "
+
         return info
-
-
-def get_hydro_list():
-    """
-    Returns a list of available hydrophones.
-
-    Returns:
-        List[str]: Names of available hydrophones.
-    """
-
-    hydrophones = config['Characterization.Equipment']['Hydrophones'].split(', ')
-
-    return hydrophones

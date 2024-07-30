@@ -68,8 +68,8 @@ class CharacSequence(sequence.Sequence):
         super().__init__()
 
         self.seq_number = 0   # sequence number of protocol in excel file
-
-        self.is_sham = False  # apply sham condition
+        self.tag = ''  # user can add a description to the sequence
+        self.dephasing_degree = 0  # if not 0, apply dephasing
 
         self.use_coord_excel = False  # boolean if coordinate excel file is used as input of grid
         self.path_coord_excel = None  # path of coordinate excel file
@@ -94,8 +94,9 @@ class CharacSequence(sequence.Sequence):
         info += super().__str__()
 
         info += f"Sequence number: {self.seq_number} \n "
-
-        info += f"Sham condition applied?: {self.is_sham} \n "
+        info += f"Tag: {self.tag} \n "
+        info += ("Dephasing degree for every 2nd element (0 = no dephasing): " +
+                 f"{self.dephasing_degree} \n ")
 
         info += f"Use coordinate excel as input?: {self.use_coord_excel} \n "
         info += f"Path of coordinate excel: {self.path_coord_excel} \n "
@@ -197,8 +198,9 @@ class CharacSequence(sequence.Sequence):
 
         # Sequence specific characterization parameters
         self.seq_number = int(seq_row[excel_ind["seq_num"]])
+        self.tag = str(seq_row[excel_ind["tag"]])
 
-        self.is_sham = str(seq_row[excel_ind["is_sham"]]) == 'True'
+        self.dephasing_degree = float(seq_row[excel_ind["dephasing"]])
 
         self.focus = abs(float(seq_row[excel_ind["focus"]]))  # [mm]
 
@@ -284,7 +286,9 @@ def _define_excel_indices(data):
 
     excel_indices = {
         "seq_num": data.columns.get_loc('Sequence number'),
-        "is_sham": data.columns.get_loc('Apply sham condition?'),
+        "tag": data.columns.get_loc('Tag'),
+        "dephasing": data.columns.get_loc('Dephasing degree (0 = no dephasing) ' +
+                                          'CURRENLTY ONLY APPLICABLE FOR IGT DS'),
         "pulse_dur": data.columns.get_loc('Pulse duration [us]'),
         "pulse_rep_int": data.columns.get_loc('Pulse Repetition Interval [ms]'),
         "pulse_train_dur": data.columns.get_loc('Pulse Train Duration [ms]'),

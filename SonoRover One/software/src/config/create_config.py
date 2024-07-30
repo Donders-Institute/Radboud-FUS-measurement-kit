@@ -39,6 +39,7 @@ config = configparser.ConfigParser(interpolation=None)
 
 config['General'] = {}
 config['General']['Logger name'] = 'characterization'
+config['General']['Maximum number of output filename'] = str(1000)
 
 config['Versions'] = {}
 config['Versions']['SonoRover One software'] = '1.0'
@@ -64,10 +65,25 @@ config['Characterization']['Disconnection message'] = ('Ensure the following: \n
 config['Characterization']['Continue acquisition message'] = ('Continue acquisition with the ' +
                                                               'following sequence: ')
 
+ACD_ADJUST = ['0 - no adjustment', '+1 - axial measurement moving from transducer',
+              '-1 - axial measurement moving towards transducer']
+config['Characterization']['ACD adjustment'] = ', '.join(ACD_ADJUST)
+
 config['Characterization.Equipment'] = {}
 
 HYDROPHONES = ['\'Golden Lipstick\' HGL-0200', '\'Needle\' HNR-0500']
 config['Characterization.Equipment']['Hydrophones'] = ', '.join(HYDROPHONES)
+
+config['Characterization.Equipment.' + HYDROPHONES[0]] = {}
+config['Characterization.Equipment.' + HYDROPHONES[0]]['Name'] = 'Hydrophone ' + HYDROPHONES[0]
+config['Characterization.Equipment.' + HYDROPHONES[0]]['Sensitivity (V/Pa) datasheet'] = (
+    'config//hydrophones//HGL-0200 Calibration datasheet.xlsx')
+
+config['Characterization.Equipment.' + HYDROPHONES[1]] = {}
+config['Characterization.Equipment.' + HYDROPHONES[1]]['Name'] = 'Hydrophone ' + HYDROPHONES[1]
+config['Characterization.Equipment.' + HYDROPHONES[1]]['Sensitivity (V/Pa) datasheet'] = ''
+
+config['Characterization.Equipment']['Hydrophone datasheet freq. header'] = 'Freq(MHz)'
 
 PICO_SERIALS = ['5442D', '5242D', '5244D']
 config['Characterization.Equipment']['PicoScopes'] = ', '.join(PICO_SERIALS)
@@ -87,7 +103,6 @@ config['Characterization.Equipment.' + PICO_SERIALS[2]]['Name'] = ('PicoScope ' 
                                                                    ' - embedded in ' +
                                                                    'characterization setup')
 config['Characterization.Equipment.' + PICO_SERIALS[2]]['Pico.py identification'] = PICO_SERIALS[2]
-
 
 with open(CONFIG_FILE, 'w') as configfile:
     config.write(configfile)

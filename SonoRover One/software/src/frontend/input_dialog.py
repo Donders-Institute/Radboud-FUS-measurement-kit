@@ -45,6 +45,7 @@ import logging
 from config.config import config_info as config
 
 from backend.input_parameters import InputParameters
+import frontend.acd_param_dialog as apd
 
 
 class InputDialog():
@@ -121,7 +122,7 @@ class InputDialog():
             self.win.mainloop()
 
         except AttributeError:
-            print(logging.exception())
+            print(logging.exception('AttributeError'))
             if self.not_exited_flag:
                 self.win.destroy()
 
@@ -189,8 +190,8 @@ class InputDialog():
         self.com_pos = self._create_entry("COM port of positioning system", com_pos_num,
                                           is_event=True, event_handling=self._event_handling)
         # Dropdown for selecting hydrophone
-        self.hydro_combo = self._create_combo("Hydrophone", self.input_param.hydro_list,
-                                              self.input_param.hydrophone,
+        self.hydro_combo = self._create_combo("Hydrophone", self.input_param.hydro_names,
+                                              self.input_param.hydrophone.name,
                                               self._event_handling)
 
         # Entry field for hydrophone acquisition time
@@ -200,7 +201,7 @@ class InputDialog():
 
         # Dropdown for selecting picoscope
         self.pico_combo = self._create_combo("PicoScope", self.input_param.pico_names,
-                                             self.input_param.picoscope,
+                                             self.input_param.picoscope.name,
                                              self._event_handling)
 
         # Entry field for Picoscope sampling frequency multiplication factor
@@ -218,17 +219,7 @@ class InputDialog():
                                             is_event=True, event_handling=self._event_handling)
 
         # Entry fields for coordinates
-        self.x_coord = self._create_entry("Absolute G code x-coordinate of relative zero",
-                                          self.input_param.coord_zero[0],
-                                          is_event=True, event_handling=self._event_handling)
-
-        self.y_coord = self._create_entry("Absolute G code y-coordinate of relative zero",
-                                          self.input_param.coord_zero[1],
-                                          is_event=True, event_handling=self._event_handling)
-
-        self.z_coord = self._create_entry("Absolute G code z-coordinate of relative zero",
-                                          self.input_param.coord_zero[2],
-                                          is_event=True, event_handling=self._event_handling)
+        self._create_coord_entries()
 
         # Checkbox for performing all protocols in sequence without waiting for user input
         self.perform_check = self._create_checkbox(
@@ -241,12 +232,44 @@ class InputDialog():
         self.error_label = ctk.CTkLabel(master=self.win, text="")
         self.error_label.grid(row=self.row_nr, columnspan=2)
 
+    def _create_coord_entries(self):
+        """
+        Creates one coordinate label and three entries for each x, y and z-coordinate.
+        """
+
+        self._add_row()
+
+        label = ctk.CTkLabel(master=self.win, text="Absolute G code coordinates of relative zero" +
+                             " [x, y, z]")
+        label.grid(row=self.row_nr, column=0, padx=20, sticky='w')
+
+        # Create three entries
+        self.coord_entries = [None, None, None]
+        orientation = ['w', '', 'e']
+        for i in range(len(self.coord_entries)):
+            entry = ctk.CTkEntry(master=self.win, width=150)
+
+            entry.bind('<Return>', self._event_handling)
+            entry.bind('<1>', self._event_handling)
+
+            def_value = self.input_param.coord_zero[i]
+            entry.insert(0, def_value)
+            entry.grid(row=self.row_nr, column=1, padx=10, pady=5, sticky=orientation[i])
+
+            self.coord_entries[i] = entry
+
     def _create_buttons(self):
         """
         Creates Ok and Cancel buttons.
         """
 
         self._add_row()
+
+        # Additional ACD processing parameters
+        self.acd_button = ctk.CTkButton(master=self.win,
+                                        text="Additional ACD processing parameters",
+                                        command=self._acd_action)
+        self.acd_button.grid(row=self.row_nr, column=0, sticky='w', ipadx=53, padx=10, pady=10)
 
         # Ok button
         self.ok_button = ctk.CTkButton(master=self.win, text="Ok", command=self._ok_action)
@@ -460,9 +483,9 @@ class InputDialog():
             'sampling frequency multiplication factor': (self.sampl_freq, True, True, None, False),
             'temperature of water': (self.temp_ent, True, True, None, False),
             'dissolved oxygen level of water': (self.oxy_entry, True, True, None, False),
-            'x-coordinate': (self.x_coord, True, False, None, False),
-            'y-coordinate': (self.y_coord, True, False, None, False),
-            'z-coordinate': (self.z_coord, True, False, None, False),
+            'x-coordinate': (self.coord_entries[0], True, False, None, False),
+            'y-coordinate': (self.coord_entries[1], True, False, None, False),
+            'z-coordinate': (self.coord_entries[2], True, False, None, False),
         }
 
         if self.input_param.is_ds_com_port:
@@ -544,6 +567,10 @@ class InputDialog():
 
         return error_message
 
+    def _acd_action(self):
+        acd_dialog = apd.ACDParamDialog(self.input_param.acd_param, self.input_param.adjust_param)
+        self.input_param.acd_param = acd_dialog.acd_param
+
     def _ok_action(self):
         """
         Action function triggered when Ok button is clicked. Saves valid input parameters.
@@ -591,11 +618,15 @@ class InputDialog():
 
             self.input_param.pos_com_port = f'COM{self.com_pos.get()}'
 
-            # Save selected hydrophone
-            self.input_param.hydrophone = self.hydro_combo.get()
+            # Save selected hydrophone object
+            hydro_name = self.hydro_combo.get()
+            for hydro in self.input_param.hydro_list:
+                if hydro.name == hydro_name:
+                    self.input_param.hydrophone = hydro
+
             self.input_param.acquisition_time = float(self.acq_time.get())
 
-            # Save selected transducer object
+            # Save selected PicoScope object
             pico_name = self.pico_combo.get()
             for pico in self.input_param.pico_list:
                 if pico.name == pico_name:
@@ -605,8 +636,9 @@ class InputDialog():
 
             self.input_param.temp = float(self.temp_ent.get())
             self.input_param.dis_oxy = float(self.oxy_entry.get())
-            self.input_param.coord_zero = [float(self.x_coord.get()), float(self.y_coord.get()),
-                                           float(self.z_coord.get())]
+            self.input_param.coord_zero = [float(self.coord_entries[0].get()),
+                                           float(self.coord_entries[1].get()),
+                                           float(self.coord_entries[2].get())]
             self.input_param.perform_all_seqs = self.perform_check.get() == 1
 
             # Cache data by writing to ini file

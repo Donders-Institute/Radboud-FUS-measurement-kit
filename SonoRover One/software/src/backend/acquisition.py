@@ -119,7 +119,6 @@ class Acquisition:
             "nrow": 0,
             "ncol": 0,
             "nsl": 0,
-            "row_pixel_us": 0,
             "coord_excel_data": None
             }
 
@@ -237,7 +236,9 @@ class Acquisition:
         proces_param = {
             "eiwt": eiwt,
             "adjust": adjust,
+            "row_pixel_us": 0,
             "begus": begus,
+            "endus": endus,
             "begn": begn,
             "endn": endn,
             "npoints": npoints
@@ -317,7 +318,7 @@ class Acquisition:
 
         fileok = not os.path.isfile(self.output["outputRAW"])
         i = 0
-        imax = 99
+        imax = int(config['General']['Maximum number of output filename'])
         filename = os.path.join(head, tail)
 
         while not fileok and i <= imax:
@@ -387,7 +388,7 @@ class Acquisition:
         self.sequence.vect_sl = np.array(self.sequence.vectSl)
 
         # Time in us for the US to propagate ever vectRow used for ACD processing
-        self.grid_param["row_pixel_us"] = np.linalg.norm(self.sequence.vect_row)/1.5
+        self.proces_param["row_pixel_us"] = np.linalg.norm(self.sequence.vect_row)/1.5
 
     def _init_grid_excel(self):
         """
@@ -438,6 +439,7 @@ class Acquisition:
         self._save_seq_param(params)
         self._save_grid_param(params)
         self._save_acq_param(params)
+        self._save_acd_proces_param(params)
 
         config_fold = config['General']['Configuration file folder']
         with open(os.path.join(config_fold, self.output["outputINI"]), 'w') as configfile:
@@ -463,6 +465,8 @@ class Acquisition:
             self.input_param.path_protocol_excel_file
             )
         params['General']['Path of output'] = self.input_param.dir_output
+        params['General']['Output filenames'] = ', '.join(key + ' - ' + str(val)
+                                                          for key, val in self.output.items())
         params['General']['Perform all sequences in sequence without waiting for user input?'] = (
             str(self.input_param.perform_all_seqs)
             )
@@ -499,7 +503,12 @@ class Acquisition:
         params['Equipment']['Transducer.natural_foc'] = str(self.input_param.tran.natural_foc)
         params['Equipment']['Transducer.min_foc'] = str(self.input_param.tran.min_foc)
         params['Equipment']['Transducer.max_foc'] = str(self.input_param.tran.max_foc)
-        params['Equipment']['Transducer.steer_info'] = self.input_param.tran.steer_info
+
+        # Only log steer_info when IGT driving system is used
+        ds_manufact = str(self.input_param.driving_sys.manufact)
+        if ds_manufact == config['Equipment.Manufacturer.IGT']['Name']:
+            params['Equipment']['Transducer.steer_info'] = self.input_param.tran.steer_info
+
         params['Equipment']['Transducer.is_active'] = str(self.input_param.tran.is_active)
 
         params['Equipment']['COM port of positioning system'] = self.input_param.pos_com_port
@@ -511,21 +520,36 @@ class Acquisition:
 
         params['Sequence'] = {}
         params['Sequence']['Sequence number'] = str(self.sequence.seq_number)
+        params['Sequence']['Tag'] = str(self.sequence.tag)
+        params['Sequence']['Dephasing degree'] = str(self.sequence.dephasing_degree)
+
         params['Sequence']['Operating frequency [Hz]'] = str(self.sequence.oper_freq)
         params['Sequence']['Focus [um]'] = str(self.sequence.focus)
 
-        params['Sequence']['Global power [mW] (NeuroFUS) or Amplitude [%] (IGT)'] = (
-            str(self.sequence.power_value)
-            )
-        params['Sequence']['Ramp mode (0 - rectangular, 1 - linear, 2 - tukey)'] = (
-            str(self.sequence.ramp_mode)
-            )
-        params['Sequence']['Ramp duration [us]'] = str(self.sequence.ramp_dur)
-        params['Sequence']['Ramp duration step size [us]'] = str(self.sequence.ramp_dur_step)
+        ds_manufact = str(self.input_param.driving_sys.manufact)
+        if ds_manufact == config['Equipment.Manufacturer.SC']['Name']:
+            params['Sequence']['Global power [mW] (NeuroFUS)'] = str(self.sequence.power_value)
+        elif ds_manufact == config['Equipment.Manufacturer.IGT']['Name']:
+            params['Sequence']['Amplitude [%] (IGT)'] = str(self.sequence.power_value)
+        else:
+            params['Sequence']['Unknown power unit'] = str(self.sequence.power_value)
 
-        params['Sequence']['Pulse duration [us]'] = str(self.sequence.pulse_dur)
-        params['Sequence']['Pulse repetition interval [us]'] = str(self.sequence.pulse_rep_int)
-        params['Sequence']['Pulse train duration [us]'] = str(self.sequence.pulse_train_dur)
+        params['Sequence']['Pulse duration [ms]'] = str(self.sequence.pulse_dur)
+        params['Sequence']['Pulse repetition interval [ms]'] = str(self.sequence.pulse_rep_int)
+
+        params['Sequence']['Pulse ramp mode (0 - rectangular, 1 - linear, 2 - tukey)'] = (
+            str(self.sequence.pulse_ramp_shape)
+            )
+        params['Sequence']['Pulse ramp duration [ms]'] = str(self.sequence.pulse_ramp_dur)
+
+        params['Sequence']['Pulse train duration [ms]'] = str(self.sequence.pulse_train_dur)
+        params['Sequence']['Pulse train repetition interval [ms]'] = (
+            str(self.sequence.pulse_train_rep_int)
+            )
+
+        params['Sequence']['Pulse train repetition duration [ms]'] = (
+            str(self.sequence.pulse_train_rep_dur)
+            )
 
     def _save_grid_param(self, params):
         """
@@ -583,7 +607,7 @@ class Acquisition:
 
     def _save_acq_param(self, params):
         """
-        Save PicoScope parameters to an INI file.
+        Save PicoScope and hydrophone parameters to an INI file.
         """
 
         params['Acquisition'] = {}
@@ -595,9 +619,56 @@ class Acquisition:
             str(self.input_param.sampl_freq_multi)
             )
         params['Acquisition']['Sampling frequency [Hz]'] = str(self.pico_sampling_freq)
-        params['Acquisition']['Hydrophone'] = str(self.input_param.hydrophone)
+        params['Acquisition']['Hydrophone'] = str(self.input_param.hydrophone.name)
+
+        # Extract corresponding sensitivity value
+        datasheet_path = self.input_param.hydrophone.sens_v_pa
+        sens_data = pd.read_excel(datasheet_path)
+        freq_header = config['Characterization.Equipment']['Hydrophone datasheet freq. header']
+        freq_mhz = round(self.sequence.oper_freq/1000, 2)
+        match_row = sens_data.loc[sens_data[freq_header] == freq_mhz]
+
+        if match_row.empty:
+            logger.warning(f'No frequency in datasheet {datasheet_path}' +
+                           f'corresponds with {freq_mhz}. Sensitivity value is not logged.')
+
+        elif len(match_row) > 1:
+            logger.warning(f'Duplicate frequency {freq_mhz} found in datasheet {datasheet_path}.' +
+                           'Sensitivity value is not logged.')
+        else:
+            params['Acquisition']['Sensitivity (V/Pa) corresponding to used freq.'] = (
+                str(match_row.iloc[0].iloc[1])
+                )
+
         params['Acquisition']['Hydrophone acquisition time [us]'] = str(self.sampling_duration_us)
         params['Acquisition']['Amount of samples per acquisition'] = str(int(self.sample_count))
+
+    def _save_acd_proces_param(self, params):
+        """
+        Save PicoScope parameters to an INI file.
+        """
+
+        params['ACD processing'] = {}
+        params['ACD processing']['e^(iwt)'] = str(self.proces_param["eiwt"])
+        params['ACD processing']['Adjustment parameter'] = str(self.proces_param["adjust"])
+        params['ACD processing']['Time for the US to propagate every row [us]'] = (
+            str(self.proces_param["row_pixel_us"])
+            )
+        params['ACD processing']['Beginning time of processing window [us]'] = (
+            str(self.proces_param["begus"])
+            )
+        params['ACD processing']['End time of processing window [us]'] = (
+            str(self.proces_param["endus"])
+            )
+        params['ACD processing']['Beginning sample point of processing window'] = (
+            str(self.proces_param["begn"])
+            )
+        params['ACD processing']['End sample point of processing window'] = (
+            str(self.proces_param["endn"])
+            )
+        params['ACD processing']['Amount of sample points in processing window'] = (
+            str(self.proces_param["npoints"])
+            )
 
     def _scan_grid(self):
         """
@@ -767,7 +838,7 @@ class Acquisition:
         """
 
         newbegus = (self.proces_param["begus"] +
-                    self.proces_param["adjust"] * k * self.grid_param["row_pixel_us"])
+                    self.proces_param["adjust"] * k * self.proces_param["row_pixel_us"])
 
         # Begining of the processing window
         begn = int(newbegus*1e-6*self.pico_sampling_freq)
