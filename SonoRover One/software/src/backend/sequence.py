@@ -69,7 +69,6 @@ class CharacSequence(sequence.Sequence):
 
         self.seq_number = 0   # sequence number of protocol in excel file
         self.tag = ''  # user can add a description to the sequence
-        self.dephasing_degree = 0  # if not 0, apply dephasing
 
         self.use_coord_excel = False  # boolean if coordinate excel file is used as input of grid
         self.path_coord_excel = None  # path of coordinate excel file
@@ -95,8 +94,6 @@ class CharacSequence(sequence.Sequence):
 
         info += f"Sequence number: {self.seq_number} \n "
         info += f"Tag: {self.tag} \n "
-        info += ("Dephasing degree for every 2nd element (0 = no dephasing): " +
-                 f"{self.dephasing_degree} \n ")
 
         info += f"Use coordinate excel as input?: {self.use_coord_excel} \n "
         info += f"Path of coordinate excel: {self.path_coord_excel} \n "
@@ -206,11 +203,19 @@ class CharacSequence(sequence.Sequence):
 
         power_param = str(seq_row[excel_ind["power"]])
         match power_param:
-            case 'Global power [mW] (fill in \'Corresponding value\')':
+            case 'SC - Global power [mW] (fill in \'Corresponding value\')':
                 self.global_power = abs(float(seq_row[excel_ind["power_value"]]))/1000  # SC: gp [W]
                 self.ampl = None  # IGT: amplitude [%]
 
-            case 'Amplitude [%] (fill in \'Corresponding value\')':
+            case 'IGT - Max. pressure in free water [MPa] (fill in \'Corresponding value\')':
+                self.global_power = None  # SC: global power [W]
+                self.press = abs(float(seq_row[excel_ind["power_value"]]))
+
+            case 'IGT - Voltage [V] (fill in \'Corresponding value\')':
+                self.global_power = None  # SC: global power [W]
+                self.volt = abs(float(seq_row[excel_ind["power_value"]]))
+
+            case 'IGT - Amplitude [%] (fill in \'Corresponding value\')':
                 self.global_power = None  # SC: global power [W]
                 self.ampl = abs(float(seq_row[excel_ind["power_value"]]))  # IGT: amplitude [%]
 
@@ -293,7 +298,8 @@ def _define_excel_indices(data):
         "pulse_rep_int": data.columns.get_loc('Pulse Repetition Interval [ms]'),
         "pulse_train_dur": data.columns.get_loc('Pulse Train Duration [ms]'),
 
-        "power": data.columns.get_loc('Global power [mW] or Amplitude [%]'),
+        "power": data.columns.get_loc('SC - Global power [mW] or IGT - Max. pressure in free ' +
+                                      'water [Mpa], Voltage [V] or Amplitude [%]'),
         "power_value": data.columns.get_loc('Corresponding value'),
         "focus": data.columns.get_loc('Focus [mm]'),
         "ramp_mode": data.columns.get_loc('Modulation'),
