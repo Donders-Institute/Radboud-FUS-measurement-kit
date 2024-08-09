@@ -531,7 +531,7 @@ class InputDialog():
             if file_ext not in ['.xlsx', '.xls', '.csv']:
                 widget.configure(text_color="red")
                 error_message += (f'Error: No {ext} file is selected.'
-                                  + ' Please select a file with {ext}. \n ')
+                                  + f' Please select a file with {ext}. \n ')
                 return error_message
             if not os.path.exists(value):
                 widget.configure(text_color="red")

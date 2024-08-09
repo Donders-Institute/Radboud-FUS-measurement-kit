@@ -179,7 +179,6 @@ class Acquisition:
 
         self.equipment["scope"].openUnit(pico.Resolution.DR_14BIT)
 
-        # TODO: IGT - can this be removed?
         # #        self.equipment["scope"].closeChannels()
         # In an exploration phase using the picoscope with the same generator settings
         # Determine the max voltage to set the range (pico.Range.RANGE_10V)
