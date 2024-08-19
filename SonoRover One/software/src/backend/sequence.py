@@ -203,22 +203,26 @@ class CharacSequence(sequence.Sequence):
 
         power_param = str(seq_row[excel_ind["power"]])
         match power_param:
+            # Order is important, because the code will check if other value is
+            # set: first set new parameter and then set power value of other
+            # driving system to None
+                
             case 'SC - Global power [mW] (fill in \'Corresponding value\')':
                 self.global_power = abs(float(seq_row[excel_ind["power_value"]]))/1000  # SC: gp [W]
                 self.ampl = None  # IGT: amplitude [%]
 
             case 'IGT - Max. pressure in free water [MPa] (fill in \'Corresponding value\')':
-                self.global_power = None  # SC: global power [W]
                 self.press = abs(float(seq_row[excel_ind["power_value"]]))
+                self.global_power = None  # SC: global power [W]
 
             case 'IGT - Voltage [V] (fill in \'Corresponding value\')':
-                self.global_power = None  # SC: global power [W]
                 self.volt = abs(float(seq_row[excel_ind["power_value"]]))
+                self.global_power = None  # SC: global power [W]
 
             case 'IGT - Amplitude [%] (fill in \'Corresponding value\')':
-                self.global_power = None  # SC: global power [W]
                 self.ampl = abs(float(seq_row[excel_ind["power_value"]]))  # IGT: amplitude [%]
-
+                self.global_power = None  # SC: global power [W]
+                
         # Timing parameters
         # ## pulse ## #
         self.pulse_dur = abs(float(seq_row[excel_ind["pulse_dur"]]))  # [ms]

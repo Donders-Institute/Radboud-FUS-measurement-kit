@@ -34,18 +34,25 @@ https://github.com/Donders-Institute/Radboud-FUS-measurement-kit
 import os
 
 # Miscellaneous packages
+from importlib import resources as impresources
 
 # Own packages
-
-from config.config import config_info as config
+from config.config import config_info, read_additional_config
 from config.logging_config import initialize_logger
 
 from frontend.input_dialog import InputDialog
 
+from fus_driving_systems import config as fds_config
+from fus_driving_systems.config import logging_config as fds_logging_config
+
+
 from distutils.dir_util import copy_tree
 import shutil
 
-test_scanner_only = False
+test_scanner_only = True
+init_motor = True
+init_ds = True
+init_pico = False
 is_testing = test_scanner_only  # | other test examples
 
 
@@ -66,19 +73,30 @@ def main():
         protocol_excel, ext = os.path.splitext(tail)
         logger = initialize_logger(base_path, protocol_excel)
 
-        version = config['Versions']['SonoRover One software']
+        version = config_info['Versions']['SonoRover One software']
         logger.info(f'Characterization performed with the following software: {version}')
         logger.info(f'Characterization performed with the following parameters: \n {input_param}')
 
+        # Read additional fus_driving_systems config file
+        inp_file = impresources.files(fds_config) / 'ds_config.ini'
+        read_additional_config(inp_file)
+
+        # Sync fus_driving_systems logging
+        fds_logging_config.sync_logger(logger)
+        
         # Import sequences of excel, delay import due to initialization of logger
         from backend import sequence
         sequence_list = sequence.generate_sequence_list(input_param)
 
         # Initialize acquisition by initializing all equipment
         # Delay import due to initialization of logger
-        from backend import acquisition as aq
         from frontend import check_dialogs
-        acquisition = aq.Acquisition(input_param)
+        if is_testing:
+            from backend import test_acquisition as test_aq
+            acquisition = test_aq.TestAcquisition(input_param, init_motor, init_ds, init_pico)
+        else:
+            from backend import acquisition as aq
+            acquisition = aq.Acquisition(input_param)
         try:
             for seq in sequence_list:
                 if not input_param.perform_all_seqs:
@@ -87,12 +105,13 @@ def main():
 
                 logger.info(f'Performing the following sequence: \n {seq}')
 
-                if not is_testing:
-                    acquisition.acquire_sequence(seq)
-                else:
+                if is_testing:
                     # Test functions
                     if test_scanner_only:
-                        acquisition.check_scan(seq)
+                        acquisition.check_scan_ds_combo(seq)
+                else:
+                    acquisition.acquire_sequence(seq)
+                    
 
             # All sequences are finished, so move data
             move_output_data(logger, input_param.temp_dir_output, input_param.dir_output)

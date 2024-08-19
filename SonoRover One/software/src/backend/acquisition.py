@@ -51,8 +51,6 @@ import configparser
 import csv
 from datetime import datetime
 
-from importlib import resources as impresources
-
 import math
 import numpy as np
 import pandas as pd
@@ -60,8 +58,10 @@ import pandas as pd
 # Own packages
 from frontend import check_dialogs
 
-import fus_driving_systems as fds
-from config.config import config_info as config, read_additional_config
+from fus_driving_systems.igt import igt_ds as fds_igt
+from fus_driving_systems.sonic_concepts import sonic_concepts_ds as fds_sc
+
+from config.config import config_info
 from config.logging_config import logger
 
 from backend.motor_GRBL import MotorsXYZ
@@ -73,7 +73,7 @@ class Acquisition:
     Class to acquire acoustic signal on a pre-defined grid.
     """
 
-    def __init__(self, input_param):
+    def __init__(self, input_param, init_equip=True):
         """
         Initialize Acquisition class with global acquisition parameters.
 
@@ -84,13 +84,6 @@ class Acquisition:
 
         self.input_param = input_param
 
-        # Read additional fus_driving_systems config file
-        inp_file = impresources.files(fds.config) / 'ds_config.ini'
-        read_additional_config(inp_file)
-
-        # Sync fus_driving_systems logging
-        fds.config.logging_config.sync_logger(logger)
-
         # # Global acquisition parameters
         # Initialize equipment
         self.equipment = {
@@ -99,19 +92,20 @@ class Acquisition:
             "motors": None
             }
 
-        # Connect with driving system
-        self._init_ds()
-
-        # Connect with PicoScope
-        self.equipment["scope"] = pico.getScope(self.input_param.picoscope.pico_py_ident)
-        self._init_scope(input_param.sampl_freq_multi, input_param.acquisition_time)
-
-        # Connect with positioning system
-        self.equipment["motors"] = MotorsXYZ()
-        self._init_motor(input_param.pos_com_port)
-
-        # Initialize ACD processing parameters
-        self.proces_param = self._init_processing(endus=input_param.acquisition_time)
+        if init_equip:
+            # Connect with driving system
+            self._init_ds()
+    
+            # Connect with PicoScope
+            self.equipment["scope"] = pico.getScope(self.input_param.picoscope.pico_py_ident)
+            self._init_scope(input_param.sampl_freq_multi, input_param.acquisition_time)
+    
+            # Initialize ACD processing parameters
+            self.proces_param = self._init_processing(endus=input_param.acquisition_time)
+            
+            # Connect with positioning system
+            self.equipment["motors"] = MotorsXYZ()
+            self._init_motor(input_param.pos_com_port)
 
         # Initialize sequence specific parameters
         self.sequence = None
@@ -144,23 +138,22 @@ class Acquisition:
 
         add_message = ''
         # Driving system of Sonic Concepts
-        if ds_manufact == config['Equipment.Manufacturer.SC']['Name']:
-            add_message = config['Equipment.Manufacturer.SC']['Additional charac. discon. message']
-            self.equipment["ds"] = fds.SC()
+        if ds_manufact == config_info['Equipment.Manufacturer.SC']['Name']:
+            add_message = config_info['Equipment.Manufacturer.SC']['Additional charac. discon. message']
+            self.equipment["ds"] = fds_sc.SC()
 
             check_dialogs.check_disconnection_dialog(add_message)
 
             self.equipment["ds"].connect(self.input_param.driving_sys.connect_info)
 
         # Driving system of IGT
-        elif ds_manufact == config['Equipment.Manufacturer.IGT']['Name']:
-            add_message = config['Equipment.Manufacturer.IGT']['Additional charac. discon. message']
-            self.equipment["ds"] = fds.IGT()
+        elif ds_manufact == config_info['Equipment.Manufacturer.IGT']['Name']:
+            add_message = config_info['Equipment.Manufacturer.IGT']['Additional charac. discon. message']
+            self.equipment["ds"] = fds_igt.IGT()
 
             check_dialogs.check_disconnection_dialog(add_message)
 
-            self.equipment["ds"].connect(self.input_param.driving_sys.connect_info,
-                                         log_dir=self.input_param.main_dir)
+            self.equipment["ds"].connect(self.input_param.driving_sys.connect_info)
         else:
             logger.error(f"Unknown driving system manufacturer: {ds_manufact}")
 
@@ -254,7 +247,7 @@ class Acquisition:
 
         This method initializes the motor system and connects to it using the specified port.
         """
-
+        
         self.equipment["motors"].connect(port=port)
         self.equipment["motors"].initialize()
         pos = self.equipment["motors"].readPosition()
@@ -286,10 +279,6 @@ class Acquisition:
 
         logger.info('Grid is initialized')
 
-        # Send sequence to driving system
-        self.equipment["ds"].send_sequence(self.sequence)
-        logger.info('All driving system parameters are set')
-
         self._save_params_ini()
         logger.info('Used parameters have been saved in a file.')
 
@@ -317,7 +306,7 @@ class Acquisition:
 
         fileok = not os.path.isfile(self.output["outputRAW"])
         i = 0
-        imax = int(config['General']['Maximum number of output filename'])
+        imax = int(config_info['General']['Maximum number of output filename'])
         filename = os.path.join(head, tail)
 
         while not fileok and i <= imax:
@@ -440,7 +429,7 @@ class Acquisition:
         self._save_acq_param(params)
         self._save_acd_proces_param(params)
 
-        config_fold = config['General']['Configuration file folder']
+        config_fold = config_info['General']['Configuration file folder']
         with open(os.path.join(config_fold, self.output["outputINI"]), 'w') as configfile:
             params.write(configfile)
         logger.info(f'Parameters saved to {self.output["outputINI"]}')
@@ -452,7 +441,7 @@ class Acquisition:
 
         params['Versions'] = {}
         params['Versions']['Equipment characterization pipeline software'] = (
-            config['Versions']['Equipment characterization pipeline software']
+            config_info['Versions']['Equipment characterization pipeline software']
             )
 
         # Get current date and time for logging
@@ -505,7 +494,7 @@ class Acquisition:
 
         # Only log steer_info when IGT driving system is used
         ds_manufact = str(self.input_param.driving_sys.manufact)
-        if ds_manufact == config['Equipment.Manufacturer.IGT']['Name']:
+        if ds_manufact == config_info['Equipment.Manufacturer.IGT']['Name']:
             params['Equipment']['Transducer.steer_info'] = self.input_param.tran.steer_info
 
         params['Equipment']['Transducer.is_active'] = str(self.input_param.tran.is_active)
@@ -526,9 +515,9 @@ class Acquisition:
         params['Sequence']['Focus [um]'] = str(self.sequence.focus)
 
         ds_manufact = str(self.input_param.driving_sys.manufact)
-        if ds_manufact == config['Equipment.Manufacturer.SC']['Name']:
+        if ds_manufact == config_info['Equipment.Manufacturer.SC']['Name']:
             params['Sequence']['SC - Global power [mW]'] = str(self.sequence.global_power)
-        elif ds_manufact == config['Equipment.Manufacturer.IGT']['Name']:
+        elif ds_manufact == config_info['Equipment.Manufacturer.IGT']['Name']:
             params['Sequence']['IGT - Maximum pressure in free water [MPa]'] = (
                 str(self.sequence.press)
                 )
@@ -642,7 +631,7 @@ class Acquisition:
         # Extract corresponding sensitivity value
         datasheet_path = self.input_param.hydrophone.sens_v_pa
         sens_data = pd.read_excel(datasheet_path)
-        freq_header = config['Characterization.Equipment']['Hydrophone datasheet freq. header']
+        freq_header = config_info['Characterization.Equipment']['Hydrophone datasheet freq. header']
         freq_mhz = round(self.sequence.oper_freq/1000, 2)
         match_row = sens_data.loc[sens_data[freq_header] == freq_mhz]
 
@@ -794,7 +783,11 @@ class Acquisition:
         # Start picoscope acquisition on trigger
         self.equipment["scope"].startAcquisitionTB(self.sample_count, self.timebase)
         time.sleep(0.025)
-
+        
+        # Send sequence to driving system
+        self.equipment["ds"].send_sequence(self.sequence)
+        logger.info('All driving system parameters are set')
+        
         # Execute pulse sequence
         self.equipment["ds"].execute_sequence()
 
@@ -889,14 +882,16 @@ class Acquisition:
         logger.debug(f'ampl_a: {ampl_a:.3f}, phase_a: {math.degrees(phase_a):.3f}')
         return (ampl_a, phase_a)
 
-    def _close_all(self):
+    def close_all(self):
         """
         Close all connected devices and release resources.
         """
 
         if self.equipment["motors"].connected:
             self.equipment["motors"].disconnect()
-        self.equipment["scope"].closeUnit()
+            
+        if self.equipment["scope"] is not None:
+            self.equipment["scope"].closeUnit()
 
         # When fus is none, probably NeuroFUS system used
         if self.equipment["ds"] is not None:

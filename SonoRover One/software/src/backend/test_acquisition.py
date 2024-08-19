@@ -37,20 +37,75 @@ import time
 import numpy as np
 
 # Own packages
-import backend.acquisition as acq
-from config.config import config_info as config
-from scan_iter import Scan_Iter
+import fus_driving_systems as fds
 
+import backend.acquisition as acq
+from config.logging_config import logger
+from backend.scan_iter import Scan_Iter
+
+from backend.motor_GRBL import MotorsXYZ
+from backend import pico
 
 class TestAcquisition(acq.Acquisition):
+    
+    def __init__(self, input_param, init_motor, init_ds, init_pico):
+        super().__init__(input_param, init_equip=False)
+        
+        # # Global acquisition parameters
+        # Initialize equipment
+        self.equipment = {
+            "ds": None,
+            "scope": None,
+            "motors": None
+            }
+        
+        # Initialize sequence specific parameters
+        self.sequence = None
+        self.grid_param = {
+            "nrow": 0,
+            "ncol": 0,
+            "nsl": 0,
+            "coord_excel_data": None
+            }
+
+        self.signal_a = None
+        self.output = {
+            "outputRAW": None,
+            "outputACD": None,
+            "outputJSON": None,
+            "outputINI": None,
+            "outputRAWCoord": None,
+            "outputCoord": None
+            }
+        
+        if init_motor:
+            # Connect with positioning system
+            self.equipment["motors"] = MotorsXYZ()
+            self._init_motor(self.input_param.pos_com_port)
+        
+        if init_ds:
+            # Sync fus_driving_systems logging
+            fds.config.logging_config.sync_logger(logger)
+            
+            # Connect with driving system
+            self._init_ds()
+            
+        if init_pico:
+            # Connect with PicoScope
+            self.equipment["scope"] = pico.getScope(self.input_param.picoscope.pico_py_ident)
+            self._init_scope(input_param.sampl_freq_multi, input_param.acquisition_time)
+            
+            # Initialize ACD processing parameters
+            self.proces_param = self._init_processing(endus=input_param.acquisition_time)
+    
     def init_scan(self, scan='Dir'):
         """
         init the scan in either direct mode: acquire all lines starting from the same position
         Dir: (0,0), (0,1), (0,2), (0,3), (1,0), (1,1), (1,2), (1,3)
         Alt: (0,0), (0,1), (0,2), (0,3), (1,3), (1,3), (1,1), (1,0)
         """
-        self.logger.debug(f'scan: {scan}')
-        self.grid = Scan_Iter(self.nsl, self.nrow, self.ncol, scan=scan)
+        logger.debug(f'scan: {scan}')
+        self.grid = Scan_Iter(self.grid_param["nsl"], self.grid_param["nrow"], self.grid_param["ncol"], scan=scan)
 
     def init_scope_params(self, sampl_freq_multi):
         """
@@ -60,25 +115,25 @@ class TestAcquisition(acq.Acquisition):
         self.pico_sampling_freq = self.sampling_freq
         self.sampling_period = 1.0/self.pico_sampling_freq
 
-    def scan_only(self, coord_focus, delay_s=0.0, scan='Dir'):
+    def scan_only(self, coord_zero, delay_s=0.0, scan='Dir'):
         """
         scan the predefined grid without any acquisition to verify grid positions
         """
-        self.logger.debug(f'scan: {scan}')
+        logger.debug(f'scan: {scan}')
         self.init_scan(scan=scan)
         t0 = time.time()
 
         counter = 0
         for s, r, c in self.grid:
-            if self.protocol.use_coord_excel:
-                destXYZ = [self.coord_excel_data.loc[counter, "X-coordinate [mm]"] + coord_focus[0],
-                           self.coord_excel_data.loc[counter, "Y-coordinate [mm]"] + coord_focus[1],
-                           self.coord_excel_data.loc[counter, "Z-coordinate [mm]"] + coord_focus[2]]
+            if self.sequence.use_coord_excel:
+                destXYZ = [self.grid_param["coord_excel_data"].loc[counter, "X-coordinate [mm]"] + coord_zero[0],
+                           self.grid_param["coord_excel_data"].loc[counter, "Y-coordinate [mm]"] + coord_zero[1],
+                           self.grid_param["coord_excel_data"].loc[counter, "Z-coordinate [mm]"] + coord_zero[2]]
             else:
                 destXYZ = self.starting_pos + s*self.vectSl + r*self.vectCol + c*self.vectRow
 
-            self.logger.info(f'src: [{s}, {r}, {c}], destXYZ: {destXYZ[0]:.3f}, {destXYZ[1]:.3f}, {destXYZ[2]:.3f}')
-            self.motors.move(list(destXYZ), relative=False)
+            logger.info(f'src: [{s}, {r}, {c}], destXYZ: {destXYZ[0]:.3f}, {destXYZ[1]:.3f}, {destXYZ[2]:.3f}')
+            self.equipment["motors"].move(list(destXYZ), relative=False)
             counter = counter + 1
 
         # time.sleep(delay_s)
@@ -102,29 +157,29 @@ class TestAcquisition(acq.Acquisition):
         finally:
             self.gen.close()
 
-    def scan_noMotion(self, coord_focus):
+    def scan_noMotion(self, coord_zero):
         """
         scan without moving the motors (mostly for debugging)
         """
-        self.cplx_data = np.zeros((2, self.nsl, self.nrow, self.ncol), dtype='float32')
+        self.cplx_data = np.zeros((2, self.grid_param["nsl"], self.grid_param["nrow"], self.grid_param["ncol"]), dtype='float32')
 
         counter = 0
-        for i in range(self.nsl):
-            for j in range(self.nrow):
-                for k in range(self.ncol):
+        for i in range(self.grid_param["nsl"]):
+            for j in range(self.grid_param["nrow"]):
+                for k in range(self.grid_param["ncol"]):
 
                     if self.protocol.use_coord_excel:
-                        measur_nr = self.coord_excel_data.loc[counter, "Measurement number"]
-                        cluster_nr = self.coord_excel_data.loc[counter, "Cluster number"]
-                        indices_nr = self.coord_excel_data.loc[counter, "Indices number"]
-                        relatXYZ = [self.coord_excel_data.loc[counter, "X-coordinate [mm]"],
-                                    self.coord_excel_data.loc[counter, "Y-coordinate [mm]"],
-                                    self.coord_excel_data.loc[counter, "Z-coordinate [mm]"]]
-                        destXYZ = [relatXYZ[0] + coord_focus[0], relatXYZ[1] + coord_focus[1],
-                                   relatXYZ[2] + coord_focus[2]]
-                        row_nr = self.coord_excel_data.loc[counter, "Row number"]
-                        col_nr = self.coord_excel_data.loc[counter, "Column number"]
-                        sl_nr = self.coord_excel_data.loc[counter, "Slice number"]
+                        measur_nr = self.grid_param["coord_excel_data"].loc[counter, "Measurement number"]
+                        cluster_nr = self.grid_param["coord_excel_data"].loc[counter, "Cluster number"]
+                        indices_nr = self.grid_param["coord_excel_data"].loc[counter, "Indices number"]
+                        relatXYZ = [self.grid_param["coord_excel_data"].loc[counter, "X-coordinate [mm]"],
+                                    self.grid_param["coord_excel_data"].loc[counter, "Y-coordinate [mm]"],
+                                    self.grid_param["coord_excel_data"].loc[counter, "Z-coordinate [mm]"]]
+                        destXYZ = [relatXYZ[0] + coord_zero[0], relatXYZ[1] + coord_zero[1],
+                                   relatXYZ[2] + coord_zero[2]]
+                        row_nr = self.grid_param["coord_excel_data"].loc[counter, "Row number"]
+                        col_nr = self.grid_param["coord_excel_data"].loc[counter, "Column number"]
+                        sl_nr = self.grid_param["coord_excel_data"].loc[counter, "Slice number"]
 
                     else:
                         measur_nr = counter + 1
@@ -132,8 +187,8 @@ class TestAcquisition(acq.Acquisition):
                         indices_nr = measur_nr
                         destXYZ = (self.starting_pos + i*self.vectSl + j*self.vectCol
                                    + k*self.vectRow)
-                        relatXYZ = [destXYZ[0] - coord_focus[0], destXYZ[1] - coord_focus[1],
-                                    destXYZ[2] - coord_focus[2]]
+                        relatXYZ = [destXYZ[0] - coord_zero[0], destXYZ[1] - coord_zero[1],
+                                    destXYZ[2] - coord_zero[2]]
                         row_nr = j
                         col_nr = k
                         sl_nr = i
@@ -154,6 +209,70 @@ class TestAcquisition(acq.Acquisition):
 
         with open(self.outputACD, 'wb') as outacd:
             self.cplx_data.tofile(outacd)
+            
+    def check_scan(self, sequence, scan='Dir'):
+        """
+        perform a scan of the defined grid to check scanning path
+        """
+        
+        # Save protocol, config, used driving system and used transducer
+        self.sequence = sequence
+
+        if sequence.use_coord_excel:
+            self._init_grid_excel()
+        else:
+            self._init_grid()
+
+        logger.info('Grid is initialized')
+
+        duration = self.scan_only(self.input_param.coord_zero, delay_s=0.0, scan=scan)
+        print(f'duration: {duration}: ns: {self.grid_param["nsl"]},  nr: {self.grid_param["nrow"]}, ' +
+              f'nc: {self.grid_param["ncol"]},')
+                
+    def check_scan_ds_combo(self, sequence, scan='Dir'):
+        """
+        perform a scan of the defined grid to check scanning path
+        """
+        
+        # Save protocol, config, used driving system and used transducer
+        self.sequence = sequence
+
+        if sequence.use_coord_excel:
+            self._init_grid_excel()
+        else:
+            self._init_grid()
+
+        logger.info('Grid is initialized')
+
+        logger.debug(f'scan: {scan}')
+        self.init_scan(scan=scan)
+        t0 = time.time()
+
+        counter = 0
+        for s, r, c in self.grid:
+            if self.sequence.use_coord_excel:
+                destXYZ = [self.grid_param["coord_excel_data"].loc[counter, "X-coordinate [mm]"] + self.input_param.coord_zero[0],
+                           self.grid_param["coord_excel_data"].loc[counter, "Y-coordinate [mm]"] + self.input_param.coord_zero[1],
+                           self.grid_param["coord_excel_data"].loc[counter, "Z-coordinate [mm]"] + self.input_param.coord_zero[2]]
+            else:
+                destXYZ = self.starting_pos + s*self.vectSl + r*self.vectCol + c*self.vectRow
+
+            logger.info(f'src: [{s}, {r}, {c}], destXYZ: {destXYZ[0]:.3f}, {destXYZ[1]:.3f}, {destXYZ[2]:.3f}')
+            self.equipment["motors"].move(list(destXYZ), relative=False)
+            
+            # Send sequence to driving system
+            self.equipment["ds"].send_sequence(self.sequence)
+            logger.info('All driving system parameters are set')
+            
+            # Execute pulse sequence
+            self.equipment["ds"].execute_sequence()
+            
+            counter = counter + 1
+
+        # time.sleep(delay_s)
+        t1 = time.time()
+        delta_t = t1-t0
+        print(f'duration: {delta_t}') 
 
 
 ###########################################################################################
@@ -194,31 +313,7 @@ def simul_acquire(outfile, protocol, input_param):
         my_acquisition.close_all()
 
 
-def check_scan(protocol, input_param, scan='Dir'):
-    """
-    perform a scan of the defined grid to check scanning path
-    """
-    my_acquisition = TestAcquisition(input_param)
 
-    # Save protocol, config, used driving system and used transducer
-    my_acquisition.protocol = protocol
-    my_acquisition.driving_system = input_param.driving_system
-    my_acquisition.transducer = input_param.transducer
-
-    if protocol.use_coord_excel:
-        my_acquisition.init_grid_excel()
-    else:
-        my_acquisition.init_grid()
-
-    try:
-        # determine the COM port used by the motors using the Device manager
-        my_acquisition.init_motor(input_param.pos_com_port)
-        duration = my_acquisition.scan_only(input_param.coord_focus, delay_s=0.0, scan=scan)
-        print(f'duration: {duration}: ns: {my_acquisition.nsl},  nr: {my_acquisition.nrow}, ' +
-              f'nc: {my_acquisition.ncol},')
-    finally:
-        if my_acquisition.motors.connected:
-            my_acquisition.motors.disconnect()
 
 
 def check_generator(protocol, input_param, repetitions=1, delay_s=1.0):
@@ -272,6 +367,6 @@ def check_acquisition(outfile, protocol, input_param):
         my_acquisition.init_scope(input_param.sampl_freq_multi)
         my_acquisition.init_aquisition(input_param.acquisition_time)
         my_acquisition.init_processing()
-        my_acquisition.scan_noMotion(input_param.coord_focus)
+        my_acquisition.scan_noMotion(input_param.coord_zero)
     finally:
         my_acquisition.close_all()
