@@ -95,14 +95,14 @@ class Acquisition:
         if init_equip:
             # Connect with driving system
             self._init_ds()
-    
+
             # Connect with PicoScope
             self.equipment["scope"] = pico.getScope(self.input_param.picoscope.pico_py_ident)
             self._init_scope(input_param.sampl_freq_multi, input_param.acquisition_time)
-    
+
             # Initialize ACD processing parameters
             self.proces_param = self._init_processing(endus=input_param.acquisition_time)
-            
+
             # Connect with positioning system
             self.equipment["motors"] = MotorsXYZ()
             self._init_motor(input_param.pos_com_port)
@@ -247,7 +247,7 @@ class Acquisition:
 
         This method initializes the motor system and connects to it using the specified port.
         """
-        
+
         self.equipment["motors"].connect(port=port)
         self.equipment["motors"].initialize()
         pos = self.equipment["motors"].readPosition()
@@ -278,6 +278,10 @@ class Acquisition:
             self._init_grid()
 
         logger.info('Grid is initialized')
+
+        # Send sequence to driving system
+        self.equipment["ds"].send_sequence(self.sequence)
+        logger.info('All driving system parameters are set')
 
         self._save_params_ini()
         logger.info('Used parameters have been saved in a file.')
@@ -783,11 +787,7 @@ class Acquisition:
         # Start picoscope acquisition on trigger
         self.equipment["scope"].startAcquisitionTB(self.sample_count, self.timebase)
         time.sleep(0.025)
-        
-        # Send sequence to driving system
-        self.equipment["ds"].send_sequence(self.sequence)
-        logger.info('All driving system parameters are set')
-        
+
         # Execute pulse sequence
         self.equipment["ds"].execute_sequence()
 
@@ -889,7 +889,7 @@ class Acquisition:
 
         if self.equipment["motors"].connected:
             self.equipment["motors"].disconnect()
-            
+
         if self.equipment["scope"] is not None:
             self.equipment["scope"].closeUnit()
 

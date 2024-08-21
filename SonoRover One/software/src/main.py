@@ -83,7 +83,7 @@ def main():
 
         # Sync fus_driving_systems logging
         fds_logging_config.sync_logger(logger)
-        
+
         # Import sequences of excel, delay import due to initialization of logger
         from backend import sequence
         sequence_list = sequence.generate_sequence_list(input_param)
@@ -111,7 +111,6 @@ def main():
                         acquisition.check_scan_ds_combo(seq)
                 else:
                     acquisition.acquire_sequence(seq)
-                    
 
             # All sequences are finished, so move data
             move_output_data(logger, input_param.temp_dir_output, input_param.dir_output)

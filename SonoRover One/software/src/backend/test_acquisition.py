@@ -46,11 +46,12 @@ from backend.scan_iter import Scan_Iter
 from backend.motor_GRBL import MotorsXYZ
 from backend import pico
 
+
 class TestAcquisition(acq.Acquisition):
-    
+
     def __init__(self, input_param, init_motor, init_ds, init_pico):
         super().__init__(input_param, init_equip=False)
-        
+
         # # Global acquisition parameters
         # Initialize equipment
         self.equipment = {
@@ -58,7 +59,7 @@ class TestAcquisition(acq.Acquisition):
             "scope": None,
             "motors": None
             }
-        
+
         # Initialize sequence specific parameters
         self.sequence = None
         self.grid_param = {
@@ -77,27 +78,27 @@ class TestAcquisition(acq.Acquisition):
             "outputRAWCoord": None,
             "outputCoord": None
             }
-        
+
         if init_motor:
             # Connect with positioning system
             self.equipment["motors"] = MotorsXYZ()
             self._init_motor(self.input_param.pos_com_port)
-        
+
         if init_ds:
             # Sync fus_driving_systems logging
             fds.config.logging_config.sync_logger(logger)
-            
+
             # Connect with driving system
             self._init_ds()
-            
+
         if init_pico:
             # Connect with PicoScope
             self.equipment["scope"] = pico.getScope(self.input_param.picoscope.pico_py_ident)
             self._init_scope(input_param.sampl_freq_multi, input_param.acquisition_time)
-            
+
             # Initialize ACD processing parameters
             self.proces_param = self._init_processing(endus=input_param.acquisition_time)
-    
+
     def init_scan(self, scan='Dir'):
         """
         init the scan in either direct mode: acquire all lines starting from the same position
@@ -105,7 +106,8 @@ class TestAcquisition(acq.Acquisition):
         Alt: (0,0), (0,1), (0,2), (0,3), (1,3), (1,3), (1,1), (1,0)
         """
         logger.debug(f'scan: {scan}')
-        self.grid = Scan_Iter(self.grid_param["nsl"], self.grid_param["nrow"], self.grid_param["ncol"], scan=scan)
+        self.grid = Scan_Iter(self.grid_param["nsl"], self.grid_param["nrow"],
+                              self.grid_param["ncol"], scan=scan)
 
     def init_scope_params(self, sampl_freq_multi):
         """
@@ -126,9 +128,12 @@ class TestAcquisition(acq.Acquisition):
         counter = 0
         for s, r, c in self.grid:
             if self.sequence.use_coord_excel:
-                destXYZ = [self.grid_param["coord_excel_data"].loc[counter, "X-coordinate [mm]"] + coord_zero[0],
-                           self.grid_param["coord_excel_data"].loc[counter, "Y-coordinate [mm]"] + coord_zero[1],
-                           self.grid_param["coord_excel_data"].loc[counter, "Z-coordinate [mm]"] + coord_zero[2]]
+                destXYZ = [self.grid_param["coord_excel_data"].loc[counter, "X-coordinate [mm]"]
+                           + coord_zero[0],
+                           self.grid_param["coord_excel_data"].loc[counter, "Y-coordinate [mm]"]
+                           + coord_zero[1],
+                           self.grid_param["coord_excel_data"].loc[counter, "Z-coordinate [mm]"]
+                           + coord_zero[2]]
             else:
                 destXYZ = self.starting_pos + s*self.vectSl + r*self.vectCol + c*self.vectRow
 
@@ -209,12 +214,12 @@ class TestAcquisition(acq.Acquisition):
 
         with open(self.outputACD, 'wb') as outacd:
             self.cplx_data.tofile(outacd)
-            
+
     def check_scan(self, sequence, scan='Dir'):
         """
         perform a scan of the defined grid to check scanning path
         """
-        
+
         # Save protocol, config, used driving system and used transducer
         self.sequence = sequence
 
@@ -226,14 +231,14 @@ class TestAcquisition(acq.Acquisition):
         logger.info('Grid is initialized')
 
         duration = self.scan_only(self.input_param.coord_zero, delay_s=0.0, scan=scan)
-        print(f'duration: {duration}: ns: {self.grid_param["nsl"]},  nr: {self.grid_param["nrow"]}, ' +
-              f'nc: {self.grid_param["ncol"]},')
-                
+        print(f'duration: {duration}: ns: {self.grid_param["nsl"]},  nr: ' +
+              f'{self.grid_param["nrow"]}, nc: {self.grid_param["ncol"]},')
+
     def check_scan_ds_combo(self, sequence, scan='Dir'):
         """
         perform a scan of the defined grid to check scanning path
         """
-        
+
         # Save protocol, config, used driving system and used transducer
         self.sequence = sequence
 
@@ -243,6 +248,10 @@ class TestAcquisition(acq.Acquisition):
             self._init_grid()
 
         logger.info('Grid is initialized')
+
+        # Send sequence to driving system
+        self.equipment["ds"].send_sequence(self.sequence)
+        logger.info('All driving system parameters are set')
 
         logger.debug(f'scan: {scan}')
         self.init_scan(scan=scan)
@@ -259,20 +268,16 @@ class TestAcquisition(acq.Acquisition):
 
             logger.info(f'src: [{s}, {r}, {c}], destXYZ: {destXYZ[0]:.3f}, {destXYZ[1]:.3f}, {destXYZ[2]:.3f}')
             self.equipment["motors"].move(list(destXYZ), relative=False)
-            
-            # Send sequence to driving system
-            self.equipment["ds"].send_sequence(self.sequence)
-            logger.info('All driving system parameters are set')
-            
+
             # Execute pulse sequence
             self.equipment["ds"].execute_sequence()
-            
+
             counter = counter + 1
 
         # time.sleep(delay_s)
         t1 = time.time()
         delta_t = t1-t0
-        print(f'duration: {delta_t}') 
+        print(f'duration: {delta_t}')
 
 
 ###########################################################################################
@@ -311,9 +316,6 @@ def simul_acquire(outfile, protocol, input_param):
         my_acquisition.save_params_ini(input_param)
     finally:
         my_acquisition.close_all()
-
-
-
 
 
 def check_generator(protocol, input_param, repetitions=1, delay_s=1.0):

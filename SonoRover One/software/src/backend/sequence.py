@@ -206,7 +206,7 @@ class CharacSequence(sequence.Sequence):
             # Order is important, because the code will check if other value is
             # set: first set new parameter and then set power value of other
             # driving system to None
-                
+
             case 'SC - Global power [mW] (fill in \'Corresponding value\')':
                 self.global_power = abs(float(seq_row[excel_ind["power_value"]]))/1000  # SC: gp [W]
                 self.ampl = None  # IGT: amplitude [%]
@@ -222,7 +222,7 @@ class CharacSequence(sequence.Sequence):
             case 'IGT - Amplitude [%] (fill in \'Corresponding value\')':
                 self.ampl = abs(float(seq_row[excel_ind["power_value"]]))  # IGT: amplitude [%]
                 self.global_power = None  # SC: global power [W]
-                
+
         # Timing parameters
         # ## pulse ## #
         self.pulse_dur = abs(float(seq_row[excel_ind["pulse_dur"]]))  # [ms]
@@ -412,8 +412,6 @@ def generate_sequence_list(input_param):
             charac_seq = CharacSequence()
             charac_seq.set_sequence(excel_ind, seq_row, input_param)
             sequence_list.append(charac_seq)
-
-            logger.info(f'The following sequence is added to the list: \n {charac_seq}')
 
         logger.info(f'{len(sequence_list)} different sequences found in {excel_path}')
 
