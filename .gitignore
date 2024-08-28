@@ -1,3 +1,6 @@
+# Ignore FDS package
+Radboud-FUS-driving-system-software
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *$py.class

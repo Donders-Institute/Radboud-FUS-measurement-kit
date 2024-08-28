@@ -25,7 +25,8 @@
   - [👥 Authors](#authors)
   - [✒️ How to cite](#how-to-cite)
 - [💻 Getting Started](#getting-started)
-  - [Setup](#setup) 
+  - [Setup](#setup)
+  - [Install](#install)
   - [Usage](#usage)
 - [🔭 Future Features](#future-features)
 - [🤝 Contributing](#contributing)
@@ -65,7 +66,7 @@ This project is facilitated by the Radboud Focused Ultrasound Initiative. For mo
 - [LinkedIn](https://linkedin.com/in/margely-cornelissen)
 
 👤 **Erik Dumont, [Image Guided Therapy (IGT)](http://www.imageguidedtherapy.com/)**
-
+- GitHub: [@erikdumontigt](https://github.com/erikdumontigt)
 - [LinkedIn](https://linkedin.com/in/erik-dumont-986a814)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
@@ -78,15 +79,21 @@ Margely Cornelissen, Stein Fekkes (Radboud University, Nijmegen, The Netherlands
 
 <!-- GETTING STARTED -->
 
-## 💻 Getting Started <a name="getting-started"></a>
+# 💻 Getting Started <a name="getting-started"></a>
 
-### Setup
+## Setup <a name="setup"></a>
 
-#### Hardware
+### Hardware
 
 The hardware files are stored as native solidworks files and as step format. The main assembly file: W0003510-00-01-SonoRover One.SLDASM will contain all references to part files and subassemblies.
 
-#### Software
+### Software
+
+#### Important Note
+
+**This package is developed specifically for Windows operating systems.** While it might work in other environments with some modifications, full support is provided only for Windows.
+
+
 Clone this repository to your desired folder:
 
 - Git terminal
@@ -102,14 +109,85 @@ Clone this repository to your desired folder:
 	3. Choose 'URL' and paste the following repository URL: [https://github.com/Donders-Institute/Radboud-FUS-measurement-kit.git](https://github.com/Donders-Institute/Radboud-FUS-measurement-kit.git)
 	4. Choose your desired folder and clone the repository.
 
+## Install <a name="install"></a>
 
-### Usage
+### Software
 
-#### Software
+**Seamless Integration and Compatibility**: The current SonoRover One software utilizes a standardized [focused ultrasound driving system software package](https://github.com/Donders-Institute/Radboud-FUS-driving-system-software). This approach allows you to easily incorporate equipment with different communication protocols into the Radboud FUS driving system software, making it available in the SonoRover One system. By following an abstract communication structure, the software can seamlessly operate with equipment from various manufacturers, ensuring consistent, centralized updates and eliminating the need for direct management of communication protocols in both standalone and experimental settings.
 
-The software is provided as-is. As it is currently version 0.8, it is mainly intended for inspiration and preliminary use. We are actively working on cleaning, restructuring, and rewriting the code for a 1.0 release in the future.
+Open your command prompt and run the following batch file to set up the virtual environment and install the necessary dependencies. You can use input parameters to customize the environment name or Python interpreter location.
 
-The primary script is [characterizationPipeline.py](characterizationPipeline.py). Running this script launches a GUI to set the following parameters:
+```
+cd your_directory_with_cloned_repository
+install_dependencies.bat [VENV_NAME] [PYTHON_INTERPRETER_PATH]
+```
+	
+- VENV_NAME: Specify the name for the virtual environment (e.g., MyEnv). If not provided, it defaults to SONOROVER_ONE.
+- PYTHON_INTERPRETER_PATH: Specify the path to the Python 3.10 interpreter if it’s not in the default location. For example, C:\Path\To\Python310\python.exe.
+
+The batch file will:
+
+- Create a virtual environment.
+- Install the required Python packages.
+- Clone the Radboud FUS driving system software repository into the SonoRover One repository.
+- Install the Radboud FUS driving system software package. 
+- Set up necessary environment variables.
+
+After running the batch file, ensure that the virtual environment is activated and dependencies are installed. You can verify this by:
+
+- Checking for the virtual environment in your WORKON_HOME directory.
+- Confirming that the required packages are installed.
+
+#### Notes
+- **Python Version**: The script assumes that Python 3.10 is installed. If you have a different version, make sure to adjust the script accordingly or install Python 3.10.
+- **Environment Variables**: The batch file sets environment variables temporarily for the session and permanently if they are not already set. Ensure that WORKON_HOME is correctly configured as needed.
+
+#### Troubleshooting
+If you encounter issues with the batch file not being recognized or errors during execution, ensure that:
+
+- The batch file has the correct permissions to execute.
+- The repository has been cloned correctly and contains the necessary files.
+
+
+## Usage <a name="usage"></a>
+
+### Software
+
+With all dependencies installed, activate your environment in your command prompt. 
+
+```
+workon [VENV_NAME]
+```
+
+While the virtual environment is activated, you can install Spyder or any other IDE of your choice. To install Spyder, run:
+
+```
+pip install spyder
+```
+
+After installing Spyder, you can launch it directly from the command line within the activated virtual environment by running:
+
+```
+spyder
+```
+
+#### Activate your virtual environment and launch the IDE at once
+To simplify the process of activating the virtual environment and launching your IDE, you can use the provided [batch script](start_venv_and_ide.bat).
+
+How to use the script:
+1. Ensure that start_env_and_ide.bat is located in a convenient location, such as the root directory of your project or your desktop.
+2. Run the script in one of the following ways:
+	- Open start_venv_and_ide.bat in a text editor and modify the VENV_NAME and IDE variables directly if you prefer not to use command-line arguments. To run the .bat file, just double-click it.
+	- Using the command prompt:
+		```
+		start_venv_and_ide.bat [VENV_NAME] [IDE]
+		```
+		- VENV_NAME: Specify the name for the virtual environment (e.g., MyEnv). If not provided, it defaults to SONOROVER_ONE.
+		- IDE: Specify the python interpreter. IF not provided, it defaults to spyder.
+
+#### Primary script
+The primary script is  [main](/SonoRover%20One/software/src/main.py). 
+Running this script launches a GUI to set the following parameters:
 
 1. **Path and filename of protocol excel file**: Select the required protocol Excel file. Refer to the example template [here](SonoRover%20One/software/example%20input/protocol%20template/template_protocol_input.xlsx). This file contains sequences with various foci, power outputs, timing parameters, and/or coordinate grids. It is specific to a driving system-transducer combination.  
    **Note**: If you change the headers in the Excel file, you must also update the corresponding headers in the code.
@@ -161,19 +239,19 @@ After all parameters are set, click 'ok' to start the characterization. Log file
 
 <!-- FUTURE FEATURES -->
 
-## 🔭 Future Features <a name="future-features"></a>
+# 🔭 Future Features <a name="future-features"></a>
 
-#### Software
+## Software
 
-- [ ] **Implemented driving system abstract class to easily integrate driving systems from other manufacturers**
-- [ ] **Cleaner, restructured and more robust code**
+- [x] **Implemented driving system abstract class to easily integrate driving systems from other manufacturers**
+- [x] **Cleaner, restructured and more robust code**
 - [ ] **Compatibility check of chosen equipment**
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 <!-- CONTRIBUTING -->
 
-## 🤝 Contributing <a name="contributing"></a>
+# 🤝 Contributing <a name="contributing"></a>
 
 Contributions, issues, and feature requests are welcome!
 
@@ -184,7 +262,7 @@ We'd love to hear from you.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-## 📝 License <a name="license"></a>
+# 📝 License <a name="license"></a>
 
 This project is [MIT](./LICENSE) licensed.
 
