@@ -58,8 +58,19 @@ def read_additional_config(file_path):
     if not os.path.exists(abs_path):
         raise FileNotFoundError(f"Configuration file '{abs_path}' not found.")
     additional_config.read(abs_path)
-    config_info.update(additional_config)
-
+    
+    # Iterate through the sections and options
+    for section in additional_config.sections():
+        if not config_info.has_section(section):
+            config_info.add_section(section)
+        
+        for option, value in additional_config.items(section):
+            if not config_info.has_option(section, option):
+                config_info.set(section, option, value)
+            else:
+                # Optionally, handle merging or appending here if needed
+                existing_value = config_info.get(section, option)
+                config_info.set(section, option, f"{existing_value}, {value}")
 
 # Automatically read the main configuration file when the module is imported
 inp_file = (impresources.files(config) / 'characterization_config.ini')

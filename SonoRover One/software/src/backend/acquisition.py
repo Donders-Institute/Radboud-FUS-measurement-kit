@@ -140,7 +140,7 @@ class Acquisition:
         # Driving system of Sonic Concepts
         if ds_manufact == config_info['Equipment.Manufacturer.SC']['Name']:
             add_message = config_info['Equipment.Manufacturer.SC']['Additional charac. discon. message']
-            self.equipment["ds"] = fds_sc.SC()
+            self.equipment["ds"] = fds_sc.SonicConcepts()
 
             check_dialogs.check_disconnection_dialog(add_message)
 
@@ -179,7 +179,7 @@ class Acquisition:
                                             pico.Coupling.DC, pico.Probe.x1)
 
         # Calculate and set sampling frequency
-        self.sampling_freq = sampl_freq_multi*self.sequence.oper_freq
+        self.sampling_freq = sampl_freq_multi*self.input_param.oper_freq
         self.timebase = self.equipment["scope"].timeBase(self.sampling_freq)
         self.pico_sampling_freq = self.equipment["scope"].samplingRate(self.timebase)
         self.sampling_period = 1.0/self.pico_sampling_freq
@@ -217,7 +217,7 @@ class Acquisition:
 
         # self.t[n] is the sampling time for sample n
         t = self.sampling_period*np.arange(0, self.sample_count)
-        eiwt = np.exp(1j * 2 * np.pi * self.sequence.oper_freq * t)  # cos(wt) + j sin(wt)
+        eiwt = np.exp(1j * 2 * np.pi * self.input_param.oper_freq * t)  # cos(wt) + j sin(wt)
 
         begn = int(begus*1e-6*self.pico_sampling_freq)  # begining of the processing window
         endn = int(endus*1e-6*self.pico_sampling_freq)  # end of the processing window
@@ -444,8 +444,8 @@ class Acquisition:
         """
 
         params['Versions'] = {}
-        params['Versions']['Equipment characterization pipeline software'] = (
-            config_info['Versions']['Equipment characterization pipeline software']
+        params['Versions']['Sonorover One software'] = (
+            config_info['Versions']['sonorover one software']
             )
 
         # Get current date and time for logging
@@ -515,7 +515,7 @@ class Acquisition:
         params['Sequence']['Tag'] = str(self.sequence.tag)
         params['Sequence']['Dephasing degree'] = str(self.sequence.dephasing_degree)
 
-        params['Sequence']['Operating frequency [Hz]'] = str(self.sequence.oper_freq)
+        params['Sequence']['Operating frequency [Hz]'] = str(self.input_param.oper_freq)
         params['Sequence']['Focus [um]'] = str(self.sequence.focus)
 
         ds_manufact = str(self.input_param.driving_sys.manufact)
@@ -636,7 +636,7 @@ class Acquisition:
         datasheet_path = self.input_param.hydrophone.sens_v_pa
         sens_data = pd.read_excel(datasheet_path)
         freq_header = config_info['Characterization.Equipment']['Hydrophone datasheet freq. header']
-        freq_mhz = round(self.sequence.oper_freq/1000, 2)
+        freq_mhz = round(self.input_param.oper_freq/1000, 2)
         match_row = sens_data.loc[sens_data[freq_header] == freq_mhz]
 
         if match_row.empty:
@@ -700,6 +700,9 @@ class Acquisition:
 
                     self.equipment["motors"].move(list(dest_xyz), relative=False)
                     self._acquire_data()
+                    
+                    with open(self.output["outputRAW"], 'ab') as outraw:
+                        self.signal_a.tofile(outraw)
 
                     # Process raw data as ACD
                     if self.proces_param["adjust"] != 0:
@@ -819,9 +822,6 @@ class Acquisition:
         """
         measur_nr, cluster_nr, ind_nr = vol_orien
         row_nr, col_nr, sl_nr = plane_orien
-
-        with open(self.output["outputRAW"], 'ab') as outraw:
-            self.signal_a.tofile(outraw)
 
         with open(self.output["outputCoord"], 'a', newline='') as outcoord:
             # Round down floats to 3 decimals
