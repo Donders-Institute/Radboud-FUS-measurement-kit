@@ -49,7 +49,7 @@ from fus_driving_systems.config import logging_config as fds_logging_config
 from distutils.dir_util import copy_tree
 import shutil
 
-test_scanner_only = True
+test_scanner_only = False
 init_motor = True
 init_ds = True
 init_pico = False
@@ -108,6 +108,7 @@ def main():
                 if is_testing:
                     # Test functions
                     if test_scanner_only:
+                        #acquisition.check_scan(seq)
                         acquisition.check_scan_ds_combo(seq)
                 else:
                     acquisition.acquire_sequence(seq)
