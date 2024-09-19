@@ -71,17 +71,18 @@ config['Characterization']['ACD adjustment'] = ', '.join(ACD_ADJUST)
 
 config['Characterization.Equipment'] = {}
 
-HYDROPHONES = ['\'Golden Lipstick\' HGL-0200', '\'Needle\' HNR-0500']
+HYDROPHONES = ['HGL 0200 SN2845', 'HNR 0500 SN2439']
 config['Characterization.Equipment']['Hydrophones'] = ', '.join(HYDROPHONES)
 
 config['Characterization.Equipment.' + HYDROPHONES[0]] = {}
 config['Characterization.Equipment.' + HYDROPHONES[0]]['Name'] = 'Hydrophone ' + HYDROPHONES[0]
 config['Characterization.Equipment.' + HYDROPHONES[0]]['Sensitivity (V/Pa) datasheet'] = (
-    'config//hydrophones//HGL-0200 Calibration datasheet.xlsx')
+    'config//hydrophones//HGL 0200 SN2845 Calibration datasheet.xlsx')
 
 config['Characterization.Equipment.' + HYDROPHONES[1]] = {}
 config['Characterization.Equipment.' + HYDROPHONES[1]]['Name'] = 'Hydrophone ' + HYDROPHONES[1]
-config['Characterization.Equipment.' + HYDROPHONES[1]]['Sensitivity (V/Pa) datasheet'] = ''
+config['Characterization.Equipment.' + HYDROPHONES[1]]['Sensitivity (V/Pa) datasheet'] = (
+    'config//hydrophones//HNR 0500 SN2439 Calibration datasheet.xlsx')
 
 config['Characterization.Equipment']['Hydrophone datasheet freq. header'] = 'Freq(MHz)'
 

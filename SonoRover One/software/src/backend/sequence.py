@@ -225,7 +225,7 @@ class CharacSequence(sequence.Sequence):
 
         # Timing parameters
         # ## pulse ## #
-        self.pulse_dur = abs(float(seq_row[excel_ind["pulse_dur"]]))  # [ms]
+        self.pulse_dur = abs(float(seq_row[excel_ind["pulse_dur"]]))*1e3  # [us] to [ms]
         self.pulse_rep_int = abs(float(seq_row[excel_ind["pulse_rep_int"]]))  # [ms]
 
         # pulse ramping

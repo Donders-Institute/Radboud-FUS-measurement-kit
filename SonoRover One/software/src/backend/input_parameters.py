@@ -171,8 +171,14 @@ class InputParameters:
         cached_input['Input parameters']['Operating frequency [kHz]'] = str(int(self.oper_freq))
 
         cached_input['Input parameters']['COM port of positioning system'] = str(self.pos_com_port)
-
+        cached_input['Input parameters']['Hydrophone serial number'] = str(self.hydrophone.serial)
+        cached_input['Input parameters']['Hydrophone name'] = str(self.hydrophone.name)
+        cached_input['Input parameters']['Hydrophone Sensitivity (V/Pa) datasheet'] = str(self.hydrophone.sens_v_pa)
         cached_input['Input parameters']['Hydrophone acquisition time [us]'] = str(self.acquisition_time)
+
+        cached_input['Input parameters']['PicoScope serial number'] = str(self.picoscope.serial)
+        cached_input['Input parameters']['Picoscope name'] = str(self.picoscope.name)
+        cached_input['Input parameters']['PicoScope pico.py identification'] = str(self.picoscope.pico_py_ident)
         cached_input['Input parameters']['Picoscope sampling frequency multiplication factor'] = str(self.sampl_freq_multi)
 
         cached_input['Input parameters']['Temperature of water [°C]'] = str(self.temp)
@@ -232,7 +238,15 @@ class InputParameters:
 
         self.pos_com_port = cached_input['Input parameters']['COM port of positioning system']
 
+        self.hydrophone.serial = cached_input['Input parameters']['Hydrophone serial number']
+        self.hydrophone.name = cached_input['Input parameters']['Hydrophone name']
+        self.hydrophone.sens_v_pa = cached_input['Input parameters']['Hydrophone Sensitivity (V/Pa) datasheet']
+
         self.acquisition_time = float(cached_input['Input parameters']['Hydrophone acquisition time [us]'])
+
+        self.picoscope.serial = cached_input['Input parameters']['PicoScope serial number']
+        self.picoscope.name = cached_input['Input parameters']['Picoscope name']
+        self.picoscope.pico_py_ident = cached_input['Input parameters']['PicoScope pico.py identification']
         self.sampl_freq_multi = float(cached_input['Input parameters']['Picoscope sampling frequency multiplication factor'])
 
         self.temp = float(cached_input['Input parameters']['Temperature of water [°C]'])

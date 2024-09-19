@@ -179,7 +179,7 @@ class Acquisition:
                                             pico.Coupling.DC, pico.Probe.x1)
 
         # Calculate and set sampling frequency
-        self.sampling_freq = sampl_freq_multi*self.input_param.oper_freq
+        self.sampling_freq = sampl_freq_multi*self.input_param.oper_freq*1e3  # convert kHz to Hz
         self.timebase = self.equipment["scope"].timeBase(self.sampling_freq)
         self.pico_sampling_freq = self.equipment["scope"].samplingRate(self.timebase)
         self.sampling_period = 1.0/self.pico_sampling_freq
@@ -217,7 +217,7 @@ class Acquisition:
 
         # self.t[n] is the sampling time for sample n
         t = self.sampling_period*np.arange(0, self.sample_count)
-        eiwt = np.exp(1j * 2 * np.pi * self.input_param.oper_freq * t)  # cos(wt) + j sin(wt)
+        eiwt = np.exp(1j * 2 * np.pi * self.input_param.oper_freq*1e3 * t)  # cos(wt) + j sin(wt)
 
         begn = int(begus*1e-6*self.pico_sampling_freq)  # begining of the processing window
         endn = int(endus*1e-6*self.pico_sampling_freq)  # end of the processing window
@@ -515,7 +515,7 @@ class Acquisition:
         params['Sequence']['Tag'] = str(self.sequence.tag)
         params['Sequence']['Dephasing degree'] = str(self.sequence.dephasing_degree)
 
-        params['Sequence']['Operating frequency [Hz]'] = str(self.input_param.oper_freq)
+        params['Sequence']['Operating frequency [kHz]'] = str(self.input_param.oper_freq)
         params['Sequence']['Focus [um]'] = str(self.sequence.focus)
 
         ds_manufact = str(self.input_param.driving_sys.manufact)
@@ -804,13 +804,13 @@ class Acquisition:
 
         # Transfer data from picoscope
         self.signal_a = self.equipment["scope"].readVolts()[0]
+
         logger.debug(f'signal_a size: {self.signal_a.size}, ' +
                      f'dtype: {self.signal_a.dtype}')
 
     def _save_data(self, vol_orien, relat_xyz, plane_orien, dest_xyz):
         """
-        Save the acquired data in a float32 format into the outputRaw file and the corresponding
-        coordinates into the outputCoord file.
+        Save the coordinates into the outputCoord file.
 
         Parameters:
         - vol_orien (list of int): Volume orientation consisting of -> measur_nr (int) - Measurement
