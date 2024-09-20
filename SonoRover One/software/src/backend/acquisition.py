@@ -520,7 +520,7 @@ class Acquisition:
 
         ds_manufact = str(self.input_param.driving_sys.manufact)
         if ds_manufact == config_info['Equipment.Manufacturer.SC']['Name']:
-            params['Sequence']['SC - Global power [mW]'] = str(self.sequence.global_power)
+            params['Sequence']['SC - Global power [W]'] = str(self.sequence.global_power)
         elif ds_manufact == config_info['Equipment.Manufacturer.IGT']['Name']:
             params['Sequence']['IGT - Maximum pressure in free water [MPa]'] = (
                 str(self.sequence.press)
