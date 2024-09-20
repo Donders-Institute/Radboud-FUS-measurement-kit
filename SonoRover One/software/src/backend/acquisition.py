@@ -411,8 +411,8 @@ class Acquisition:
             self.grid_param["nsl"] = (self.grid_param["coord_excel_data"].loc[:, "Slice number"]
                                       .max())
 
-            self.sequence.nslices_nrow_ncol = [self.grid_param["nsl"], self.grid_param["nrow"],
-                                               self.grid_param["ncol"]]
+            self.sequence.nslices_nrow_ncol = np.array((self.grid_param["nsl"], self.grid_param["nrow"],
+                                               self.grid_param["ncol"]))
 
         else:
             logger.error("Pipeline is cancelled. The following direction cannot be found: "
