@@ -316,8 +316,8 @@ class Acquisition:
         self._save_params_ini()
         logger.info('Used parameters have been saved in a file.')
 
-        pre_foc = self.sequence.coord_zero[2] - self.sequence.focus + distance_from_foc
-        post_foc = self.sequence.coord_zero[2] - self.sequence.focus - distance_from_foc
+        pre_foc = self.input_param.coord_zero[2] + self.sequence.focus - distance_from_foc
+        post_foc = self.input_param.coord_zero[2] + self.sequence.focus + distance_from_foc
 
         z_coords = [pre_foc, post_foc]
 
@@ -333,16 +333,16 @@ class Acquisition:
 
         initial_line_length = 10  # mm
         initial_line_step_size = 0.5  # mm
-        threshold = 0.0005  # mm
+        threshold = 0.01  # mm
         reduction_factor = 0.5  # Factor to reduce line_length and line_step_size
-        multip_factor = 10  # Multiplication factor for threshold to reduce line_length and line_step_size
+        multip_factor = 1000  # Multiplication factor for threshold to reduce line_length and line_step_size
         line_length = initial_line_length
         line_step_size = initial_line_step_size
 
-        middle_points = np.zeros(2, 1, 1, 1)
+        middle_points = np.zeros((2, 3))
 
         for i in range(len(z_coords)):
-            logger.info(f"Finding acoustical axis coordinate for z = {z_coords[i]} mm")
+            logger.info(f"Finding acoustical axis coordinate for z = {round(z_coords[i], 2)} mm")
 
             # Define starting z-coordinates
             self.sequence.coord_start[2] = z_coords[i]
@@ -351,8 +351,8 @@ class Acquisition:
             line_length = initial_line_length
             line_step_size = initial_line_step_size
 
-            found_x_coords = [0, self.sequence.coord_zero[0]]
-            found_y_coords = [0, self.sequence.coord_zero[1]]
+            found_x_coords = [0, self.input_param.coord_zero[0]]
+            found_y_coords = [0, self.input_param.coord_zero[1]]
 
             while abs(found_x_coords[-2] - found_x_coords[-1]) > threshold or abs(found_y_coords[-2] - found_y_coords[-1]) > threshold:
                 # Log iteration number and convergence progress
@@ -361,8 +361,8 @@ class Acquisition:
                 y_diff = abs(found_y_coords[-2] - found_y_coords[-1])
                 max_diff = max(x_diff, y_diff)
 
-                logger.info(f"Iteration {iteration}: Max difference = {max_diff:.6f} mm")
-                logger.info(f"X difference: {x_diff:.6f} mm, Y difference: {y_diff:.6f} mm")
+                logger.info(f"Iteration {iteration}: Max difference = {max_diff:.4f} mm")
+                logger.info(f"X difference: {x_diff:.4f} mm, Y difference: {y_diff:.4f} mm")
 
                 if max_diff > threshold:
                     convergence_ratio = max_diff / threshold
@@ -371,11 +371,11 @@ class Acquisition:
                     logger.info("Convergence threshold reached!")
 
                 # Update line_length and line_step_size based on how close we are to the threshold
-                if max(abs(found_x_coords[-2] - found_x_coords[-1]), abs(found_y_coords[-2] - found_y_coords[-1])) < threshold * multip_factor:
-                    multip_factor *= reduction_factor
-                    line_length *= reduction_factor
-                    line_step_size *= reduction_factor
-                    logger.info(f"Reducing search area. New line_length: {line_length:.2f}mm, new line_step_size: {line_step_size:.2f}mm")
+                # if max(abs(found_x_coords[-2] - found_x_coords[-1]), abs(found_y_coords[-2] - found_y_coords[-1])) < threshold * multip_factor:
+                #     multip_factor *= reduction_factor
+                #     line_length *= reduction_factor
+                #     line_step_size *= reduction_factor
+                #     logger.info(f"Reducing search area. New line_length: {line_length:.2f}mm, new line_step_size: {line_step_size:.2f}mm")
 
                 # Update number of points based on new line_length and line_step_size
                 line_n_points = round(line_length / line_step_size)
@@ -383,12 +383,13 @@ class Acquisition:
                 self.sequence.nslices_nrow_ncol = [self.grid_param["nsl"], self.grid_param["nrow"], self.grid_param["ncol"]]
 
                 # Scan for x-coordinate
-                self.sequence.vect_row = np.array([1, 0, 0])
-                self.sequence.vect_col = np.array([0, line_step_size, 0])
+                self.sequence.vect_row = np.array([0, 1, 0])
+                self.sequence.vect_col = np.array([line_step_size, 0, 0])
 
                 self.sequence.coord_start[0] = found_x_coords[-1] - line_length/2
                 self.sequence.coord_start[1] = found_y_coords[-1]
 
+                logger.info('Scan in x-direction...')
                 volt_data_x, dest_xyz_list_x = self._scan_grid()
 
                 # Find center of mass for x
@@ -401,28 +402,38 @@ class Acquisition:
                 center_of_mass_x = dest_xyz_list_x[center_of_mass_index_x][0]
                 found_x_coords.append(center_of_mass_x)
 
-                plt.plot(dest_xyz_list_x[0], max_voltages_x)
-                plt.axhline(y=center_of_mass_x, color='r', linestyle='-')
+                x_coords = [coord[0] for coord in dest_xyz_list_x]
+                plt.plot(x_coords, max_voltages_x)
+                plt.axvline(x=center_of_mass_x, color='r', linestyle='--')
 
                 plt.xlabel('X-coordinates [mm]')
                 plt.ylabel('Maximum voltage per grid point [V]')
 
-                plt.title(f'Z-coord: {z_coords[i]}, Iteration {iteration}: Max difference = ' +
-                          f'{max_diff:.6f} mm \n Line length: {line_length}, stepsize: ' +
+                plt.title(f'Z-coord: {round(z_coords[i], 2)}, Iteration {iteration}: Max difference = ' +
+                          f'{max_diff:.4f} mm \n Line length: {line_length}, stepsize: ' +
                           f'{line_step_size}')
 
+                if i == 0:
+                    filename = os.path.join(self.input_param.temp_dir_output, 
+                                            'acoustical_alignment_pre_foc_'  + 
+                                            f'iter_{iteration}_x_coord.png')
+                else:
+                    filename = os.path.join(self.input_param.temp_dir_output, 
+                                            'acoustical_alignment_post_foc_'  + 
+                                            f'iter_{iteration}_x_coord.png')
+                    
+                plt.savefig(filename)
+                
                 plt.show()
 
-                filename = os.path.join(self.input_param.temp_dir_output, 'acoustical_alignment_' +
-                                        f'x_coord_iter_{iteration}.png')
-                plt.savefig(filename)
-
                 # Scan for y-coordinate
-                self.sequence.vect_row = np.array([0, 1, 0])
-                self.sequence.vect_col = np.array([line_step_size, 0, 0])
+                self.sequence.vect_row = np.array([1, 0, 0])
+                self.sequence.vect_col = np.array([0, line_step_size, 0])
                 self.sequence.coord_start[0] = center_of_mass_x
                 self.sequence.coord_start[1] = found_y_coords[-1] - line_length/2
 
+                
+                logger.info('Scan in y-direction...')
                 volt_data_y, dest_xyz_list_y = self._scan_grid()
 
                 # Find center of mass for y
@@ -434,27 +445,35 @@ class Acquisition:
                 center_of_mass_y = dest_xyz_list_y[center_of_mass_index_y][1]
                 found_y_coords.append(center_of_mass_y)
 
-                plt.plot(dest_xyz_list_y[1], max_voltages_y)
-                plt.axhline(y=center_of_mass_y, color='r', linestyle='--')
+                y_coords = [coord[1] for coord in dest_xyz_list_y]
+
+                plt.plot(y_coords, max_voltages_y)
+                plt.axvline(x=center_of_mass_y, color='r', linestyle='--')
 
                 plt.xlabel('Y-coordinates [mm]')
                 plt.ylabel('Maximum voltage per grid point [V]')
 
-                plt.title(f'Z-coord: {z_coords[i]}, Iteration {iteration}: Max difference = ' +
-                          f'{max_diff:.6f} mm \n Line length: {line_length}, stepsize: ' +
+                plt.title(f'Z-coord: {round(z_coords[i], 2)}, Iteration {iteration}: Max difference = ' +
+                          f'{max_diff:.4f} mm \n Line length: {line_length}, stepsize: ' +
                           f'{line_step_size}')
 
-                plt.show()
-
-                filename = os.path.join(self.input_param.temp_dir_output, 'acoustical_alignment_' +
-                                        f'y_coord_iter_{iteration}.png')
+                if i == 0:
+                    filename = os.path.join(self.input_param.temp_dir_output, 
+                                            'acoustical_alignment_pre_foc_'  + 
+                                            f'iter_{iteration}_y_coord.png')
+                else:
+                    filename = os.path.join(self.input_param.temp_dir_output, 
+                                            'acoustical_alignment_post_foc_'  + 
+                                            f'iter_{iteration}_y_coord.png')
                 plt.savefig(filename)
+                
+                plt.show()
 
                 logger.info(f"Current position: X={center_of_mass_x:.3f}mm, Y={center_of_mass_y:.3f}mm")
 
             # Save the middle point of the scan
-            middle_points[i] = np.array([found_x_coords[-1], found_y_coords[-1], z_coords[i]])
-
+            middle_points[i] = [found_x_coords[-1], found_y_coords[-1], z_coords[i]]
+        
         # Determine the linear relationship between the two middle points
         if len(middle_points) > 1:  # We need at least two points to determine a linear relationship
             point1 = middle_points[0]
@@ -463,8 +482,8 @@ class Acquisition:
             direction_vector = point2 - point1
             unit_vector = direction_vector / np.linalg.norm(direction_vector)
 
-            # Calculate point where z-coordinate is equal to self.sequence.coord_zero[2]
-            t = (self.sequence.coord_zero[2] - point1[2]) / direction_vector[2]  # Solve for t when z = self.sequence.coord_zero[2]
+            # Calculate point where z-coordinate is equal to self.input_param.coord_zero[2]
+            t = (self.input_param.coord_zero[2] - point1[2]) / direction_vector[2]  # Solve for t when z = self.input_param.coord_zero[2]
             transducer_z_point = point1 + t * direction_vector
 
             # The equation for any point on the acoustical axis is:
@@ -500,7 +519,7 @@ class Acquisition:
             point = self.acoustical_axis['origin'] - t * self.acoustical_axis['direction']
 
             measurement_nr = i + 1  # equal to indices_nr and col_nr
-            rows.append(measurement_nr, cluster_nr, measurement_nr, point, 1, measurement_nr, 1, point-self.sequence.coord_zero)
+            rows.append([measurement_nr, cluster_nr, measurement_nr, point, 1, measurement_nr, 1, point-self.input_param.coord_zero])
 
         # Generate the output filename
         excel_filename = os.path.splitext(self.output["outputRAW"])[0] + '_acoustical_axis.xlsx'
@@ -601,7 +620,7 @@ class Acquisition:
     def _init_grid(self):
         """
         Initialize grid with predefined grid parameters. Coordinate of the (i,j) grid point (with i
-        = row, j = col) will be: starting_pos + i x vectCol + j x vectRow
+        = row, j = col) will be: starting_pos + i x vect_col + j x vect_row
 
         This method initializes the grid based on predefined coordinates for scanning.
         """
@@ -615,11 +634,11 @@ class Acquisition:
         self.grid_param["ncol"] = self.sequence.nslices_nrow_ncol[2]
 
         # Vectors in row, column and slice direction, its length is the pixel spacing
-        self.sequence.vect_row = np.array(self.sequence.vectRow)
-        self.sequence.vect_col = np.array(self.sequence.vectCol)
-        self.sequence.vect_sl = np.array(self.sequence.vectSl)
+        self.sequence.vect_row = np.array(self.sequence.vect_row)
+        self.sequence.vect_col = np.array(self.sequence.vect_col)
+        self.sequence.vect_sl = np.array(self.sequence.vect_sl)
 
-        # Time in us for the US to propagate ever vectRow used for ACD processing
+        # Time in us for the US to propagate ever vect_row used for ACD processing
         self.proces_param["row_pixel_us"] = np.linalg.norm(self.sequence.vect_row)/1.5
 
     def _init_grid_excel(self):
@@ -819,17 +838,18 @@ class Acquisition:
             )
         params['Grid']['Use coordinate excel as input?'] = str(self.sequence.use_coord_excel)
         params['Grid']['Path of coordinate excel'] = str(self.sequence.path_coord_excel)
-
+        params['Grid']['Acoustical alignment'] = str(self.sequence.ac_align)
+        
         if self.sequence.use_coord_excel:
             params['Grid']['Number of slices, rows, columns (z-dir, x-dir, y-dir)'] = (
                 str(self.sequence.nslices_nrow_ncol)
                 )
-        else:
+        elif not self.sequence.ac_align:
             params['Grid']['Begin coordinates [mm]'] = str(self.sequence.coord_start)
 
-            sl_dir = np.nonzero(self.sequence.vectSl)[0][0]
-            row_dir = np.nonzero(self.sequence.vectRow)[0][0]
-            col_dir = np.nonzero(self.sequence.vectCol)[0][0]
+            sl_dir = np.nonzero(self.sequence.vect_sl)[0][0]
+            row_dir = np.nonzero(self.sequence.vect_row)[0][0]
+            col_dir = np.nonzero(self.sequence.vect_col)[0][0]
 
             dir_info = [[sl_dir, self.sequence.nslices_nrow_ncol[0]],
                         [row_dir, self.sequence.nslices_nrow_ncol[1]],
@@ -852,9 +872,10 @@ class Acquisition:
             params['Grid']['Number of slices, rows, columns ' + direction] = (
                 str(self.sequence.nslices_nrow_ncol)
                 )
-            params['Grid']['Slice vector [mm]'] = str(self.sequence.vectSl)
-            params['Grid']['Row vector [mm]'] = str(self.sequence.vectRow)
-            params['Grid']['Column vector [mm]'] = str(self.sequence.vectCol)
+            params['Grid']['Slice vector [mm]'] = str(self.sequence.vect_sl)
+            params['Grid']['Row vector [mm]'] = str(self.sequence.vect_row)
+            params['Grid']['Column vector [mm]'] = str(self.sequence.vect_col)
+            
 
     def _save_acq_param(self, params):
         """
@@ -1010,7 +1031,7 @@ class Acquisition:
             cluster_nr = 1
             indices_nr = measur_nr
             dest_xyz = (self.sequence.coord_start + i*self.sequence.vect_sl +
-                        j*self.sequence.vect_col + k*self.sequence.vect_row)
+                        j*self.sequence.vect_row + k*self.sequence.vect_col)
             relat_xyz = [dest_xyz[0] - coord_zero[0], dest_xyz[1] - coord_zero[1],
                          dest_xyz[2] - coord_zero[2]]
             row_nr = j
