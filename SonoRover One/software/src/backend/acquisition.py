@@ -333,11 +333,7 @@ class Acquisition:
 
         initial_line_length = 10  # mm
         initial_line_step_size = 0.5  # mm
-        threshold = 0.01  # mm
-        reduction_factor = 0.5  # Factor to reduce line_length and line_step_size
-        multip_factor = 1000  # Multiplication factor for threshold to reduce line_length and line_step_size
-        line_length = initial_line_length
-        line_step_size = initial_line_step_size
+        threshold = 0.001  # mm
 
         middle_points = np.zeros((2, 3))
 
@@ -346,6 +342,11 @@ class Acquisition:
 
             # Define starting z-coordinates
             self.sequence.coord_start[2] = z_coords[i]
+            
+            reduction_factor = 0.5  # Factor to reduce line_length and line_step_size
+            multip_factor = 1000  # Multiplication factor for threshold to reduce line_length and line_step_size
+            line_length = initial_line_length
+            line_step_size = initial_line_step_size
 
             # Reset line_length, line_step_size and found_x_coords, found_y_coords for the next z_coord
             line_length = initial_line_length
@@ -353,123 +354,125 @@ class Acquisition:
 
             found_x_coords = [0, self.input_param.coord_zero[0]]
             found_y_coords = [0, self.input_param.coord_zero[1]]
-
-            while abs(found_x_coords[-2] - found_x_coords[-1]) > threshold or abs(found_y_coords[-2] - found_y_coords[-1]) > threshold:
-                # Log iteration number and convergence progress
-                iteration = len(found_x_coords) - 2  # Subtract 2 because of initial values
-                x_diff = abs(found_x_coords[-2] - found_x_coords[-1])
-                y_diff = abs(found_y_coords[-2] - found_y_coords[-1])
-                max_diff = max(x_diff, y_diff)
-
-                logger.info(f"Iteration {iteration}: Max difference = {max_diff:.4f} mm")
-                logger.info(f"X difference: {x_diff:.4f} mm, Y difference: {y_diff:.4f} mm")
-
-                if max_diff > threshold:
-                    convergence_ratio = max_diff / threshold
-                    logger.info(f"Current difference is {convergence_ratio:.2f} times larger than the threshold")
-                else:
-                    logger.info("Convergence threshold reached!")
-
+            
+            for j in range(4):
+                logger.info(f'Redo search iteration {j}...')
+                while abs(found_x_coords[-2] - found_x_coords[-1]) > threshold*multip_factor or abs(found_y_coords[-2] - found_y_coords[-1]) > threshold*multip_factor:
+                    # Log iteration number and convergence progress
+                    iteration = len(found_x_coords) - 2  # Subtract 2 because of initial values
+                    x_diff = abs(found_x_coords[-2] - found_x_coords[-1])
+                    y_diff = abs(found_y_coords[-2] - found_y_coords[-1])
+                    max_diff = max(x_diff, y_diff)
+    
+                    logger.info(f"Iteration {iteration}: Max difference = {max_diff:.4f} mm")
+                    logger.info(f"X difference: {x_diff:.4f} mm, Y difference: {y_diff:.4f} mm")
+    
+                    if max_diff > threshold:
+                        convergence_ratio = max_diff / threshold
+                        logger.info(f"Current difference is {convergence_ratio:.2f} times larger than the threshold")
+                    else:
+                        logger.info("Convergence threshold reached!")
+    
+                    # Update number of points based on new line_length and line_step_size
+                    line_n_points = round(line_length / line_step_size)
+                    self.grid_param["ncol"] = line_n_points
+                    self.sequence.nslices_nrow_ncol = [self.grid_param["nsl"], self.grid_param["nrow"], self.grid_param["ncol"]]
+    
+                    # Scan for x-coordinate
+                    self.sequence.vect_row = np.array([0, 1, 0])
+                    self.sequence.vect_col = np.array([line_step_size, 0, 0])
+    
+                    self.sequence.coord_start[0] = found_x_coords[-1] - line_length/2
+                    self.sequence.coord_start[1] = found_y_coords[-1]
+    
+                    logger.info('Scan in x-direction...')
+                    volt_data_x, dest_xyz_list_x = self._scan_grid()
+    
+                    # Find center of mass for x
+                    max_voltages_x = np.max(volt_data_x, axis=3).flatten()
+    
+                    cumsum_x = np.cumsum(max_voltages_x)
+                    total_sum_x = cumsum_x[-1]
+                    center_of_mass_index_x = np.argmin(np.abs(cumsum_x - total_sum_x / 2))
+    
+                    center_of_mass_x = dest_xyz_list_x[center_of_mass_index_x][0]
+                    found_x_coords.append(center_of_mass_x)
+    
+                    x_coords = [coord[0] for coord in dest_xyz_list_x]
+                    plt.plot(x_coords, max_voltages_x)
+                    plt.axvline(x=center_of_mass_x, color='r', linestyle='--')
+    
+                    plt.xlabel('X-coordinates [mm]')
+                    plt.ylabel('Maximum voltage per grid point [V]')
+    
+                    plt.title(f'Z-coord: {round(z_coords[i], 2)}, Iteration {iteration}: Max difference = ' +
+                              f'{max_diff:.4f} mm \n Line length: {line_length}, stepsize: ' +
+                              f'{line_step_size}')
+    
+                    if i == 0:
+                        filename = os.path.join(self.input_param.temp_dir_output, 
+                                                'acoustical_alignment_pre_foc_'  + 
+                                                f'iter_{iteration}_x_coord.png')
+                    else:
+                        filename = os.path.join(self.input_param.temp_dir_output, 
+                                                'acoustical_alignment_post_foc_'  + 
+                                                f'iter_{iteration}_x_coord.png')
+                        
+                    plt.savefig(filename)
+                    
+                    plt.show()
+    
+                    # Scan for y-coordinate
+                    self.sequence.vect_row = np.array([1, 0, 0])
+                    self.sequence.vect_col = np.array([0, line_step_size, 0])
+                    self.sequence.coord_start[0] = center_of_mass_x
+                    self.sequence.coord_start[1] = found_y_coords[-1] - line_length/2
+    
+                    
+                    logger.info('Scan in y-direction...')
+                    volt_data_y, dest_xyz_list_y = self._scan_grid()
+    
+                    # Find center of mass for y
+                    max_voltages_y = np.max(volt_data_y, axis=3).flatten()
+                    cumsum_y = np.cumsum(max_voltages_y)
+                    total_sum_y = cumsum_y[-1]
+                    center_of_mass_index_y = np.argmin(np.abs(cumsum_y - total_sum_y / 2))
+    
+                    center_of_mass_y = dest_xyz_list_y[center_of_mass_index_y][1]
+                    found_y_coords.append(center_of_mass_y)
+    
+                    y_coords = [coord[1] for coord in dest_xyz_list_y]
+    
+                    plt.plot(y_coords, max_voltages_y)
+                    plt.axvline(x=center_of_mass_y, color='r', linestyle='--')
+    
+                    plt.xlabel('Y-coordinates [mm]')
+                    plt.ylabel('Maximum voltage per grid point [V]')
+    
+                    plt.title(f'Z-coord: {round(z_coords[i], 2)}, Iteration {iteration}: Max difference = ' +
+                              f'{max_diff:.4f} mm \n Line length: {line_length}, stepsize: ' +
+                              f'{line_step_size}')
+    
+                    if i == 0:
+                        filename = os.path.join(self.input_param.temp_dir_output, 
+                                                'acoustical_alignment_pre_foc_'  + 
+                                                f'iter_{iteration}_y_coord.png')
+                    else:
+                        filename = os.path.join(self.input_param.temp_dir_output, 
+                                                'acoustical_alignment_post_foc_'  + 
+                                                f'iter_{iteration}_y_coord.png')
+                    plt.savefig(filename)
+                    
+                    plt.show()
+    
+                    logger.info(f"Current position: X={center_of_mass_x:.3f}mm, Y={center_of_mass_y:.3f}mm")
+                    
                 # Update line_length and line_step_size based on how close we are to the threshold
                 # if max(abs(found_x_coords[-2] - found_x_coords[-1]), abs(found_y_coords[-2] - found_y_coords[-1])) < threshold * multip_factor:
-                #     multip_factor *= reduction_factor
-                #     line_length *= reduction_factor
-                #     line_step_size *= reduction_factor
-                #     logger.info(f"Reducing search area. New line_length: {line_length:.2f}mm, new line_step_size: {line_step_size:.2f}mm")
-
-                # Update number of points based on new line_length and line_step_size
-                line_n_points = round(line_length / line_step_size)
-                self.grid_param["ncol"] = line_n_points
-                self.sequence.nslices_nrow_ncol = [self.grid_param["nsl"], self.grid_param["nrow"], self.grid_param["ncol"]]
-
-                # Scan for x-coordinate
-                self.sequence.vect_row = np.array([0, 1, 0])
-                self.sequence.vect_col = np.array([line_step_size, 0, 0])
-
-                self.sequence.coord_start[0] = found_x_coords[-1] - line_length/2
-                self.sequence.coord_start[1] = found_y_coords[-1]
-
-                logger.info('Scan in x-direction...')
-                volt_data_x, dest_xyz_list_x = self._scan_grid()
-
-                # Find center of mass for x
-                max_voltages_x = np.max(volt_data_x, axis=3).flatten()
-
-                cumsum_x = np.cumsum(max_voltages_x)
-                total_sum_x = cumsum_x[-1]
-                center_of_mass_index_x = np.argmin(np.abs(cumsum_x - total_sum_x / 2))
-
-                center_of_mass_x = dest_xyz_list_x[center_of_mass_index_x][0]
-                found_x_coords.append(center_of_mass_x)
-
-                x_coords = [coord[0] for coord in dest_xyz_list_x]
-                plt.plot(x_coords, max_voltages_x)
-                plt.axvline(x=center_of_mass_x, color='r', linestyle='--')
-
-                plt.xlabel('X-coordinates [mm]')
-                plt.ylabel('Maximum voltage per grid point [V]')
-
-                plt.title(f'Z-coord: {round(z_coords[i], 2)}, Iteration {iteration}: Max difference = ' +
-                          f'{max_diff:.4f} mm \n Line length: {line_length}, stepsize: ' +
-                          f'{line_step_size}')
-
-                if i == 0:
-                    filename = os.path.join(self.input_param.temp_dir_output, 
-                                            'acoustical_alignment_pre_foc_'  + 
-                                            f'iter_{iteration}_x_coord.png')
-                else:
-                    filename = os.path.join(self.input_param.temp_dir_output, 
-                                            'acoustical_alignment_post_foc_'  + 
-                                            f'iter_{iteration}_x_coord.png')
-                    
-                plt.savefig(filename)
-                
-                plt.show()
-
-                # Scan for y-coordinate
-                self.sequence.vect_row = np.array([1, 0, 0])
-                self.sequence.vect_col = np.array([0, line_step_size, 0])
-                self.sequence.coord_start[0] = center_of_mass_x
-                self.sequence.coord_start[1] = found_y_coords[-1] - line_length/2
-
-                
-                logger.info('Scan in y-direction...')
-                volt_data_y, dest_xyz_list_y = self._scan_grid()
-
-                # Find center of mass for y
-                max_voltages_y = np.max(volt_data_y, axis=3).flatten()
-                cumsum_y = np.cumsum(max_voltages_y)
-                total_sum_y = cumsum_y[-1]
-                center_of_mass_index_y = np.argmin(np.abs(cumsum_y - total_sum_y / 2))
-
-                center_of_mass_y = dest_xyz_list_y[center_of_mass_index_y][1]
-                found_y_coords.append(center_of_mass_y)
-
-                y_coords = [coord[1] for coord in dest_xyz_list_y]
-
-                plt.plot(y_coords, max_voltages_y)
-                plt.axvline(x=center_of_mass_y, color='r', linestyle='--')
-
-                plt.xlabel('Y-coordinates [mm]')
-                plt.ylabel('Maximum voltage per grid point [V]')
-
-                plt.title(f'Z-coord: {round(z_coords[i], 2)}, Iteration {iteration}: Max difference = ' +
-                          f'{max_diff:.4f} mm \n Line length: {line_length}, stepsize: ' +
-                          f'{line_step_size}')
-
-                if i == 0:
-                    filename = os.path.join(self.input_param.temp_dir_output, 
-                                            'acoustical_alignment_pre_foc_'  + 
-                                            f'iter_{iteration}_y_coord.png')
-                else:
-                    filename = os.path.join(self.input_param.temp_dir_output, 
-                                            'acoustical_alignment_post_foc_'  + 
-                                            f'iter_{iteration}_y_coord.png')
-                plt.savefig(filename)
-                
-                plt.show()
-
-                logger.info(f"Current position: X={center_of_mass_x:.3f}mm, Y={center_of_mass_y:.3f}mm")
+                multip_factor *= 10
+                line_length *= reduction_factor
+                line_step_size *= reduction_factor
+                logger.info(f"Reducing search area. New line_length: {line_length:.2f}mm, new line_step_size: {line_step_size:.2f}mm")
 
             # Save the middle point of the scan
             middle_points[i] = [found_x_coords[-1], found_y_coords[-1], z_coords[i]]
@@ -519,7 +522,12 @@ class Acquisition:
             point = self.acoustical_axis['origin'] - t * self.acoustical_axis['direction']
 
             measurement_nr = i + 1  # equal to indices_nr and col_nr
-            rows.append([measurement_nr, cluster_nr, measurement_nr, point, 1, measurement_nr, 1, point-self.input_param.coord_zero])
+            rows.append([measurement_nr, cluster_nr, measurement_nr, point[0], 
+                         point[1], point[2], 1, measurement_nr, 1, 
+                         point[0]-self.input_param.coord_zero[0],
+                         point[1]-self.input_param.coord_zero[1],
+                         point[2]-self.input_param.coord_zero[2]
+                         ])
 
         # Generate the output filename
         excel_filename = os.path.splitext(self.output["outputRAW"])[0] + '_acoustical_axis.xlsx'
