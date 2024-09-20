@@ -54,6 +54,7 @@ init_motor = True
 init_ds = True
 init_pico = False
 is_testing = test_scanner_only  # | other test examples
+distance_to_focus = 10  # [mm], BRING TO FRONT END
 
 
 def main():
@@ -111,7 +112,10 @@ def main():
                         #acquisition.check_scan(seq)
                         acquisition.check_scan_ds_combo(seq)
                 else:
-                    acquisition.acquire_sequence(seq)
+                    if seq.ac_align:
+                        acquisition.acoustical_alignment(seq, distance_to_focus)
+                    else:
+                        acquisition.acquire_sequence(seq)
 
             # All sequences are finished, so move data
             move_output_data(logger, input_param.temp_dir_output, input_param.dir_output)

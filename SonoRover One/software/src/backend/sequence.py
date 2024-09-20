@@ -70,6 +70,8 @@ class CharacSequence(sequence.Sequence):
         self.seq_number = 0   # sequence number of protocol in excel file
         self.tag = ''  # user can add a description to the sequence
 
+        # boolean if acoustical alignment is performed, if so, no grid input required.
+        self.ac_align = False
         self.use_coord_excel = False  # boolean if coordinate excel file is used as input of grid
         self.path_coord_excel = None  # path of coordinate excel file
 
@@ -95,6 +97,7 @@ class CharacSequence(sequence.Sequence):
         info += f"Sequence number: {self.seq_number} \n "
         info += f"Tag: {self.tag} \n "
 
+        info += f"Acoustical alignment performed?: {self.ac_align} \n "
         info += f"Use coordinate excel as input?: {self.use_coord_excel} \n "
         info += f"Path of coordinate excel: {self.path_coord_excel} \n "
 
@@ -280,6 +283,11 @@ class CharacSequence(sequence.Sequence):
                 self._set_all_dir_vectors(directions, step_sizes)
 
                 self._calculate_n_vector(directions, dimensions, step_sizes)
+
+            case 'Acoustical alignment':
+                self.use_coord_excel = False
+                self.path_coord_excel = None
+                self.ac_align = True
 
 
 def _define_excel_indices(data):
