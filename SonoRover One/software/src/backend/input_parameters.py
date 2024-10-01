@@ -85,6 +85,7 @@ class InputParameters:
                 adjust=-1 if top-left corner is far from transducer (decrease beg)
                 adjust=+1 if top-left corner is close to the transducer (increase beg)
                 adjust=0 : no adjustment
+        sequences (list): List of US sequences to perform.
     """
 
     def __init__(self):
@@ -136,6 +137,9 @@ class InputParameters:
             "begus": 0,
             "endus": 0,
             }
+
+        # TODO: add saving sequences
+        self.sequences = []
 
     def write_to_ini(self):
         """
