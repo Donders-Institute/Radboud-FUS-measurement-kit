@@ -372,6 +372,10 @@ class Acquisition:
 
         initial_line_length = self.sequence.ac_align["init_line_len"]
         initial_line_step_size = self.sequence.ac_align["init_line_step"]
+        line_n_points = round(initial_line_length / initial_line_step_size)
+        self.grid_param["ncol"] = line_n_points
+        self.sequence.nslices_nrow_ncol = [self.grid_param["nsl"], self.grid_param["nrow"], self.grid_param["ncol"]]
+        
         reduction_factor = self.sequence.ac_align["reduction_factor"]
         threshold = self.sequence.ac_align["init_threshold"]
 
@@ -420,26 +424,37 @@ class Acquisition:
             logger.info(f"Iteration {iteration}: X difference = " +
                         f"{abs(found_x_coords[-2] - found_x_coords[-1]):.4f} mm, " +
                         f"Y difference = {abs(found_y_coords[-2] - found_y_coords[-1]):.4f} mm")
-
+            
+            max_diff = max(abs(found_x_coords[-2] - found_x_coords[-1]), abs(found_y_coords[-2] - found_y_coords[-1]))            
             # Scan x and y directions
             found_x_coords.append(self._scan_and_find_center_of_mass(found_x_coords, found_y_coords,
                                                                      line_length,
                                                                      line_step_size,
-                                                                     'x'))
+                                                                     'x', 
+                                                                     iteration, max_diff))
+
+            max_diff = max(abs(found_x_coords[-2] - found_x_coords[-1]), abs(found_y_coords[-2] - found_y_coords[-1])) 
             found_y_coords.append(self._scan_and_find_center_of_mass(found_x_coords, found_y_coords,
                                                                      line_length,
                                                                      line_step_size,
-                                                                     'y'))
-
-            # Reduce line length and step size
-            line_length *= reduction_factor
-            line_step_size *= reduction_factor
-            logger.info(f"Reducing search area. New line_length: {line_length:.2f}mm, " +
-                        f"new line_step_size: {line_step_size:.2f}mm")
+                                                                     'y',
+                                                                     iteration, max_diff))
+            
+            if iteration == self.sequence.ac_align['max_red_iter']:
+                # Reduce line length and step size
+                line_length *= reduction_factor
+                line_step_size *= reduction_factor
+                
+                line_n_points = round(line_length / line_step_size)
+                self.grid_param["ncol"] = line_n_points
+                self.sequence.nslices_nrow_ncol = [self.grid_param["nsl"], self.grid_param["nrow"], self.grid_param["ncol"]]
+    
+                logger.info(f"Reducing search area. New line_length: {line_length:.2f}mm, " +
+                            f"new line_step_size: {line_step_size:.2f}mm")
 
         return found_x_coords, found_y_coords
 
-    def _scan_and_find_center_of_mass(self, found_x_coords, found_y_coords, line_length, line_step_size, direction):
+    def _scan_and_find_center_of_mass(self, found_x_coords, found_y_coords, line_length, line_step_size, direction, iteration, max_diff):
         """
         Scan in the specified direction and find the center of mass of voltage data.
 
@@ -486,11 +501,16 @@ class Acquisition:
         logger.info(f"Found center of mass in {direction}-direction: {center_of_mass:.3f} mm")
 
         if self.sequence.ac_align["create_graphs"]:
-            self._plot_center_of_mass_graph(direction, dest_xyz_list, max_voltages, center_of_mass)
+            z_coord = round(self.sequence.coord_start[2], 2)
+            title = (f'Center of mass in {direction}-direction, {center_of_mass:.2f} [mm]' + 
+                     f' Z-coord: {z_coord},  \n ' + 
+                     f'Iter. {iteration}, Max diff. = {max_diff:.3f} mm, Line length:'  + 
+                     f' {line_length:.1f}, stepsize: {line_step_size:.1f}')
+            self._plot_center_of_mass_graph(direction, dest_xyz_list, max_voltages, center_of_mass, iteration, title)
 
         return center_of_mass
 
-    def _plot_center_of_mass_graph(self, direction, dest_xyz_list, max_voltages, center_of_mass):
+    def _plot_center_of_mass_graph(self, direction, dest_xyz_list, max_voltages, center_of_mass, iteration, title):
         """
         Plot the center of mass graph for the scanned data.
 
@@ -505,13 +525,35 @@ class Acquisition:
         center_of_mass : float
             Calculated center of mass in the specified direction.
         """
-
+        z_coord = round(self.sequence.coord_start[2], 2)
+        
         coords = [coord[0 if direction == 'x' else 1] for coord in dest_xyz_list]
-        plt.plot(coords, max_voltages)
+        plt.plot(coords, max_voltages, linestyle='-', marker='.')
         plt.axvline(x=center_of_mass, color='r', linestyle='--')
+        
+        if direction == 'x':
+            x_upper_lim = self.input_param.coord_zero[0] + self.sequence.ac_align["init_line_len"]/2
+            x_lower_lim = self.input_param.coord_zero[0] - self.sequence.ac_align["init_line_len"]/2
+        else: # direction == 'y'
+            x_upper_lim = self.input_param.coord_zero[1] + self.sequence.ac_align["init_line_len"]/2
+            x_lower_lim = self.input_param.coord_zero[1] - self.sequence.ac_align["init_line_len"]/2
+        
+        plt.xlim(x_lower_lim, x_upper_lim)
+        plt.ylim(0, 0.1)
         plt.xlabel(f'{direction.upper()}-coordinates [mm]')
         plt.ylabel('Maximum voltage per grid point [V]')
-        plt.title(f'Center of mass in {direction}-direction')
+        plt.title(title)
+        
+        if direction == 'x':
+            filename = os.path.join(self.input_param.temp_dir_output, 
+                                    f'acoustical_alignment_foc_{z_coord}_'  + 
+                                    f'iter_{iteration}_x_coord.png')
+        else:
+            filename = os.path.join(self.input_param.temp_dir_output, 
+                                    f'acoustical_alignment_foc_{z_coord}_'  + 
+                                    f'iter_{iteration}_y_coord.png')
+
+        plt.savefig(filename)
         plt.show()
 
     def _calculate_acoustical_axis(self, middle_points):
@@ -845,18 +887,21 @@ class Acquisition:
             params['Sequence']['IGT - Voltage [V]'] = str(self.sequence.volt)
             params['Sequence']['IGT - Amplitude [%]'] = str(self.sequence.ampl)
 
-            params['Sequence']['Maximum voltage at 100% amplitude [V]'] = str(self.sequence.max_v)
             params['Sequence']['Normalized pressure [-] vs. focal depth [mm] equation (Pnorm = a0' +
                                '+ a1*f + a2*f^2 + a3*f^3 + a4*f^4 + a5*f^5)'] = (
-                                   str(f"Pnorm = {self.a0} + {self.a1}*f + {self.a2}*f^2 + " +
-                                       "{self.a3}*f^3 + {self.a4}*f^4 + {self.a5}*f^5")
+                                   str(f"Pnorm = {self.sequence.a0} + "  + 
+                                       f"{self.sequence.a1}*f + "  + 
+                                       f"{self.sequence.a2}*f^2 + " +
+                                       f"{self.sequence.a3}*f^3 + " + 
+                                       f"{self.sequence.a4}*f^4 + " + 
+                                       f"{self.sequence.a5}*f^5")
                                    )
 
             params['Sequence']["Normalized pressure [-] based on chosen focal depth of " +
-                               f"{self._focus} [mm]"] = str(self.sequence.norm_press)
+                               f"{self.sequence.focus} [mm]"] = str(self.sequence.norm_press)
 
             params['Sequence']["Pressure [MPa] vs. voltage [V] equation (P = a*V + b)"] = (
-                str(f"P = {self.a}*V + {self.b}")
+                str(f"P = {self.sequence.V2P_a}*V + {self.sequence.V2P_b}")
                 )
 
         else:
