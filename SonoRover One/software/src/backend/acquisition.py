@@ -440,7 +440,7 @@ class Acquisition:
                                                                      'y',
                                                                      iteration, max_diff))
             
-            if iteration == self.sequence.ac_align['max_red_iter']:
+            if iteration % (self.sequence.ac_align['max_red_iter'] - 1) == 0:
                 # Reduce line length and step size
                 line_length *= reduction_factor
                 line_step_size *= reduction_factor
