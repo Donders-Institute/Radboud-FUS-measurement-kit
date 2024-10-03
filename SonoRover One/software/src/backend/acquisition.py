@@ -154,7 +154,9 @@ class Acquisition:
 
             check_dialogs.check_disconnection_dialog(add_message)
 
-            self.equipment["ds"].connect(self.input_param.driving_sys.connect_info)
+            self.equipment["ds"].connect(self.input_param.driving_sys.connect_info,
+                                         self.input_param.temp_dir_output,
+                                         self.input_param.protocol_excel_filename)
         else:
             logger.error(f"Unknown driving system manufacturer: {ds_manufact}")
 

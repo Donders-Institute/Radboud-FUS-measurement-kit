@@ -50,6 +50,8 @@ init_motor = True
 init_ds = True
 init_pico = False
 is_testing = test_scanner_only  # | other test examples
+# TODO: add to front-end!, change this value to move acoustical alignment results to correct location!
+ac_align_network_drive = '//ru.nl//WrkGrp//FUS_Hub//Hydrophone measurements//Measurements//2024'
 
 
 def main():
@@ -59,8 +61,9 @@ def main():
 
     # Initialize logger
     log_path = config_info['Characterization']['Temporary output path']
-
-    logger = initialize_logger(log_path, 'SonoRover_One')
+    # TODO: add to config
+    log_name = 'SonoRover_One'
+    logger = initialize_logger(log_path, log_name)
 
     version = config_info['Versions']['SonoRover One software']
     logger.info(f'Characterization performed with the following software: {version}')
@@ -111,6 +114,7 @@ def main():
                         acquisition.check_scan_ds_combo(seq)
                 else:
                     if seq.is_ac_align:
+                        input_param.dir_output = ac_align_network_drive
                         acquisition.acoustical_alignment(seq)
                     else:
                         acquisition.acquire_sequence(seq)
