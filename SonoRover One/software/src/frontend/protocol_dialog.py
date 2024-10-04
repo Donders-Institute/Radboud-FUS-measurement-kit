@@ -673,11 +673,11 @@ class ProtocolDialog():
                 self.input_param.main_dir = os.path.dirname(self.input_param.path_protocol_excel_file)
 
                 # Extract protocol excel filename without extension
-                self.protocol_excel_filename = os.path.splitext(
+                self.input_param.protocol_excel_filename = os.path.splitext(
                     os.path.basename(self.input_param.path_protocol_excel_file))[0]
 
             else:
-                self.protocol_excel_filename = 'Acoustical alignment'
+                self.input_param.protocol_excel_filename = 'Acoustical alignment'
                 self.ac_align_seq.is_ac_align = True
 
                 self.ac_align_seq.pulse_dur = abs(float(self.pulse_dur.get()))/1e3  # [us] to [ms]
@@ -723,7 +723,7 @@ class ProtocolDialog():
             folder_struct = f'Output of T [{td_name}] - DS [{ds_name}]'
             self.input_param.temp_dir_output = os.path.join(
                 config['Characterization']['Temporary output path'], folder_struct,
-                f'P [{self.protocol_excel_filename}]')
+                f'P [{self.input_param.protocol_excel_filename}]')
             self.input_param.dir_output = self.input_param.temp_dir_output
 
             # Create directories if they don't exist
@@ -733,7 +733,7 @@ class ProtocolDialog():
             self.input_param.sequences = [self.ac_align_seq]
 
             self.main_prot_entry.delete(0, tk.END)
-            self.main_prot_entry.insert(0, self.protocol_excel_filename)
+            self.main_prot_entry.insert(0, self.input_param.protocol_excel_filename)
 
             # Close the dialog
             self._cancel_action()
