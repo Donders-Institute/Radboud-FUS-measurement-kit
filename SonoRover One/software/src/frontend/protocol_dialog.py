@@ -41,6 +41,8 @@ import logging
 
 # Own packages
 from config.config import config_info as config
+from config.logging_config import logger
+
 from backend import sequence
 
 
@@ -66,7 +68,15 @@ class ProtocolDialog():
         self.row_nr = 0
 
         self.input_param = input_param
-        self.ac_align_seq = sequence.CharacSequence()
+
+        if not self.input_param.sequences:
+            self.ac_align_seq = sequence.CharacSequence()
+        else:
+            if len(self.input_param.sequences) > 1:
+                logger.error('Handling a regular sequence collected by the GUI has not been implemented yet.')
+
+            self.ac_align_seq = self.input_param.sequences[0]
+
         self.n_ac_align_rows = 14
 
         self._build_dialog()
@@ -145,7 +155,11 @@ class ProtocolDialog():
         # Protocol
         # TODO: add to config
         self.protocols = ['Select protocol excel file...', 'Acoustical alignment']
-        self.chosen_prot = self.protocols[0]
+        if self.input_param.is_ac_align is False:
+            self.chosen_prot = self.protocols[0]
+        else:
+            self.chosen_prot = self.protocols[1]
+
         self.prot_combo = self._create_combo("Protocol", self.protocols, self.chosen_prot,
                                              self._prot_combo_action)
 
@@ -161,6 +175,8 @@ class ProtocolDialog():
 
         # Save row where to insert additional entries
         self.insert_row = self.row_nr
+
+        self._prot_combo_action(None)
 
         # Error message label
         self._add_row()
@@ -204,7 +220,24 @@ class ProtocolDialog():
         # elif ds_manufact == config['Equipment.Manufacturer.IGT']['Name']:
         #     power_options = self.igt_power_options
 
-        def_power = power_options[0]
+        if not self.input_param.sequences:
+            def_power = power_options[0]
+        else:
+            if len(self.input_param.sequences) > 1:
+                logger.error('Handling a regular sequence collected by the GUI has not been implemented yet.')
+
+            seq = self.input_param.sequences[0]
+
+            def_power = seq.chosen_power
+            if seq.chosen_power == "Global power [mW]":
+                def_power = "Global power [mW]"
+                def_power_value = seq.global_power
+            elif seq.chosen_power == "Max. pressure in free water [MPa]":
+                def_power_value = seq.press
+            elif seq.chosen_power == "Voltage [V]":
+                def_power_value = seq.volt
+            elif seq.chosen_power == "Amplitude [%]":
+                def_power_value = seq.ampl
 
         self.power_combo = self._create_combo("Power setting", power_options, def_power,
                                               self._event_handling, width=240)
@@ -215,7 +248,7 @@ class ProtocolDialog():
         self.power_entry.bind('<1>', self._event_handling)
 
         # TODO: default power entry
-        self.power_entry.insert(0, 0)
+        self.power_entry.insert(0, def_power_value)
         self.power_entry.grid(row=self.row_nr, column=1, padx=10, pady=5, sticky="e")
 
         self.focus = self._create_entry("Focus [mm]",
@@ -481,6 +514,7 @@ class ProtocolDialog():
 
         # Protocols[0]: Select protocol excel file...
         if cur_prot == self.protocols[0]:
+            self.input_param.is_ac_align = False
 
             # Shift widgets below this point down by updating their grid positions
             for widget in self.win.grid_slaves():
@@ -499,6 +533,8 @@ class ProtocolDialog():
 
         # Protocols[1]: acoustical alignment
         elif cur_prot == self.protocols[1]:
+            self.input_param.is_ac_align = True
+
             # Shift widgets below this point down by updating their grid positions
             for widget in self.win.grid_slaves():
                 if widget.grid_info()['row'] >= self.insert_row:
@@ -519,6 +555,9 @@ class ProtocolDialog():
 
         self.path_prot.delete(0, tk.END)
         self.path_prot.insert(0, filename)
+
+        # Lift window
+        self._resize_window()
 
         #self._event_handling(None)
 
@@ -556,10 +595,16 @@ class ProtocolDialog():
         error_message = ''
 
         fields_to_validate = {
-            'beginning time': (self.begus, True, True, None, False),
-            'end time': (self.endus, True, True, None, False),
-            'adjust': (self.adjust, False, False, None, True),
+            'path_protocol_excel_file': (self.path_prot, False, False, '.xlsx or .xls extension',
+                                         False),
+            'driving system': (self.ds_combo, False, False, None, True),
+            'transducer': (self.trans_combo, False, False, None, True),
+            'operating frequency': (self.oper_freq_entr, True, True, None, False),
         }
+
+        if self.input_param.is_ds_com_port:
+            fields_to_validate.update({'COM port number of driving system':
+                                       (self.com_us, True, True, None, False)})
 
         for field_name, (widget, is_float, check_positive, ext,
                          selected_combo) in fields_to_validate.items():
@@ -668,16 +713,18 @@ class ProtocolDialog():
 
             chosen_prot = self.prot_combo.get()
             if chosen_prot == 'Select protocol excel file...':
+                self.input_param.is_ac_align = False
+
                 # Save protocol file path and main directory
                 self.input_param.path_protocol_excel_file = self.path_prot.get()
                 self.input_param.main_dir = os.path.dirname(self.input_param.path_protocol_excel_file)
+                self.input_param.protocol = self.input_param.path_protocol_excel_file
 
-                # Extract protocol excel filename without extension
-                self.input_param.protocol_excel_filename = os.path.splitext(
-                    os.path.basename(self.input_param.path_protocol_excel_file))[0]
+                self.ac_align_seq.is_ac_align = False
 
             else:
-                self.input_param.protocol_excel_filename = 'Acoustical alignment'
+                self.input_param.protocol = 'Acoustical alignment'
+                self.input_param.is_ac_align = True
                 self.ac_align_seq.is_ac_align = True
 
                 self.ac_align_seq.pulse_dur = abs(float(self.pulse_dur.get()))/1e3  # [us] to [ms]
@@ -687,6 +734,7 @@ class ProtocolDialog():
                 self.ac_align_seq.pulse_train_rep_dur = self.ac_align_seq.pulse_rep_int/1000  # [s]
 
                 chosen_power = self.power_combo.get()
+                # TODO: add chosen powers to config
                 if chosen_power == "Global power [mW]":
                     self.ac_align_seq.global_power = abs(float(self.power_entry.get()))/1000  # SC: gp [W]
                 elif chosen_power == "Max. pressure in free water [MPa]":
@@ -712,18 +760,23 @@ class ProtocolDialog():
                 self.ac_align_seq.ac_align['max_red_iter'] = int(self.max_red_iter.get())
 
                 # Parse boolean values from checkboxes
-                self.ac_align_seq.ac_align['create_graphs'] = self.create_graphs.get()
-                self.ac_align_seq.ac_align['create_axis_file'] = self.create_axis_file.get()
+                self.ac_align_seq.ac_align['create_graphs'] = self.create_graphs.get() == 1
+                self.ac_align_seq.ac_align['create_axis_file'] = self.create_axis_file.get() == 1
 
                 # Parse float entries for axis length and stepsize
                 self.ac_align_seq.ac_align['axis_length'] = abs(float(self.axial_len.get()))
                 self.ac_align_seq.ac_align['axis_stepsize'] = abs(float(self.axial_step.get()))
 
+                if self.input_param.is_ac_align is False:
+                    # Extract protocol excel filename without extension
+                    self.input_param.protocol = os.path.splitext(
+                        os.path.basename(self.input_param.path_protocol_excel_file))[0]
+
             # Define temporary and main output directories based on selected parameters
             folder_struct = f'Output of T [{td_name}] - DS [{ds_name}]'
             self.input_param.temp_dir_output = os.path.join(
                 config['Characterization']['Temporary output path'], folder_struct,
-                f'P [{self.input_param.protocol_excel_filename}]')
+                f'P [{self.input_param.protocol}]')
             self.input_param.dir_output = self.input_param.temp_dir_output
 
             # Create directories if they don't exist
@@ -733,7 +786,7 @@ class ProtocolDialog():
             self.input_param.sequences = [self.ac_align_seq]
 
             self.main_prot_entry.delete(0, tk.END)
-            self.main_prot_entry.insert(0, self.input_param.protocol_excel_filename)
+            self.main_prot_entry.insert(0, self.input_param.protocol)
 
             # Close the dialog
             self._cancel_action()

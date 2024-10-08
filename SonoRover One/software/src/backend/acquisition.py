@@ -154,9 +154,14 @@ class Acquisition:
 
             check_dialogs.check_disconnection_dialog(add_message)
 
+            if self.input_param.is_ac_align is False:
+                # Extract protocol excel filename without extension
+                self.input_param.protocol = os.path.splitext(
+                    os.path.basename(self.input_param.path_protocol_excel_file))[0]
+
             self.equipment["ds"].connect(self.input_param.driving_sys.connect_info,
                                          config_info['Characterization']['Temporary output path'],
-                                         self.input_param.protocol_excel_filename)
+                                         self.input_param.protocol)
         else:
             logger.error(f"Unknown driving system manufacturer: {ds_manufact}")
 

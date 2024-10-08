@@ -43,6 +43,7 @@ import logging
 
 # Own packages
 from config.config import config_info as config
+from config.logging_config import logger
 
 from backend.input_parameters import InputParameters
 import frontend.acd_param_dialog as apd
@@ -91,7 +92,7 @@ class InputDialog():
         # Check if cached data exists and load if valid
         config_path = config['Characterization']['Path of input parameters cache']
         if os.path.exists(config_path):
-            cached_input = configparser.ConfigParser()
+            cached_input = configparser.ConfigParser(interpolation=None)
             cached_input.read(config_path)
 
             # Check if cached data exists and load if valid
@@ -116,14 +117,14 @@ class InputDialog():
             self._create_entries()
             self._create_buttons()
 
-            #self._event_handling(None)  # perform initial event handling
+            self._event_handling(None)  # perform initial event handling
 
             self._resize_window()
 
             self.win.mainloop()
 
         except AttributeError:
-            print(logging.exception('AttributeError'))
+            logger.error(logging.exception('AttributeError'))
             if self.not_exited_flag:
                 self.win.destroy()
 
@@ -148,8 +149,13 @@ class InputDialog():
         """
 
         # Path and filename of protocol excel file
+        if self.input_param.is_ac_align is True:
+            self.input_param.protocol = 'Acoustical alignment'
+        else:
+            self.input_param.protocol = self.input_param.path_protocol_excel_file
+
         self.path_prot = self._create_entry("Protocol",
-                                            self.input_param.path_protocol_excel_file,
+                                            self.input_param.protocol,
                                             is_event=True, event_handling=self._event_handling,
                                             width=350)
 
@@ -385,11 +391,6 @@ class InputDialog():
         error_message = ''
 
         fields_to_validate = {
-            #'path_protocol_excel_file': (self.path_prot, False, False, '.xlsx or .xls extension',
-            #                             False),
-            #'driving system': (self.ds_combo, False, False, None, True),
-            #'transducer': (self.trans_combo, False, False, None, True),
-            #'operating frequency': (self.oper_freq_entr, True, True, None, False),
             'COM port number of positioning system': (self.com_pos, True, True, None, False),
             'hydrophone': (self.hydro_combo, False, False, None, True),
             'acquisition time': (self.acq_time, True, True, None, False),
@@ -401,10 +402,6 @@ class InputDialog():
             'y-coordinate': (self.coord_entries[1], True, False, None, False),
             'z-coordinate': (self.coord_entries[2], True, False, None, False),
         }
-
-        # if self.input_param.is_ds_com_port:
-        #     fields_to_validate.update({'COM port number of driving system':
-        #                                (self.com_us, True, True, None, False)})
 
         for field_name, (widget, is_float, check_positive, ext,
                          selected_combo) in fields_to_validate.items():
