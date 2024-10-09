@@ -31,6 +31,8 @@ https://github.com/Donders-Institute/Radboud-FUS-measurement-kit
 """
 
 # Basic packages
+import os
+
 import sys
 
 # Miscellaneous packages
@@ -286,8 +288,20 @@ class InputParameters:
         self.sequences = []
         self.is_ac_align = cached_input['Input parameters.Protocol']['Alignment.Acoustical'] == 'True'
         if self.is_ac_align is True:
+            # Define temporary and main output directories based on selected parameters
+            folder_struct = f'Output of T [{self.tran.name}] - DS [{self.driving_sys.name}]'
+            self.temp_dir_output = os.path.join(
+                config['Characterization']['Temporary output path'], folder_struct,
+                f'P [Acoustical alignment]')
+            self.dir_output = self.temp_dir_output
+
+            # Create directories if they don't exist
+            os.makedirs(self.temp_dir_output, exist_ok=True)
+            # os.makedirs(self.input_param.dir_output, exist_ok=True)
+
             seq = sequence.CharacSequence()
 
+            seq.is_ac_align = True
             seq.driving_sys = self.driving_sys.serial
             seq.transducer = self.tran.serial
             seq.oper_freq = self.oper_freq

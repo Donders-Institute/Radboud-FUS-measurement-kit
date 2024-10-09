@@ -380,6 +380,10 @@ class Acquisition:
         initial_line_length = self.sequence.ac_align["init_line_len"]
         initial_line_step_size = self.sequence.ac_align["init_line_step"]
         line_n_points = round(initial_line_length / initial_line_step_size)
+
+        if (line_n_points % 2) == 0:
+            line_n_points = line_n_points + 1
+
         self.grid_param["ncol"] = line_n_points
         self.sequence.nslices_nrow_ncol = [self.grid_param["nsl"], self.grid_param["nrow"], self.grid_param["ncol"]]
         
@@ -399,6 +403,7 @@ class Acquisition:
 
             # Save the middle point of the scan
             middle_points[idx] = [found_x_coords[-1], found_y_coords[-1], z_coord]
+            print(f"Found middle_point: {middle_points[idx]}")
 
         return middle_points
 
@@ -432,27 +437,53 @@ class Acquisition:
                         f"{abs(found_x_coords[-2] - found_x_coords[-1]):.4f} mm, " +
                         f"Y difference = {abs(found_y_coords[-2] - found_y_coords[-1]):.4f} mm")
             
+            fig, (ax1, ax2) = plt.subplots(1, 2)
+            
             max_diff = max(abs(found_x_coords[-2] - found_x_coords[-1]), abs(found_y_coords[-2] - found_y_coords[-1]))            
             # Scan x and y directions
             found_x_coords.append(self._scan_and_find_center_of_mass(found_x_coords, found_y_coords,
                                                                      line_length,
                                                                      line_step_size,
                                                                      'x', 
-                                                                     iteration, max_diff))
+                                                                     iteration, max_diff,
+                                                                     fig, ax1))
 
             max_diff = max(abs(found_x_coords[-2] - found_x_coords[-1]), abs(found_y_coords[-2] - found_y_coords[-1])) 
             found_y_coords.append(self._scan_and_find_center_of_mass(found_x_coords, found_y_coords,
                                                                      line_length,
                                                                      line_step_size,
                                                                      'y',
-                                                                     iteration, max_diff))
+                                                                     iteration, max_diff,
+                                                                     fig, ax2))
+        
+            max_diff = max(abs(found_x_coords[-2] - found_x_coords[-1]), abs(found_y_coords[-2] - found_y_coords[-1])) 
+            z_coord = round(self.sequence.coord_start[2], 2)
             
-            if iteration % (self.sequence.ac_align['max_red_iter'] - 1) == 0:
+            title = (f'Center of mass coordinates [{found_x_coords[-1]:.2f}, {found_y_coords[-1]:.2f}] [mm]' + 
+                     f', Z-coord: {z_coord} \n ' + 
+                     f'Iter. {iteration}, Max diff. = {max_diff:.5f} mm, Line length:'  + 
+                     f' {line_length:.1f}, stepsize: {line_step_size:.2f}')
+            
+            fig.suptitle(title)
+            fig.supylabel('RMS of total acq. time per grid point [mV]')
+            
+            filename = os.path.join(self.input_param.temp_dir_output, 
+                                    f'acoustical_alignment_foc_{z_coord}_'  + 
+                                    f'iter_{iteration}.png')
+
+            fig.savefig(filename)
+            plt.show()
+            
+            if iteration != 0 and iteration % (self.sequence.ac_align['max_red_iter']) == 0:
                 # Reduce line length and step size
                 line_length *= reduction_factor
                 line_step_size *= reduction_factor
                 
                 line_n_points = round(line_length / line_step_size)
+                
+                if (line_n_points % 2) == 0:
+                    line_n_points = line_n_points + 1
+
                 self.grid_param["ncol"] = line_n_points
                 self.sequence.nslices_nrow_ncol = [self.grid_param["nsl"], self.grid_param["nrow"], self.grid_param["ncol"]]
     
@@ -461,7 +492,7 @@ class Acquisition:
 
         return found_x_coords, found_y_coords
 
-    def _scan_and_find_center_of_mass(self, found_x_coords, found_y_coords, line_length, line_step_size, direction, iteration, max_diff):
+    def _scan_and_find_center_of_mass(self, found_x_coords, found_y_coords, line_length, line_step_size, direction, iteration, max_diff, fig, ax):
         """
         Scan in the specified direction and find the center of mass of voltage data.
 
@@ -497,27 +528,34 @@ class Acquisition:
 
         logger.info(f"Scanning in {direction}-direction...")
         volt_data, dest_xyz_list = self._scan_grid()
-        max_voltages = np.max(volt_data, axis=3).flatten()
+        
+        # Perform RMS to flatten out fluctations
+        sqr_volt = np.square(volt_data)
+        mean_volt = np.mean(sqr_volt, axis=3)
+        rms = np.sqrt(mean_volt).flatten()
 
         # Calculate center of mass
-        cumsum = np.cumsum(max_voltages)
-        total_sum = cumsum[-1]
-        center_of_mass_index = np.argmin(np.abs(cumsum - total_sum / 2))
-
-        center_of_mass = dest_xyz_list[center_of_mass_index][0 if direction == 'x' else 1]
-        logger.info(f"Found center of mass in {direction}-direction: {center_of_mass:.3f} mm")
+        cumsum = np.cumsum(rms).flatten()
+        center_of_mass_value = cumsum[-1] / 2
+        
+        coord_index = [0 if direction == 'x' else 1]
+        coords = dest_xyz_list[:, :, :, coord_index].flatten()
+        
+        center_of_mass_coord = np.interp(center_of_mass_value, cumsum, coords)
+        
+        logger.info(f"Found center of mass in {direction}-direction: {center_of_mass_coord:.3f} mm")
 
         if self.sequence.ac_align["create_graphs"]:
             z_coord = round(self.sequence.coord_start[2], 2)
-            title = (f'Center of mass in {direction}-direction, {center_of_mass:.2f} [mm]' + 
+            title = (f'Center of mass in {direction}-direction, {center_of_mass_coord:.2f} [mm]' + 
                      f' Z-coord: {z_coord},  \n ' + 
                      f'Iter. {iteration}, Max diff. = {max_diff:.3f} mm, Line length:'  + 
                      f' {line_length:.1f}, stepsize: {line_step_size:.1f}')
-            self._plot_center_of_mass_graph(direction, dest_xyz_list, max_voltages, center_of_mass, iteration, title)
+            self._plot_center_of_mass_graph(direction, dest_xyz_list, rms, center_of_mass_coord, iteration, title, fig, ax)
 
-        return center_of_mass
+        return center_of_mass_coord
 
-    def _plot_center_of_mass_graph(self, direction, dest_xyz_list, max_voltages, center_of_mass, iteration, title):
+    def _plot_center_of_mass_graph(self, direction, dest_xyz_list, rms, center_of_mass_coord, iteration, title, fig, ax):
         """
         Plot the center of mass graph for the scanned data.
 
@@ -529,14 +567,16 @@ class Acquisition:
             List of destination coordinates during the scan.
         max_voltages : np.ndarray
             Array of maximum voltages at each grid point.
-        center_of_mass : float
+        center_of_mass_coord : float
             Calculated center of mass in the specified direction.
         """
         z_coord = round(self.sequence.coord_start[2], 2)
         
-        coords = [coord[0 if direction == 'x' else 1] for coord in dest_xyz_list]
-        plt.plot(coords, max_voltages, linestyle='-', marker='.')
-        plt.axvline(x=center_of_mass, color='r', linestyle='--')
+        coord_index = [0 if direction == 'x' else 1]
+        coords = dest_xyz_list[:, :, :, coord_index].flatten()
+
+        ax.plot(coords, rms*1000, linestyle='-', linewidth=0.5, marker='.', markersize=2)
+        ax.axvline(x=center_of_mass_coord, color='r', linestyle='--')
         
         if direction == 'x':
             x_upper_lim = self.input_param.coord_zero[0] + self.sequence.ac_align["init_line_len"]/2
@@ -545,11 +585,13 @@ class Acquisition:
             x_upper_lim = self.input_param.coord_zero[1] + self.sequence.ac_align["init_line_len"]/2
             x_lower_lim = self.input_param.coord_zero[1] - self.sequence.ac_align["init_line_len"]/2
         
-        plt.xlim(x_lower_lim, x_upper_lim)
-        plt.ylim(0, 0.1)
-        plt.xlabel(f'{direction.upper()}-coordinates [mm]')
-        plt.ylabel('Maximum voltage per grid point [V]')
-        plt.title(title)
+        ax.set_xlim(x_lower_lim - 15, x_upper_lim + 15)
+        
+        if direction == 'y':
+            ax.get_yaxis().set_visible(False)
+
+        ax.set_ylim(0, 100)
+        ax.set_xlabel(f'{direction.upper()}-coordinates [mm]')
         
         if direction == 'x':
             filename = os.path.join(self.input_param.temp_dir_output, 
@@ -559,9 +601,6 @@ class Acquisition:
             filename = os.path.join(self.input_param.temp_dir_output, 
                                     f'acoustical_alignment_foc_{z_coord}_'  + 
                                     f'iter_{iteration}_y_coord.png')
-
-        plt.savefig(filename)
-        plt.show()
 
     def _calculate_acoustical_axis(self, middle_points):
         """
@@ -1066,7 +1105,8 @@ class Acquisition:
         volt_data = np.zeros((self.grid_param["nsl"], self.grid_param["nrow"],
                              self.grid_param["ncol"], self.sample_count), dtype='float32')
 
-        dest_xyz_list = []
+        dest_xyz_list = np.zeros((self.grid_param["nsl"], self.grid_param["nrow"],
+                             self.grid_param["ncol"], 3), dtype='float32')
 
         counter = 0
         for i in range(self.grid_param["nsl"]):
@@ -1082,7 +1122,7 @@ class Acquisition:
 
                     volt_data[i, j, k] = self.signal_a
 
-                    dest_xyz_list.append(dest_xyz)
+                    dest_xyz_list[i, j, k] = dest_xyz
 
                     # Process raw data as ACD
                     if self.proces_param["adjust"] != 0:

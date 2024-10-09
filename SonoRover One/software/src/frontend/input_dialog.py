@@ -481,6 +481,17 @@ class InputDialog():
     def _select_prot_action(self):
         prot_dialog = pd.ProtocolDialog(self.input_param, self.path_prot)
         self.input_param = prot_dialog.input_param
+        
+        # Define temporary and main output directories based on selected parameters
+        folder_struct = f'Output of T [{self.input_param.tran.name}] - DS [{self.input_param.driving_sys.name}]'
+        self.input_param.temp_dir_output = os.path.join(
+            config['Characterization']['Temporary output path'], folder_struct,
+            f'P [{self.input_param.protocol}]')
+        self.input_param.dir_output = self.input_param.temp_dir_output
+
+        # Create directories if they don't exist
+        os.makedirs(self.input_param.temp_dir_output, exist_ok=True)
+        # os.makedirs(self.input_param.dir_output, exist_ok=True)
 
     def _acd_action(self):
         acd_dialog = apd.ACDParamDialog(self.input_param.acd_param, self.input_param.adjust_param)

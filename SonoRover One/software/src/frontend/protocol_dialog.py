@@ -222,6 +222,7 @@ class ProtocolDialog():
 
         if not self.input_param.sequences:
             def_power = power_options[0]
+            def_power_value = 0
         else:
             if len(self.input_param.sequences) > 1:
                 logger.error('Handling a regular sequence collected by the GUI has not been implemented yet.')
@@ -771,17 +772,6 @@ class ProtocolDialog():
                     # Extract protocol excel filename without extension
                     self.input_param.protocol = os.path.splitext(
                         os.path.basename(self.input_param.path_protocol_excel_file))[0]
-
-            # Define temporary and main output directories based on selected parameters
-            folder_struct = f'Output of T [{td_name}] - DS [{ds_name}]'
-            self.input_param.temp_dir_output = os.path.join(
-                config['Characterization']['Temporary output path'], folder_struct,
-                f'P [{self.input_param.protocol}]')
-            self.input_param.dir_output = self.input_param.temp_dir_output
-
-            # Create directories if they don't exist
-            os.makedirs(self.input_param.temp_dir_output, exist_ok=True)
-            # os.makedirs(self.input_param.dir_output, exist_ok=True)
 
             self.input_param.sequences = [self.ac_align_seq]
 
