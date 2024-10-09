@@ -528,18 +528,21 @@ class Acquisition:
             params['Sequence']['IGT - Voltage [V]'] = str(self.sequence.volt)
             params['Sequence']['IGT - Amplitude [%]'] = str(self.sequence.ampl)
 
-            params['Sequence']['Maximum voltage at 100% amplitude [V]'] = str(self.sequence.max_v)
             params['Sequence']['Normalized pressure [-] vs. focal depth [mm] equation (Pnorm = a0' +
                                '+ a1*f + a2*f^2 + a3*f^3 + a4*f^4 + a5*f^5)'] = (
-                                   str(f"Pnorm = {self.a0} + {self.a1}*f + {self.a2}*f^2 + " +
-                                       "{self.a3}*f^3 + {self.a4}*f^4 + {self.a5}*f^5")
+                                   str(f"Pnorm = {self.sequence.a0} + "  + 
+                                       f"{self.sequence.a1}*f + "  + 
+                                       f"{self.sequence.a2}*f^2 + " +
+                                       f"{self.sequence.a3}*f^3 + " + 
+                                       f"{self.sequence.a4}*f^4 + " + 
+                                       f"{self.sequence.a5}*f^5")
                                    )
 
             params['Sequence']["Normalized pressure [-] based on chosen focal depth of " +
-                               f"{self._focus} [mm]"] = str(self.sequence.norm_press)
+                               f"{self.sequence.focus} [mm]"] = str(self.sequence.norm_press)
 
             params['Sequence']["Pressure [MPa] vs. voltage [V] equation (P = a*V + b)"] = (
-                str(f"P = {self.a}*V + {self.b}")
+                str(f"P = {self.sequence.V2P_a}*V + {self.sequence.V2P_b}")
                 )
 
         else:
