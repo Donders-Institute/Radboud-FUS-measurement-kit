@@ -225,7 +225,10 @@ class CharacSequence(sequence.Sequence):
         self.seq_number = int(seq_row[excel_ind["seq_num"]])
         self.tag = str(seq_row[excel_ind["tag"]])
 
-        self.dephasing_degree = float(seq_row[excel_ind["dephasing"]])
+        if str(seq_row[excel_ind["dephasing"]]) == 'nan':
+            self.dephasing_degree = None
+        else:
+            self.dephasing_degree = float(seq_row[excel_ind["dephasing"]])
 
         self.focus = abs(float(seq_row[excel_ind["focus"]]))  # [mm]
 
@@ -329,7 +332,7 @@ def _define_excel_indices(data):
     excel_indices = {
         "seq_num": data.columns.get_loc('Sequence number'),
         "tag": data.columns.get_loc('Tag'),
-        "dephasing": data.columns.get_loc('Dephasing degree (0 = no dephasing) ' +
+        "dephasing": data.columns.get_loc('Dephasing degree (None = no dephasing) ' +
                                           'CURRENLTY ONLY APPLICABLE FOR IGT DS'),
         "pulse_dur": data.columns.get_loc('Pulse duration [us]'),
         "pulse_rep_int": data.columns.get_loc('Pulse Repetition Interval [ms]'),
