@@ -1214,7 +1214,7 @@ class Acquisition:
         time.sleep(0.025)
 
         # Execute pulse sequence
-        self.equipment["ds"].execute_sequence()
+        self.equipment["ds"].execute_sequence(self.sequence)
 
         # Wait for acquisition to complete
         ok = self.equipment["scope"].waitAcquisition()
