@@ -31,6 +31,9 @@ https://github.com/Donders-Institute/Radboud-FUS-measurement-kit
 """
 
 # Basic packages
+import os
+
+import sys
 
 # Miscellaneous packages
 import configparser
@@ -43,7 +46,11 @@ from fus_driving_systems import transducer as td
 
 import backend.hydrophone as hp
 import backend.picoscope as ps
+from backend import sequence
+
+
 from config.config import config_info as config
+from config.logging_config import logger
 
 
 class InputParameters:
@@ -85,6 +92,7 @@ class InputParameters:
                 adjust=-1 if top-left corner is far from transducer (decrease beg)
                 adjust=+1 if top-left corner is close to the transducer (increase beg)
                 adjust=0 : no adjustment
+        sequences (list): List of US sequences to perform.
     """
 
     def __init__(self):
@@ -137,17 +145,20 @@ class InputParameters:
             "endus": 0,
             }
 
+        self.protocol = ''
+        self.is_ac_align = False
+        self.sequences = []
+
     def write_to_ini(self):
         """
         Write current input parameters to an INI file for caching.
         """
 
-        cached_input = configparser.ConfigParser()
+        cached_input = configparser.ConfigParser(interpolation=None)
 
         now = datetime.now()
         cached_input['Input parameters'] = {}
         cached_input['Input parameters']['Date'] = str(now.strftime("%Y/%m/%d"))
-        cached_input['Input parameters']['Path and filename of protocol excel file'] = str(self.path_protocol_excel_file)
 
         cached_input['Input parameters']['Driving system.serial_number'] = self.driving_sys.serial
         cached_input['Input parameters']['Driving system.name'] = self.driving_sys.name
@@ -169,6 +180,46 @@ class InputParameters:
         cached_input['Input parameters']['Transducer.is_active'] = str(self.tran.is_active)
 
         cached_input['Input parameters']['Operating frequency [kHz]'] = str(int(self.oper_freq))
+
+        cached_input['Input parameters.Protocol'] = {}
+        cached_input['Input parameters.Protocol']['Alignment.Acoustical'] = str(self.is_ac_align)
+
+        # If no sequence is available, a protocol excel file should be selected.
+        if self.is_ac_align is False:
+            cached_input['Input parameters.Protocol']['Path and filename of protocol excel file'] = str(self.path_protocol_excel_file)
+        else:
+            if len(self.sequences) > 1:
+                logger.error('Handling a regular sequence collected by the GUI has not been implemented yet.')
+            seq = self.sequences[0]
+
+            cached_input['Input parameters.Protocol']['Alignment.pulse_dur'] = str(seq.pulse_dur)
+            cached_input['Input parameters.Protocol']['Alignment.pulse_rep_int'] = str(seq.pulse_rep_int)
+
+            if seq.chosen_power == "Global power [mW]":
+                cached_input['Input parameters.Protocol']['Alignment.power_option'] = "Global power [mW]"
+                cached_input['Input parameters.Protocol']['Alignment.power_value'] = str(seq.global_power)
+            elif seq.chosen_power == "Max. pressure in free water [MPa]":
+                cached_input['Input parameters.Protocol']['Alignment.power_option'] = "Max. pressure in free water [MPa]"
+                cached_input['Input parameters.Protocol']['Alignment.power_value'] = str(seq.press)
+            elif seq.chosen_power == "Voltage [V]":
+                cached_input['Input parameters.Protocol']['Alignment.power_option'] = "Voltage [V]"
+                cached_input['Input parameters.Protocol']['Alignment.power_value'] = str(seq.volt)
+            elif seq.chosen_power == "Amplitude [%]":
+                cached_input['Input parameters.Protocol']['Alignment.power_option'] = "Amplitude [%]"
+                cached_input['Input parameters.Protocol']['Alignment.power_value'] = str(seq.ampl)
+
+            cached_input['Input parameters.Protocol']['Alignment.focus'] = str(seq.focus)
+
+            cached_input['Input parameters.Protocol']['Alignment.distance_from_foc'] = str(seq.ac_align['distance_from_foc'])
+            cached_input['Input parameters.Protocol']['Alignment.init_line_len'] = str(seq.ac_align['init_line_len'])
+            cached_input['Input parameters.Protocol']['Alignment.init_line_step'] = str(seq.ac_align['init_line_step'])
+            cached_input['Input parameters.Protocol']['Alignment.init_threshold'] = str(seq.ac_align['init_threshold'])
+            cached_input['Input parameters.Protocol']['Alignment.reduction_factor'] = str(seq.ac_align['reduction_factor'])
+            cached_input['Input parameters.Protocol']['Alignment.max_red_iter'] = str(seq.ac_align['max_red_iter'])
+            cached_input['Input parameters.Protocol']['Alignment.create_graphs'] = str(seq.ac_align['create_graphs'])
+            cached_input['Input parameters.Protocol']['Alignment.create_axis_file'] = str(seq.ac_align['create_axis_file'])
+            cached_input['Input parameters.Protocol']['Alignment.axis_length'] = str(seq.ac_align['axis_length'])
+            cached_input['Input parameters.Protocol']['Alignment.axis_stepsize'] = str(seq.ac_align['axis_stepsize'])
 
         cached_input['Input parameters']['COM port of positioning system'] = str(self.pos_com_port)
         cached_input['Input parameters']['Hydrophone serial number'] = str(self.hydrophone.serial)
@@ -211,8 +262,6 @@ class InputParameters:
             cached_input (ConfigParser): ConfigParser object containing cached input parameters.
         """
 
-        self.path_protocol_excel_file = cached_input['Input parameters']['Path and filename of protocol excel file']
-
         self.driving_sys.serial = cached_input['Input parameters']['Driving system.serial_number']
         self.driving_sys.name = cached_input['Input parameters']['Driving system.name']
         self.driving_sys.manufact = cached_input['Input parameters']['Driving system.manufact']
@@ -235,6 +284,61 @@ class InputParameters:
         self.tran.is_active = cached_input['Input parameters']['Transducer.is_active'] == 'True'
 
         self.oper_freq = int(cached_input['Input parameters']['Operating frequency [kHz]'])
+
+        self.sequences = []
+        self.is_ac_align = cached_input['Input parameters.Protocol']['Alignment.Acoustical'] == 'True'
+        if self.is_ac_align is True:
+            # Define temporary and main output directories based on selected parameters
+            folder_struct = f'Output of T [{self.tran.name}] - DS [{self.driving_sys.name}]'
+            self.temp_dir_output = os.path.join(
+                config['Characterization']['Temporary output path'], folder_struct,
+                f'P [Acoustical alignment]')
+            self.dir_output = self.temp_dir_output
+
+            # Create directories if they don't exist
+            os.makedirs(self.temp_dir_output, exist_ok=True)
+            # os.makedirs(self.input_param.dir_output, exist_ok=True)
+
+            seq = sequence.CharacSequence()
+
+            seq.is_ac_align = True
+            seq.driving_sys = self.driving_sys.serial
+            seq.transducer = self.tran.serial
+            seq.oper_freq = self.oper_freq
+
+            seq.pulse_dur = float(cached_input['Input parameters.Protocol']['Alignment.pulse_dur'])
+            seq.pulse_rep_int = float(cached_input['Input parameters.Protocol']['Alignment.pulse_rep_int'])
+
+            # Retrieve and set power parameters based on the power option.
+            power_option = cached_input['Input parameters.Protocol']['Alignment.power_option']
+            power_value = float(cached_input['Input parameters.Protocol']['Alignment.power_value'])
+
+            seq.chosen_power = power_option
+            if power_option == "Global power [mW]":
+                seq.global_power = power_value
+            elif power_option == "Max. pressure in free water [MPa]":
+                seq.press = power_value
+            elif power_option == "Voltage [V]":
+                seq.volt = power_value
+            elif power_option == "Amplitude [%]":
+                seq.ampl = power_value
+
+            seq.focus = float(cached_input['Input parameters.Protocol']['Alignment.focus'])
+
+            seq.ac_align['distance_from_foc'] = float(cached_input['Input parameters.Protocol']['Alignment.distance_from_foc'])
+            seq.ac_align['init_line_len'] = float(cached_input['Input parameters.Protocol']['Alignment.init_line_len'])
+            seq.ac_align['init_line_step'] = float(cached_input['Input parameters.Protocol']['Alignment.init_line_step'])
+            seq.ac_align['init_threshold'] = float(cached_input['Input parameters.Protocol']['Alignment.init_threshold'])
+            seq.ac_align['reduction_factor'] = float(cached_input['Input parameters.Protocol']['Alignment.reduction_factor'])
+            seq.ac_align['max_red_iter'] = int(cached_input['Input parameters.Protocol']['Alignment.max_red_iter'])
+            seq.ac_align['create_graphs'] = cached_input['Input parameters.Protocol']['Alignment.create_graphs'] == 'True'
+            seq.ac_align['create_axis_file'] = cached_input['Input parameters.Protocol']['Alignment.create_axis_file'] == 'True'
+            seq.ac_align['axis_length'] = float(cached_input['Input parameters.Protocol']['Alignment.axis_length'])
+            seq.ac_align['axis_stepsize'] = float(cached_input['Input parameters.Protocol']['Alignment.axis_stepsize'])
+
+            self.sequences.append(seq)
+        else:
+            self.path_protocol_excel_file = cached_input['Input parameters.Protocol']['Path and filename of protocol excel file']
 
         self.pos_com_port = cached_input['Input parameters']['COM port of positioning system']
 

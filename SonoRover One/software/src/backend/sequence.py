@@ -70,6 +70,21 @@ class CharacSequence(sequence.Sequence):
         self.seq_number = 0   # sequence number of protocol in excel file
         self.tag = ''  # user can add a description to the sequence
 
+        # boolean if acoustical alignment is performed, if so, no grid input required.
+        self.is_ac_align = False
+        self.ac_align = {
+            "distance_from_foc": 10,  # [mm] distance from the focus point in millimeters.
+            'init_line_len': 40,  # [mm] initial line length used for alignment.
+            'init_line_step': 0.5,  # [mm] step size for alignment in millimeters.
+            'init_threshold': 0.001,  # [mm] threshold for initial alignment error in millimeters.
+            'reduction_factor': 0.5,  # [-] reduction factor for iterative alignment steps.
+            'max_red_iter': 5,  # [-] maximum number of reduction iterations allowed.
+            'create_graphs': True,  # boolean to indicate if graphs should be created for visualization.
+            'create_axis_file': False,  # boolean to indicate if an axis file should be generated.
+            'axis_length': 140,  # [mm] total length of the axis in millimeters.
+            'axis_stepsize': 0.5  # [mm] step size for each point along the axis in millimeters.
+        }
+
         self.use_coord_excel = False  # boolean if coordinate excel file is used as input of grid
         self.path_coord_excel = None  # path of coordinate excel file
 
@@ -94,6 +109,19 @@ class CharacSequence(sequence.Sequence):
 
         info += f"Sequence number: {self.seq_number} \n "
         info += f"Tag: {self.tag} \n "
+
+        info += f"Acoustical alignment performed?: {self.is_ac_align} \n "
+        info += "Acoustical alignment parameters: \n"
+        info += f"  - Distance from focus [mm]: {self.ac_align['distance_from_foc']} \n"
+        info += f"  - Initial line length [mm]: {self.ac_align['init_line_len']} \n"
+        info += f"  - Initial line stepsize [mm]: {self.ac_align['init_line_step']} \n"
+        info += f"  - Initial threshold [mm]: {self.ac_align['init_threshold']} \n"
+        info += f"  - Reduction factor: {self.ac_align['reduction_factor']} \n"
+        info += f"  - Maximum reduction iterations: {self.ac_align['max_red_iter']} \n"
+        info += f"  - Create graphs?: {self.ac_align['create_graphs']} \n"
+        info += f"  - Create axis file?: {self.ac_align['create_axis_file']} \n"
+        info += f"  - Axis length [mm]: {self.ac_align['axis_length']} \n"
+        info += f"  - Axis step size [mm]: {self.ac_align['axis_stepsize']} \n"
 
         info += f"Use coordinate excel as input?: {self.use_coord_excel} \n "
         info += f"Path of coordinate excel: {self.path_coord_excel} \n "
@@ -283,6 +311,11 @@ class CharacSequence(sequence.Sequence):
                 self._set_all_dir_vectors(directions, step_sizes)
 
                 self._calculate_n_vector(directions, dimensions, step_sizes)
+
+            case 'Acoustical alignment':
+                self.use_coord_excel = False
+                self.path_coord_excel = None
+                self.is_ac_align = True
 
 
 def _define_excel_indices(data):

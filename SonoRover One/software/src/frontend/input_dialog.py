@@ -43,9 +43,11 @@ import logging
 
 # Own packages
 from config.config import config_info as config
+from config.logging_config import logger
 
 from backend.input_parameters import InputParameters
 import frontend.acd_param_dialog as apd
+import frontend.protocol_dialog as pd
 
 
 class InputDialog():
@@ -90,7 +92,7 @@ class InputDialog():
         # Check if cached data exists and load if valid
         config_path = config['Characterization']['Path of input parameters cache']
         if os.path.exists(config_path):
-            cached_input = configparser.ConfigParser()
+            cached_input = configparser.ConfigParser(interpolation=None)
             cached_input.read(config_path)
 
             # Check if cached data exists and load if valid
@@ -122,7 +124,7 @@ class InputDialog():
             self.win.mainloop()
 
         except AttributeError:
-            print(logging.exception('AttributeError'))
+            logger.error(logging.exception('AttributeError'))
             if self.not_exited_flag:
                 self.win.destroy()
 
@@ -147,43 +149,19 @@ class InputDialog():
         """
 
         # Path and filename of protocol excel file
-        self.path_prot = self._create_entry("Path and filename of protocol excel file",
-                                            self.input_param.path_protocol_excel_file,
+        if self.input_param.is_ac_align is True:
+            self.input_param.protocol = 'Acoustical alignment'
+        else:
+            self.input_param.protocol = self.input_param.path_protocol_excel_file
+
+        self.path_prot = self._create_entry("Protocol",
+                                            self.input_param.protocol,
                                             is_event=True, event_handling=self._event_handling,
                                             width=350)
 
         # Browse button to select protocol excel file
-        button = ctk.CTkButton(master=self.win, text="Browse", command=self._get_filename)
+        button = ctk.CTkButton(master=self.win, text="Select", command=self._select_prot_action)
         button.grid(row=self.row_nr, column=1, padx=10, sticky="e")
-
-        # Dropdown for selecting US Driving System
-        self.ds_combo = self._create_combo("US Driving System", self.input_param.ds_names,
-                                           self.input_param.driving_sys.name,
-                                           self._ds_combo_action)
-
-        # Dropdown for selecting transducer
-        self.trans_combo = self._create_combo("Transducer", self.input_param.tran_names,
-                                              self.input_param.tran.name,
-                                              self._trans_combo_action)
-
-        # Entry field for operating frequency
-        self.oper_freq_entr = self._create_entry("Operating frequency [kHz]",
-                                                 int(self.input_param.oper_freq),
-                                                 is_event=True, event_handling=self._event_handling)
-
-        # Entry field for COM port of US driving system if applicable
-        com_us_num = self.input_param.driving_sys.connect_info.removeprefix('COM')
-        self.com_us_label, self.com_us = self._create_entry(
-            "COM port of US driving system", com_us_num, is_event=True,
-            event_handling=self._event_handling, return_label=True)
-
-        self.com_us_label.grid()
-        self.com_us.grid()
-
-        # Save location for the entry, but hide it when other equipment is chosen
-        if not self.input_param.is_ds_com_port:
-            self.com_us_label.grid_remove()
-            self.com_us.grid_remove()
 
         # Entry field for COM port of positioning system
         com_pos_num = self.input_param.pos_com_port.removeprefix('COM')
@@ -379,64 +357,6 @@ class InputDialog():
 
         return checkbox
 
-    def _get_filename(self):
-        """
-        Opens a file dialog to select a filename and updates the corresponding entry field.
-        """
-
-        filename = tk.filedialog.askopenfilename(
-            initialdir=self.input_param.path_protocol_excel_file,
-            filetypes=[('Excel files', '*.xlsx')])
-
-        self.path_prot.delete(0, tk.END)
-        self.path_prot.insert(0, filename)
-
-        self._event_handling(None)
-
-    def _ds_combo_action(self, event):
-        """
-        Action function triggered when a new driving system is selected from the dropdown.
-        Updates related fields and performs event handling.
-        """
-
-        cur_ds = self.ds_combo.get()
-
-        for ds in self.input_param.ds_list:
-            if ds.name == cur_ds:
-                if 'COM' in ds.connect_info:
-                    self.input_param.is_ds_com_port = True
-
-                    self.com_us.delete(0, tk.END)
-                    com_us_num = ds.connect_info.removeprefix('COM')
-                    self.com_us.insert(0, com_us_num)
-
-                    self.com_us_label.grid()
-                    self.com_us.grid()
-
-                    self._resize_window()
-
-                else:
-                    self.input_param.is_ds_com_port = False
-
-                    if hasattr(self, 'com_us'):
-                        self.com_us_label.grid_remove()
-                        self.com_us.grid_remove()
-
-        self._event_handling(event)
-
-    def _trans_combo_action(self, event):
-        """
-        Action function triggered when a new transducer is selected from the dropdown.
-        Updates related fields and performs event handling.
-        """
-
-        new_tran_name = self.trans_combo.get()
-
-        for tran in self.input_param.tran_list:
-            if tran.name == new_tran_name:
-                self.oper_freq_entr.delete(0, tk.END)
-                self.oper_freq_entr.insert(0, int(tran.fund_freq))
-
     def _event_handling(self, event):
         """
         Performs validation of input fields and updates UI elements accordingly.
@@ -471,11 +391,6 @@ class InputDialog():
         error_message = ''
 
         fields_to_validate = {
-            'path_protocol_excel_file': (self.path_prot, False, False, '.xlsx or .xls extension',
-                                         False),
-            'driving system': (self.ds_combo, False, False, None, True),
-            'transducer': (self.trans_combo, False, False, None, True),
-            'operating frequency': (self.oper_freq_entr, True, True, None, False),
             'COM port number of positioning system': (self.com_pos, True, True, None, False),
             'hydrophone': (self.hydro_combo, False, False, None, True),
             'acquisition time': (self.acq_time, True, True, None, False),
@@ -487,10 +402,6 @@ class InputDialog():
             'y-coordinate': (self.coord_entries[1], True, False, None, False),
             'z-coordinate': (self.coord_entries[2], True, False, None, False),
         }
-
-        if self.input_param.is_ds_com_port:
-            fields_to_validate.update({'COM port number of driving system':
-                                       (self.com_us, True, True, None, False)})
 
         for field_name, (widget, is_float, check_positive, ext,
                          selected_combo) in fields_to_validate.items():
@@ -567,6 +478,21 @@ class InputDialog():
 
         return error_message
 
+    def _select_prot_action(self):
+        prot_dialog = pd.ProtocolDialog(self.input_param, self.path_prot)
+        self.input_param = prot_dialog.input_param
+        
+        # Define temporary and main output directories based on selected parameters
+        folder_struct = f'Output of T [{self.input_param.tran.name}] - DS [{self.input_param.driving_sys.name}]'
+        self.input_param.temp_dir_output = os.path.join(
+            config['Characterization']['Temporary output path'], folder_struct,
+            f'P [{self.input_param.protocol}]')
+        self.input_param.dir_output = self.input_param.temp_dir_output
+
+        # Create directories if they don't exist
+        os.makedirs(self.input_param.temp_dir_output, exist_ok=True)
+        # os.makedirs(self.input_param.dir_output, exist_ok=True)
+
     def _acd_action(self):
         acd_dialog = apd.ACDParamDialog(self.input_param.acd_param, self.input_param.adjust_param)
         self.input_param.acd_param = acd_dialog.acd_param
@@ -577,45 +503,6 @@ class InputDialog():
         """
 
         if self.win:
-            # Save protocol file path and main directory
-            self.input_param.path_protocol_excel_file = self.path_prot.get()
-            self.input_param.main_dir = os.path.dirname(self.input_param.path_protocol_excel_file)
-
-            # Save selected driving system object
-            ds_name = self.ds_combo.get()
-            for ds in self.input_param.ds_list:
-                if ds.name == ds_name:
-                    self.input_param.driving_sys = ds
-
-            # Save selected transducer object
-            td_name = self.trans_combo.get()
-            for tran in self.input_param.tran_list:
-                if tran.name == td_name:
-                    self.input_param.tran = tran
-
-            # Extract protocol excel filename without extension
-            protocol_excel_filename = os.path.splitext(
-                os.path.basename(self.input_param.path_protocol_excel_file))[0]
-
-            # Define temporary and main output directories based on selected parameters
-            folder_struct = f'Output of T [{td_name}] - DS [{ds_name}]'
-            self.input_param.temp_dir_output = os.path.join(
-                config['Characterization']['Temporary output path'], folder_struct,
-                f'P [{protocol_excel_filename}]')
-            self.input_param.dir_output = os.path.join(self.input_param.main_dir, folder_struct,
-                                                       f'P [{protocol_excel_filename}]')
-
-            # Create directories if they don't exist
-            os.makedirs(self.input_param.temp_dir_output, exist_ok=True)
-            os.makedirs(self.input_param.dir_output, exist_ok=True)
-
-            # Save numeric and boolean parameters
-            self.input_param.oper_freq = int(self.oper_freq_entr.get())
-
-            # Save COM port of US driving system if applicable
-            if self.input_param.is_ds_com_port:
-                self.input_param.driving_sys.connect_info = f'COM{self.com_us.get()}'
-
             self.input_param.pos_com_port = f'COM{self.com_pos.get()}'
 
             # Save selected hydrophone object

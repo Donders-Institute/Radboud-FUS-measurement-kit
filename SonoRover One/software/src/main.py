@@ -31,7 +31,6 @@ https://github.com/Donders-Institute/Radboud-FUS-measurement-kit
 """
 
 # Basic packages
-import os
 
 # Miscellaneous packages
 from importlib import resources as impresources
@@ -40,11 +39,8 @@ from importlib import resources as impresources
 from config.config import config_info, read_additional_config
 from config.logging_config import initialize_logger
 
-from frontend.input_dialog import InputDialog
-
 from fus_driving_systems import config as fds_config
 from fus_driving_systems.config import logging_config as fds_logging_config
-
 
 from distutils.dir_util import copy_tree
 import shutil
@@ -54,6 +50,8 @@ init_motor = True
 init_ds = True
 init_pico = False
 is_testing = test_scanner_only  # | other test examples
+# TODO: add to front-end!, change this value to move acoustical alignment results to correct location!
+ac_align_network_drive = '//ru.nl//WrkGrp//FUS_Hub//Hydrophone measurements//Measurements//2024'
 
 
 def main():
@@ -61,32 +59,36 @@ def main():
     Main function to run the characterization pipeline.
     """
 
+    # Initialize logger
+    log_path = config_info['Characterization']['Temporary output path']
+    # TODO: add to config
+    log_name = 'SonoRover_One'
+    logger = initialize_logger(log_path, log_name)
+
+    version = config_info['Versions']['SonoRover One software']
+    logger.info(f'Characterization performed with the following software: {version}')
+
+    # Sync fus_driving_systems logging
+    fds_logging_config.sync_logger(logger)
+
+    # Read additional fus_driving_systems config file
+    inp_file = impresources.files(fds_config) / 'ds_config.ini'
+    read_additional_config(inp_file)
+
+    # Import sequences of excel, delay import due to initialization of logger
+    from frontend.input_dialog import InputDialog
     # Create dialog to retrieve input values
     input_dialog = InputDialog()
     input_param = input_dialog.input_param
 
     if input_param is not None:
-        # Initialize logger
-        base_path = input_param.main_dir
-
-        head, tail = os.path.split(input_param.path_protocol_excel_file)
-        protocol_excel, ext = os.path.splitext(tail)
-        logger = initialize_logger(base_path, protocol_excel)
-
-        version = config_info['Versions']['SonoRover One software']
-        logger.info(f'Characterization performed with the following software: {version}')
         logger.info(f'Characterization performed with the following parameters: \n {input_param}')
 
-        # Read additional fus_driving_systems config file
-        inp_file = impresources.files(fds_config) / 'ds_config.ini'
-        read_additional_config(inp_file)
-
-        # Sync fus_driving_systems logging
-        fds_logging_config.sync_logger(logger)
-
-        # Import sequences of excel, delay import due to initialization of logger
-        from backend import sequence
-        sequence_list = sequence.generate_sequence_list(input_param)
+        # No sequence chosen using GUI, so read excel file
+        if not input_param.sequences:
+            # Import sequences of excel, delay import due to initialization of logger
+            from backend import sequence
+            input_param.sequences = sequence.generate_sequence_list(input_param)
 
         # Initialize acquisition by initializing all equipment
         # Delay import due to initialization of logger
@@ -98,7 +100,7 @@ def main():
             from backend import acquisition as aq
             acquisition = aq.Acquisition(input_param)
         try:
-            for seq in sequence_list:
+            for seq in input_param.sequences:
                 if not input_param.perform_all_seqs:
                     # Wait for user input before continuing
                     check_dialogs.continue_acquisition_dialog(seq)
@@ -108,10 +110,14 @@ def main():
                 if is_testing:
                     # Test functions
                     if test_scanner_only:
-                        #acquisition.check_scan(seq)
+                        # acquisition.check_scan(seq)
                         acquisition.check_scan_ds_combo(seq)
                 else:
-                    acquisition.acquire_sequence(seq)
+                    if seq.is_ac_align:
+                        input_param.dir_output = ac_align_network_drive
+                        acquisition.acoustical_alignment(seq)
+                    else:
+                        acquisition.acquire_sequence(seq)
 
             # All sequences are finished, so move data
             move_output_data(logger, input_param.temp_dir_output, input_param.dir_output)
