@@ -55,6 +55,7 @@ import math
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from scipy.integrate import cumulative_trapezoid
 
 # Own packages
 from frontend import check_dialogs
@@ -535,13 +536,13 @@ class Acquisition:
         rms = np.sqrt(mean_volt).flatten()
 
         # Calculate center of mass
-        cumsum = np.cumsum(rms).flatten()
-        center_of_mass_value = cumsum[-1] / 2
+        cumsum_trapz  = cumulative_trapezoid(rms, initial=0).flatten()
+        center_of_mass_value = cumsum_trapz[-1] / 2
         
         coord_index = [0 if direction == 'x' else 1]
         coords = dest_xyz_list[:, :, :, coord_index].flatten()
         
-        center_of_mass_coord = np.interp(center_of_mass_value, cumsum, coords)
+        center_of_mass_coord = np.interp(center_of_mass_value, cumsum_trapz, coords)
         
         logger.info(f"Found center of mass in {direction}-direction: {center_of_mass_coord:.3f} mm")
 
@@ -576,8 +577,9 @@ class Acquisition:
         coords = dest_xyz_list[:, :, :, coord_index].flatten()
 
         ax.plot(coords, rms*1000, linestyle='-', linewidth=0.5, marker='.', markersize=2)
-        ax.axvline(x=center_of_mass_coord, color='r', linestyle='--')
-        
+        ax.axvline(x=center_of_mass_coord, color='r', linestyle='--', linewidth=0.5)
+        print(f'red line center_of_mass_coord: {center_of_mass_coord}')
+
         if direction == 'x':
             x_upper_lim = self.input_param.coord_zero[0] + self.sequence.ac_align["init_line_len"]/2
             x_lower_lim = self.input_param.coord_zero[0] - self.sequence.ac_align["init_line_len"]/2
@@ -933,22 +935,26 @@ class Acquisition:
             params['Sequence']['IGT - Voltage [V]'] = str(self.sequence.volt)
             params['Sequence']['IGT - Amplitude [%]'] = str(self.sequence.ampl)
 
-            params['Sequence']['Normalized pressure [-] vs. focal depth [mm] equation (Pnorm = a0' +
-                               '+ a1*f + a2*f^2 + a3*f^3 + a4*f^4 + a5*f^5)'] = (
-                                   str(f"Pnorm = {self.sequence.a0} + "  + 
-                                       f"{self.sequence.a1}*f + "  + 
-                                       f"{self.sequence.a2}*f^2 + " +
-                                       f"{self.sequence.a3}*f^3 + " + 
-                                       f"{self.sequence.a4}*f^4 + " + 
-                                       f"{self.sequence.a5}*f^5")
-                                   )
+            params['Sequence']["Voltage [V] vs. amplitude [%] equation (A = a*V + b)"] = (
+                f"A = {self.sequence.V2A_a}*V + {self.sequence.V2A_b} \n ")
 
-            params['Sequence']["Normalized pressure [-] based on chosen focal depth of " +
-                               f"{self.sequence.focus} [mm]"] = str(self.sequence.norm_press)
+            params['Sequence']["Pressure [Pa] vs. amplitude [%] equation (A = a*P + b)"] = (
+                f" P = {self.sequence.P2A_a}*V + {self.sequence.P2A_b} \n ")
 
-            params['Sequence']["Pressure [MPa] vs. voltage [V] equation (P = a*V + b)"] = (
-                str(f"P = {self.sequence.V2P_a}*V + {self.sequence.V2P_b}")
-                )
+            params['Sequence'][f"Normalized pressure [-] vs. focal depth [mm] equation between a focus of "
+                         f"{self.sequence.F2EQF1_low_lim} and {self.sequence.F2EQF1_up_lim} [mm] (EQ1 = a0 + " +
+                         f"a1*f + a2*f^2 + a3*f^3 + a4*f^4 + a5*f^5)"] = (f"Pnorm = {self.sequence.F2EQF1_a0} + " +
+                         f"{self.sequence.F2EQF1_a1}*f + {self.sequence.F2EQF1_a2}*f^2 + {self.sequence.F2EQF1_a3}*f^3 + " +
+                         f"{self.sequence.F2EQF1_a4}*f^4 + {self.sequence.F2EQF1_a5}*f^5 \n ")
+
+            params['Sequence'][f"Normalized pressure [-] vs. focal depth [mm] equation between a focus of "
+                         f"{self.sequence.F2EQF2_low_lim} and {self.sequence.F2EQF2_up_lim} [mm] (EQ2 = a0 + " +
+                         f"a1*f + a2*f^2 + a3*f^3 + a4*f^4 + a5*f^5)"] = (f"Pnorm = {self.sequence.F2EQF2_a0} + " +
+                         f"{self.sequence.F2EQF2_a1}*f + {self.sequence.F2EQF2_a2}*f^2 + {self.sequence.F2EQF2_a3}*f^3 + " +
+                         f"{self.sequence.F2EQF2_a4}*f^4 + {self.sequence.F2EQF2_a5}*f^5 \n ")
+
+            params['Sequence'][f"Normalized pressure [-] based on chosen focal depth of {self.sequence._focus_wrt_exit_plane} [mm]"] = (
+                f"{self.sequence._eq_factor} \n ")
 
         else:
             params['Sequence']['Unknown power unit'] = str(self.sequence.power_value)
