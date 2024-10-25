@@ -55,6 +55,7 @@ import math
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from scipy.integrate import cumulative_trapezoid
 
 # Own packages
 from frontend import check_dialogs
@@ -535,13 +536,13 @@ class Acquisition:
         rms = np.sqrt(mean_volt).flatten()
 
         # Calculate center of mass
-        cumsum = np.cumsum(rms).flatten()
-        center_of_mass_value = cumsum[-1] / 2
+        cumsum_trapz  = cumulative_trapezoid(rms, initial=0).flatten()
+        center_of_mass_value = cumsum_trapz[-1] / 2
         
         coord_index = [0 if direction == 'x' else 1]
         coords = dest_xyz_list[:, :, :, coord_index].flatten()
         
-        center_of_mass_coord = np.interp(center_of_mass_value, cumsum, coords)
+        center_of_mass_coord = np.interp(center_of_mass_value, cumsum_trapz, coords)
         
         logger.info(f"Found center of mass in {direction}-direction: {center_of_mass_coord:.3f} mm")
 
@@ -576,8 +577,9 @@ class Acquisition:
         coords = dest_xyz_list[:, :, :, coord_index].flatten()
 
         ax.plot(coords, rms*1000, linestyle='-', linewidth=0.5, marker='.', markersize=2)
-        ax.axvline(x=center_of_mass_coord, color='r', linestyle='--')
-        
+        ax.axvline(x=center_of_mass_coord, color='r', linestyle='--', linewidth=0.5)
+        print(f'red line center_of_mass_coord: {center_of_mass_coord}')
+
         if direction == 'x':
             x_upper_lim = self.input_param.coord_zero[0] + self.sequence.ac_align["init_line_len"]/2
             x_lower_lim = self.input_param.coord_zero[0] - self.sequence.ac_align["init_line_len"]/2
