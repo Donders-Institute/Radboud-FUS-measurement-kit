@@ -556,6 +556,9 @@ class ProtocolDialog():
 
         self.path_prot.delete(0, tk.END)
         self.path_prot.insert(0, filename)
+        
+        self.input_param.is_ac_align = False
+        self.chosen_prot = self.protocols[0]
 
         # Lift window
         self._resize_window()
@@ -773,7 +776,7 @@ class ProtocolDialog():
                     self.input_param.protocol = os.path.splitext(
                         os.path.basename(self.input_param.path_protocol_excel_file))[0]
 
-            self.input_param.sequences = [self.ac_align_seq]
+                self.input_param.sequences = [self.ac_align_seq]
 
             self.main_prot_entry.delete(0, tk.END)
             self.main_prot_entry.insert(0, self.input_param.protocol)

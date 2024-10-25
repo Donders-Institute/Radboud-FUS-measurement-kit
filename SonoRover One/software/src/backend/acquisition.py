@@ -935,22 +935,26 @@ class Acquisition:
             params['Sequence']['IGT - Voltage [V]'] = str(self.sequence.volt)
             params['Sequence']['IGT - Amplitude [%]'] = str(self.sequence.ampl)
 
-            params['Sequence']['Normalized pressure [-] vs. focal depth [mm] equation (Pnorm = a0' +
-                               '+ a1*f + a2*f^2 + a3*f^3 + a4*f^4 + a5*f^5)'] = (
-                                   str(f"Pnorm = {self.sequence.a0} + "  + 
-                                       f"{self.sequence.a1}*f + "  + 
-                                       f"{self.sequence.a2}*f^2 + " +
-                                       f"{self.sequence.a3}*f^3 + " + 
-                                       f"{self.sequence.a4}*f^4 + " + 
-                                       f"{self.sequence.a5}*f^5")
-                                   )
+            params['Sequence']["Voltage [V] vs. amplitude [%] equation (A = a*V + b)"] = (
+                f"A = {self.sequence.V2A_a}*V + {self.sequence.V2A_b} \n ")
 
-            params['Sequence']["Normalized pressure [-] based on chosen focal depth of " +
-                               f"{self.sequence.focus} [mm]"] = str(self.sequence.norm_press)
+            params['Sequence']["Pressure [Pa] vs. amplitude [%] equation (A = a*P + b)"] = (
+                f" P = {self.sequence.P2A_a}*V + {self.sequence.P2A_b} \n ")
 
-            params['Sequence']["Pressure [MPa] vs. voltage [V] equation (P = a*V + b)"] = (
-                str(f"P = {self.sequence.V2P_a}*V + {self.sequence.V2P_b}")
-                )
+            params['Sequence'][f"Normalized pressure [-] vs. focal depth [mm] equation between a focus of "
+                         f"{self.sequence.F2EQF1_low_lim} and {self.sequence.F2EQF1_up_lim} [mm] (EQ1 = a0 + " +
+                         f"a1*f + a2*f^2 + a3*f^3 + a4*f^4 + a5*f^5)"] = (f"Pnorm = {self.sequence.F2EQF1_a0} + " +
+                         f"{self.sequence.F2EQF1_a1}*f + {self.sequence.F2EQF1_a2}*f^2 + {self.sequence.F2EQF1_a3}*f^3 + " +
+                         f"{self.sequence.F2EQF1_a4}*f^4 + {self.sequence.F2EQF1_a5}*f^5 \n ")
+
+            params['Sequence'][f"Normalized pressure [-] vs. focal depth [mm] equation between a focus of "
+                         f"{self.sequence.F2EQF2_low_lim} and {self.sequence.F2EQF2_up_lim} [mm] (EQ2 = a0 + " +
+                         f"a1*f + a2*f^2 + a3*f^3 + a4*f^4 + a5*f^5)"] = (f"Pnorm = {self.sequence.F2EQF2_a0} + " +
+                         f"{self.sequence.F2EQF2_a1}*f + {self.sequence.F2EQF2_a2}*f^2 + {self.sequence.F2EQF2_a3}*f^3 + " +
+                         f"{self.sequence.F2EQF2_a4}*f^4 + {self.sequence.F2EQF2_a5}*f^5 \n ")
+
+            params['Sequence'][f"Normalized pressure [-] based on chosen focal depth of {self.sequence._focus_wrt_exit_plane} [mm]"] = (
+                f"{self.sequence._eq_factor} \n ")
 
         else:
             params['Sequence']['Unknown power unit'] = str(self.sequence.power_value)
