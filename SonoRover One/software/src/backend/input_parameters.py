@@ -33,8 +33,6 @@ https://github.com/Donders-Institute/Radboud-FUS-measurement-kit
 # Basic packages
 import os
 
-import sys
-
 # Miscellaneous packages
 import configparser
 
@@ -128,14 +126,14 @@ class InputParameters:
 
         # Get available PicoScope list
         self.pico_list = ps.get_pico_list()
-        self.picoscope = self.pico_list[0]
+        self.picoscope = self.pico_list[2]
         self.pico_names = ps.get_pico_names()
         self.sampl_freq_multi = 50
 
         self.temp = ''  # temperature in celsius
         self.dis_oxy = ''  # dissolved oxygen in mg/L
 
-        self.coord_zero = [-50, -50, -150]
+        self.coord_zero = [-62, -61, -155]
         self.perform_all_seqs = True
 
         self.adjust_param = config['Characterization']['ACD adjustment'].split(', ')
