@@ -112,7 +112,8 @@ class CharacSequence(sequence.Sequence):
 
         info += f"Acoustical alignment performed?: {self.is_ac_align} \n "
         info += "Acoustical alignment parameters: \n"
-        info += f"  - Distance from focus [mm]: {self.ac_align['distance_from_foc']} \n"
+        info += ("  - Distance from focus wrt exit plane [mm]:" +
+                 f" {self.ac_align['distance_from_foc']} \n")
         info += f"  - Initial line length [mm]: {self.ac_align['init_line_len']} \n"
         info += f"  - Initial line stepsize [mm]: {self.ac_align['init_line_step']} \n"
         info += f"  - Initial threshold [mm]: {self.ac_align['init_threshold']} \n"
@@ -230,7 +231,7 @@ class CharacSequence(sequence.Sequence):
         else:
             self.dephasing_degree = float(seq_row[excel_ind["dephasing"]])
 
-        self.focus = abs(float(seq_row[excel_ind["focus"]]))  # [mm]
+        self.focus_wrt_exit_plane = abs(float(seq_row[excel_ind["focus"]]))  # [mm]
 
         power_param = str(seq_row[excel_ind["power"]])
         match power_param:

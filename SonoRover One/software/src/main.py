@@ -75,8 +75,14 @@ def main():
     inp_file = impresources.files(fds_config) / 'ds_config.ini'
     read_additional_config(inp_file)
 
-    # Import sequences of excel, delay import due to initialization of logger
+    # Delay import due to initialization of logger
     from frontend.input_dialog import InputDialog
+    from backend import sequence
+    from backend import test_acquisition as test_aq
+    from backend import acoustical_alignment as ac_align
+    from backend import acquisition as aq
+    from frontend import check_dialogs
+
     # Create dialog to retrieve input values
     input_dialog = InputDialog()
     input_param = input_dialog.input_param
@@ -87,18 +93,16 @@ def main():
         # No sequence chosen using GUI, so read excel file
         if not input_param.sequences:
             # Import sequences of excel, delay import due to initialization of logger
-            from backend import sequence
             input_param.sequences = sequence.generate_sequence_list(input_param)
 
         # Initialize acquisition by initializing all equipment
-        # Delay import due to initialization of logger
-        from frontend import check_dialogs
         if is_testing:
-            from backend import test_acquisition as test_aq
             acquisition = test_aq.TestAcquisition(input_param, init_motor, init_ds, init_pico)
+        elif input_param.is_ac_align:
+            acquisition = ac_align.AcousticalAlignment(input_param)
         else:
-            from backend import acquisition as aq
             acquisition = aq.Acquisition(input_param)
+
         try:
             for seq in input_param.sequences:
                 if not input_param.perform_all_seqs:
