@@ -33,8 +33,6 @@ https://github.com/Donders-Institute/Radboud-FUS-measurement-kit
 # Basic packages
 import os
 
-import sys
-
 # Miscellaneous packages
 import configparser
 
@@ -128,14 +126,14 @@ class InputParameters:
 
         # Get available PicoScope list
         self.pico_list = ps.get_pico_list()
-        self.picoscope = self.pico_list[0]
+        self.picoscope = self.pico_list[2]
         self.pico_names = ps.get_pico_names()
         self.sampl_freq_multi = 50
 
         self.temp = ''  # temperature in celsius
         self.dis_oxy = ''  # dissolved oxygen in mg/L
 
-        self.coord_zero = [-50, -50, -150]
+        self.coord_zero = [-62.2, -60.6, -155.528]
         self.perform_all_seqs = True
 
         self.adjust_param = config['Characterization']['ACD adjustment'].split(', ')
@@ -208,7 +206,7 @@ class InputParameters:
                 cached_input['Input parameters.Protocol']['Alignment.power_option'] = "Amplitude [%]"
                 cached_input['Input parameters.Protocol']['Alignment.power_value'] = str(seq.ampl)
 
-            cached_input['Input parameters.Protocol']['Alignment.focus'] = str(seq.focus)
+            cached_input['Input parameters.Protocol']['Alignment.focus_wrt_exit_plane'] = str(seq.focus_wrt_exit_plane)
 
             cached_input['Input parameters.Protocol']['Alignment.distance_from_foc'] = str(seq.ac_align['distance_from_foc'])
             cached_input['Input parameters.Protocol']['Alignment.init_line_len'] = str(seq.ac_align['init_line_len'])
@@ -323,7 +321,7 @@ class InputParameters:
             elif power_option == "Amplitude [%]":
                 seq.ampl = power_value
 
-            seq.focus = float(cached_input['Input parameters.Protocol']['Alignment.focus'])
+            seq.focus_wrt_exit_plane = float(cached_input['Input parameters.Protocol']['Alignment.focus_wrt_exit_plane'])
 
             seq.ac_align['distance_from_foc'] = float(cached_input['Input parameters.Protocol']['Alignment.distance_from_foc'])
             seq.ac_align['init_line_len'] = float(cached_input['Input parameters.Protocol']['Alignment.init_line_len'])
@@ -381,17 +379,17 @@ class InputParameters:
         info += f"Temporary path of output: {self.temp_dir_output} \n "
         info += f"Path of output: {self.dir_output} \n "
 
-        info = str(self.driving_sys)
-        info = str(self.tran)
+        info += str(self.driving_sys)
+        info += str(self.tran)
 
         info += f"Operating frequency [kHz]: {self.oper_freq} \n "
 
         info += f"COM port of positioning system: {self.pos_com_port} \n "
 
-        info = str(self.hydrophone)
+        info += str(self.hydrophone)
         info += f"Hydrophone acquisition time [us]: {self.acquisition_time} \n "
 
-        info = str(self.picoscope)
+        info += str(self.picoscope)
         info += f"Picoscope sampling frequency multiplication factor: {self.sampl_freq_multi} \n "
 
         info += f"Temperature of water [°C]: {self.temp} \n "
@@ -404,5 +402,8 @@ class InputParameters:
         info += f"Beginning time of processing window [us]: {self.acd_param['begus']} \n "
         info += f"End time of processing window [us]: {self.acd_param['endus']} \n "
         info += f"Moving processing window along?: {self.acd_param['adjust']} \n "
+
+        for seq in self.sequences:
+            info += str(self.seq)
 
         return info

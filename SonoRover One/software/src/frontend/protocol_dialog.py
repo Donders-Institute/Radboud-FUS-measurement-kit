@@ -252,12 +252,12 @@ class ProtocolDialog():
         self.power_entry.insert(0, def_power_value)
         self.power_entry.grid(row=self.row_nr, column=1, padx=10, pady=5, sticky="e")
 
-        self.focus = self._create_entry("Focus [mm]",
-                                        self.ac_align_seq.focus,
+        self.focus = self._create_entry("Focus wrt exit plane [mm]",
+                                        self.ac_align_seq.focus_wrt_exit_plane,
                                         is_event=True, event_handling=self._event_handling,
                                         width=500)
 
-        self.focus_dist = self._create_entry("Distance from focus [mm]",
+        self.focus_dist = self._create_entry("Distance from focus wrt exit plane [mm]",
                                              self.ac_align_seq.ac_align['distance_from_foc'],
                                              is_event=True, event_handling=self._event_handling,
                                              width=500)
@@ -748,7 +748,7 @@ class ProtocolDialog():
                 elif chosen_power == "Amplitude [%]":
                     self.ac_align_seq.ampl = abs(float(self.power_entry.get()))
 
-                self.ac_align_seq.focus = abs(float(self.focus.get()))
+                self.ac_align_seq.focus_wrt_exit_plane = abs(float(self.focus.get()))
 
                 # Assign the values from the input fields to the ac_align parameters
                 # Parse float entries from entry fields
