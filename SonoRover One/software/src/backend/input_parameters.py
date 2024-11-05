@@ -133,7 +133,7 @@ class InputParameters:
         self.temp = ''  # temperature in celsius
         self.dis_oxy = ''  # dissolved oxygen in mg/L
 
-        self.coord_zero = [-62, -61, -155]
+        self.coord_zero = [-62.2, -60.6, -155.528]
         self.perform_all_seqs = True
 
         self.adjust_param = config['Characterization']['ACD adjustment'].split(', ')
