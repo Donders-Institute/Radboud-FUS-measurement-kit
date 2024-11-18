@@ -231,7 +231,14 @@ class CharacSequence(sequence.Sequence):
         else:
             self.dephasing_degree = float(seq_row[excel_ind["dephasing"]])
 
-        self.focus_wrt_exit_plane = abs(float(seq_row[excel_ind["focus"]]))  # [mm]
+        focus_definition = str(seq_row[excel_ind["focus_def"]])
+
+        match focus_definition:
+            case 'Focus wrt exit plane [mm]':
+                self.focus_wrt_exit_plane = abs(float(seq_row[excel_ind["focus_value"]]))  # [mm]
+
+            case 'Focus wrt mid bowl [mm]':
+                self.focus_wrt_mid_bowl = abs(float(seq_row[excel_ind["focus_value"]]))  # [mm]
 
         power_param = str(seq_row[excel_ind["power"]])
         match power_param:
@@ -268,7 +275,7 @@ class CharacSequence(sequence.Sequence):
         self.pulse_ramp_dur = abs(float(seq_row[excel_ind["ramp_dur"]])) / 1e3
 
         # ## pulse train ## #
-        self.pulse_train_dur = abs(float(seq_row[excel_ind["pulse_train_dur"]]))  # [ms]
+        self.pulse_train_dur = self.pulse_rep_int  # [ms]
         self.pulse_train_rep_int = self.pulse_train_dur  # [ms]
 
         # ## pulse train repetition ## #
@@ -313,11 +320,6 @@ class CharacSequence(sequence.Sequence):
 
                 self._calculate_n_vector(directions, dimensions, step_sizes)
 
-            case 'Acoustical alignment':
-                self.use_coord_excel = False
-                self.path_coord_excel = None
-                self.is_ac_align = True
-
 
 def _define_excel_indices(data):
     """
@@ -342,7 +344,8 @@ def _define_excel_indices(data):
         "power": data.columns.get_loc('SC - Global power [mW] or IGT - Max. pressure in free ' +
                                       'water [Mpa], Voltage [V] or Amplitude [%]'),
         "power_value": data.columns.get_loc('Corresponding value'),
-        "focus": data.columns.get_loc('Focus [mm]'),
+        "focus_def": data.columns.get_loc('Focus definition'),
+        "focus_value": data.columns.get_loc('Focus value [mm]'),
         "ramp_mode": data.columns.get_loc('Modulation'),
         "ramp_dur": data.columns.get_loc('Ramp duration [us]'),
 

@@ -346,7 +346,7 @@ class AcousticalAlignment(acq.Acquisition):
         if direction == 'y':
             ax.get_yaxis().set_visible(False)
 
-        ax.set_ylim(0, self.sequence.volt*1.2)
+        ax.set_ylim(0, 200)
         ax.set_xlabel(f'{direction.upper()}-coordinates [mm]')
 
     def _calculate_acoustical_axis(self, middle_points):
