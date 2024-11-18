@@ -248,19 +248,15 @@ class CharacSequence(sequence.Sequence):
 
             case 'SC - Global power [mW] (fill in \'Corresponding value\')':
                 self.global_power = abs(float(seq_row[excel_ind["power_value"]]))/1000  # SC: gp [W]
-                self.ampl = None  # IGT: amplitude [%]
 
             case 'IGT - Max. pressure in free water [MPa] (fill in \'Corresponding value\')':
                 self.press = abs(float(seq_row[excel_ind["power_value"]]))
-                self.global_power = None  # SC: global power [W]
 
             case 'IGT - Voltage [V] (fill in \'Corresponding value\')':
                 self.volt = abs(float(seq_row[excel_ind["power_value"]]))
-                self.global_power = None  # SC: global power [W]
 
             case 'IGT - Amplitude [%] (fill in \'Corresponding value\')':
                 self.ampl = abs(float(seq_row[excel_ind["power_value"]]))  # IGT: amplitude [%]
-                self.global_power = None  # SC: global power [W]
 
         # Timing parameters
         # ## pulse ## #
@@ -336,10 +332,9 @@ def _define_excel_indices(data):
         "seq_num": data.columns.get_loc('Sequence number'),
         "tag": data.columns.get_loc('Tag'),
         "dephasing": data.columns.get_loc('Dephasing degree (None = no dephasing) ' +
-                                          'CURRENLTY ONLY APPLICABLE FOR IGT DS'),
+                                          'CURRENTLY ONLY APPLICABLE FOR IGT DS'),
         "pulse_dur": data.columns.get_loc('Pulse duration [us]'),
         "pulse_rep_int": data.columns.get_loc('Pulse Repetition Interval [ms]'),
-        "pulse_train_dur": data.columns.get_loc('Pulse Train Duration [ms]'),
 
         "power": data.columns.get_loc('SC - Global power [mW] or IGT - Max. pressure in free ' +
                                       'water [Mpa], Voltage [V] or Amplitude [%]'),
