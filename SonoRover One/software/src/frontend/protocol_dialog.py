@@ -737,6 +737,8 @@ class ProtocolDialog():
                 self.ac_align_seq.pulse_train_rep_int = self.ac_align_seq.pulse_rep_int
                 self.ac_align_seq.pulse_train_rep_dur = self.ac_align_seq.pulse_rep_int/1000  # [s]
 
+                self.ac_align_seq.focus_wrt_exit_plane = abs(float(self.focus.get()))
+
                 chosen_power = self.power_combo.get()
                 # TODO: add chosen powers to config
                 if chosen_power == "Global power [mW]":
@@ -747,8 +749,6 @@ class ProtocolDialog():
                     self.ac_align_seq.volt = abs(float(self.power_entry.get()))
                 elif chosen_power == "Amplitude [%]":
                     self.ac_align_seq.ampl = abs(float(self.power_entry.get()))
-
-                self.ac_align_seq.focus_wrt_exit_plane = abs(float(self.focus.get()))
 
                 # Assign the values from the input fields to the ac_align parameters
                 # Parse float entries from entry fields

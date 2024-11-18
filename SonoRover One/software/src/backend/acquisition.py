@@ -559,8 +559,8 @@ class Acquisition:
             params['Sequence']["Normalized pressure [-] vs. focal depth wrt exit plane [mm] " +
                                "equation between a focus wrt exit plane of " +
                                f"{self.sequence.F2EQF2_low_lim} and {self.sequence.F2EQF2_up_lim}" +
-                               " [mm] (EQ1 = a0 + a1*f + a2*f^2 + a3*f^3 + a4*f^4 + a5*f^5)"] = (
-                               f"EQ1 = {self.sequence.F2EQF2_a0} + {self.sequence.F2EQF2_a1}*f + " +
+                               " [mm] (EQ2 = a0 + a1*f + a2*f^2 + a3*f^3 + a4*f^4 + a5*f^5)"] = (
+                               f"EQ2 = {self.sequence.F2EQF2_a0} + {self.sequence.F2EQF2_a1}*f + " +
                                f"{self.sequence.F2EQF2_a2}*f^2 + {self.sequence.F2EQF2_a3}*f^3 + " +
                                f"{self.sequence.F2EQF2_a4}*f^4 + {self.sequence.F2EQF2_a5}*f^5 + " +
                                f"{self.sequence.F2EQF2_a6}*f^6 + {self.sequence.F2EQF2_a7}*f^7 \n ")

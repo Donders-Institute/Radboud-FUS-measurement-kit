@@ -307,6 +307,8 @@ class InputParameters:
             seq.pulse_dur = float(cached_input['Input parameters.Protocol']['Alignment.pulse_dur'])
             seq.pulse_rep_int = float(cached_input['Input parameters.Protocol']['Alignment.pulse_rep_int'])
 
+            seq.focus_wrt_exit_plane = float(cached_input['Input parameters.Protocol']['Alignment.focus_wrt_exit_plane'])
+
             # Retrieve and set power parameters based on the power option.
             power_option = cached_input['Input parameters.Protocol']['Alignment.power_option']
             power_value = float(cached_input['Input parameters.Protocol']['Alignment.power_value'])
@@ -320,8 +322,6 @@ class InputParameters:
                 seq.volt = power_value
             elif power_option == "Amplitude [%]":
                 seq.ampl = power_value
-
-            seq.focus_wrt_exit_plane = float(cached_input['Input parameters.Protocol']['Alignment.focus_wrt_exit_plane'])
 
             seq.ac_align['distance_from_foc'] = float(cached_input['Input parameters.Protocol']['Alignment.distance_from_foc'])
             seq.ac_align['init_line_len'] = float(cached_input['Input parameters.Protocol']['Alignment.init_line_len'])
@@ -404,6 +404,6 @@ class InputParameters:
         info += f"Moving processing window along?: {self.acd_param['adjust']} \n "
 
         for seq in self.sequences:
-            info += str(self.seq)
+            info += str(seq)
 
         return info
