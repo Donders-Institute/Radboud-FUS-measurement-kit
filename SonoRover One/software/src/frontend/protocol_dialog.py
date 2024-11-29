@@ -57,17 +57,21 @@ class ProtocolDialog():
         acd_param (dict): Dictionary storing ACD processing parameters.
     """
 
-    def __init__(self, input_param, prot_entry):
+    def __init__(self, root_win, input_param, prot_entry):
         """
         Initializes the ProtocolDialog instance.
         """
 
+        self.root_win = root_win
         self.win = None
         self.main_prot_entry = prot_entry
-        self.not_exited_flag = True
         self.row_nr = 0
 
         self.input_param = input_param
+
+        self._equip_combos = config['Equipment']['Combinations']
+        self._ds_tran_combo = '~'.join([self.input_param.driving_sys.serial,
+                                        self.input_param.tran.serial])
 
         if not self.input_param.sequences:
             self.ac_align_seq = sequence.CharacSequence()
@@ -77,7 +81,7 @@ class ProtocolDialog():
 
             self.ac_align_seq = self.input_param.sequences[0]
 
-        self.n_ac_align_rows = 14
+        self.n_ac_align_rows = 16
 
         self._build_dialog()
 
@@ -88,7 +92,10 @@ class ProtocolDialog():
 
         # Get input parameters from user
         try:
-            self.win = ctk.CTk()
+            # Block main window until action within subdialog is finished
+            self.win = ctk.CTkToplevel(self.root_win)
+            self.win.grab_set()
+
             ctk.set_appearance_mode("System")
             self.win.title('Choose protocol')
 
@@ -96,7 +103,7 @@ class ProtocolDialog():
 
             self._create_buttons()
 
-            #self._event_handling(None)  # perform initial event handling
+            self._event_handling(None)  # perform initial event handling
 
             self._resize_window()
 
@@ -104,8 +111,7 @@ class ProtocolDialog():
 
         except AttributeError:
             print(logging.exception('AttributeError'))
-            if self.not_exited_flag:
-                self.win.destroy()
+            self._cancel_action()
 
     def _resize_window(self):
         """
@@ -152,31 +158,31 @@ class ProtocolDialog():
                                                  int(self.input_param.oper_freq),
                                                  is_event=True, event_handling=self._event_handling)
 
-        # Protocol
-        # TODO: add to config
-        self.protocols = ['Select protocol excel file...', 'Acoustical alignment']
-        if self.input_param.is_ac_align is False:
-            self.chosen_prot = self.protocols[0]
+        # Choose protocol extraction method
+        protocols = config['Characterization']['Protocols'].split('\n')
+        if self.input_param.is_ac_align:
+            chosen_prot = config['Characterization']['Protocol.ac_align']
         else:
-            self.chosen_prot = self.protocols[1]
+            chosen_prot = config['Characterization']['Protocol.excel']
 
-        self.prot_combo = self._create_combo("Protocol", self.protocols, self.chosen_prot,
+        self.prot_combo = self._create_combo("Protocol", protocols, chosen_prot,
                                              self._prot_combo_action)
 
-        # Path and filename of protocol excel file
-        self.path_prot = self._create_entry("Path and filename of protocol excel file",
-                                            self.input_param.path_protocol_excel_file,
-                                            is_event=True, event_handling=self._event_handling,
-                                            width=350)
-
-        # Browse button to select protocol excel file
-        button = ctk.CTkButton(master=self.win, text="Browse", command=self._get_filename)
-        button.grid(row=self.row_nr, column=1, padx=10, sticky="e")
-
         # Save row where to insert additional entries
-        self.insert_row = self.row_nr
+        self.insert_row = self.row_nr + 1
 
-        self._prot_combo_action(None)
+        if self.input_param.is_ac_align:
+            self._create_ac_align_entries()
+        else:
+            # Path and filename of protocol excel file
+            self.path_prot = self._create_entry("Path and filename of protocol excel file",
+                                                self.input_param.path_protocol_excel_file,
+                                                is_event=True, event_handling=self._event_handling,
+                                                width=350)
+
+            # Browse button to select protocol excel file
+            button = ctk.CTkButton(master=self.win, text="Browse", command=self._get_filename)
+            button.grid(row=self.row_nr, column=1, padx=10, sticky="e")
 
         # Error message label
         self._add_row()
@@ -190,7 +196,15 @@ class ProtocolDialog():
 
         start_row = self.row_nr
 
-        # Define processing window
+        # Output path
+        self.output_path = self._create_entry("Path of output directory",
+                                              self.input_param.dir_output, is_event=True,
+                                              event_handling=self._event_handling, width=350)
+
+        # Browse button to select output directory
+        button = ctk.CTkButton(master=self.win, text="Browse", command=self._get_directory)
+        button.grid(row=self.row_nr, column=1, padx=10, sticky="e")
+
         self.pulse_dur = self._create_entry("Pulse duration [us]",
                                             self.ac_align_seq.pulse_dur*1000,
                                             is_event=True, event_handling=self._event_handling,
@@ -201,64 +215,61 @@ class ProtocolDialog():
                                                 is_event=True, event_handling=self._event_handling,
                                                 width=500)
 
-        # TODO: add to config
-        self.igt_power_options = ["Max. pressure in free water [MPa]", "Voltage [V]", "Amplitude [%]"]
-        self.sc_power_options = ["Global power [mW]"]
-        power_options = self.igt_power_options + self.sc_power_options
+        power_options = config['General']['Power options'].split('\n')
+        def_power = power_options[0]
 
-        # TODO: connect this part to ds_combo action
-        # cur_ds_system = self.ds_combo.get()
-        # for ds in self.input_param.ds_list:
-        #     if ds.name == cur_ds_system:
-        #         self.input_param.driving_sys = ds
+        self.power_combo = self._create_combo("Power setting", power_options, def_power,
+                                              self._event_handling, width=240)
 
-        # # TODO: update this when ds is changed
-        # ds_manufact = str(self.input_param.driving_sys.manufact)
-        # if ds_manufact == config['Equipment.Manufacturer.SC']['Name']:
-        #     power_options = self.sc_power_options
+        self.power_entry = ctk.CTkEntry(master=self.win, width=240)
+        self.power_entry.bind('<Return>', self._event_handling)
+        self.power_entry.bind('<1>', self._event_handling)
+        self.power_entry.insert(0, 0)
+        self.power_entry.grid(row=self.row_nr, column=1, padx=10, pady=5, sticky="e")
 
-        # elif ds_manufact == config['Equipment.Manufacturer.IGT']['Name']:
-        #     power_options = self.igt_power_options
+        cur_ds_system = self.ds_combo.get()
+        for ds in self.input_param.ds_list:
+            if ds.name == cur_ds_system:
+                self._update_power_options(ds)
+                break
 
-        if not self.input_param.sequences:
-            def_power = power_options[0]
-            def_power_value = 0
-        else:
+        focus_settings = config['General']['Focus options'].split('\n')
+        def_focus_setting = focus_settings[0]
+        self.focus_combo = self._create_combo("Focus", focus_settings, def_focus_setting,
+                                              self._event_handling, width=240)
+
+        self.focus_entry = ctk.CTkEntry(master=self.win, width=240)
+        self.focus_entry.bind('<Return>', self._event_handling)
+        self.focus_entry.bind('<1>', self._event_handling)
+        self.focus_entry.insert(0, 0)
+        self.focus_entry.grid(row=self.row_nr, column=1, padx=10, pady=5, sticky="e")
+
+        # Set known power information from ini
+        if self.input_param.sequences:
             if len(self.input_param.sequences) > 1:
                 logger.error('Handling a regular sequence collected by the GUI has not been implemented yet.')
 
             seq = self.input_param.sequences[0]
 
             def_power = seq.chosen_power
-            if seq.chosen_power == "Global power [mW]":
-                def_power = "Global power [mW]"
-                def_power_value = seq.global_power
-            elif seq.chosen_power == "Max. pressure in free water [MPa]":
+            if seq.chosen_power == config['General']['Power option.glob_pow']:
+                def_power_value = seq.global_power*1000  # [W] to [mW]
+            elif seq.chosen_power == config['General']['Power option.press']:
                 def_power_value = seq.press
-            elif seq.chosen_power == "Voltage [V]":
+            elif seq.chosen_power == config['General']['Power option.volt']:
                 def_power_value = seq.volt
-            elif seq.chosen_power == "Amplitude [%]":
+            elif seq.chosen_power == config['General']['Power option.ampl']:
                 def_power_value = seq.ampl
 
-        self.power_combo = self._create_combo("Power setting", power_options, def_power,
-                                              self._event_handling, width=240)
+            self.power_combo.set(def_power)
 
-        self.power_entry = ctk.CTkEntry(master=self.win, width=240)
+            self.power_entry.delete(0, tk.END)
+            self.power_entry.insert(0, def_power_value)
 
-        self.power_entry.bind('<Return>', self._event_handling)
-        self.power_entry.bind('<1>', self._event_handling)
+            self._update_focus_entry(seq.chosen_focus)
 
-        # TODO: default power entry
-        self.power_entry.insert(0, def_power_value)
-        self.power_entry.grid(row=self.row_nr, column=1, padx=10, pady=5, sticky="e")
-
-        self.focus = self._create_entry("Focus wrt exit plane [mm]",
-                                        self.ac_align_seq.focus_wrt_exit_plane,
-                                        is_event=True, event_handling=self._event_handling,
-                                        width=500)
-
-        self.focus_dist = self._create_entry("Distance from focus wrt exit plane [mm]",
-                                             self.ac_align_seq.ac_align['distance_from_foc'],
+        self.focus_dist = self._create_entry("Distance from focus wrt exit plane [mm] array",
+                                             str(self.ac_align_seq.ac_align['distance_from_foc']),
                                              is_event=True, event_handling=self._event_handling,
                                              width=500)
 
@@ -290,11 +301,22 @@ class ProtocolDialog():
 
         self.create_graphs = self._create_checkbox("Create graphs of every line measurement",
                                                    self.ac_align_seq.ac_align['create_graphs'],
-                                                   True, self._event_handling)
+                                                   True, self._graph_check_action)
+
+        self.y_lim_label, self.y_lim = self._create_entry("Y axis limit [mV]",
+                                                          self.ac_align_seq.ac_align['y_lim'],
+                                                          is_event=True,
+                                                          event_handling=self._event_handling,
+                                                          width=500, return_label=True)
+
+        if not self.ac_align_seq.ac_align['create_graphs']:
+            # Save location for the entry, but hide it when false
+            self.y_lim_label.grid_remove()
+            self.y_lim.grid_remove()
 
         self.create_axis_file = self._create_checkbox("Create axial measurement coordinate file",
                                                       self.ac_align_seq.ac_align['create_axis_file'],
-                                                      True, self._event_handling)
+                                                      True, self._axis_file_check_action)
 
         # TODO: create self._create_axis_file_combo to enable/disable below entries
 
@@ -308,20 +330,57 @@ class ProtocolDialog():
                                                                     is_event=True, event_handling=self._event_handling,
                                                                     width=500, return_label=True)
 
+        # Save location for the entry, but hide it when false
+        if not self.ac_align_seq.ac_align['create_axis_file']:
+            self.axial_len_label.grid_remove()
+            self.axial_len.grid_remove()
+
+            self.axial_step_label.grid_remove()
+            self.axial_step.grid_remove()
+
+        self._resize_window()
+
         end_row = self.row_nr
 
         self.n_ac_align_rows = end_row - start_row
 
-        # TODO: enable/disable based on checkbox
-        # Save location for the entry, but hide it when false
-        # if not self.ac_align_seq.ac_align['create_axis_file']:
-        #     self.axial_len_label.grid_remove()
-        #     self.axial_len.grid_remove()
+    def _update_power_options(self, cur_ds):
 
-        #     self.axial_step_label.grid_remove()
-        #     self.axial_step.grid_remove()
+        ds_manufact = str(cur_ds.manufact)
+        if ds_manufact == config['Equipment.Manufacturer.SC']['Name']:
+            power_options = config['Equipment.Manufacturer.SC']['Power options'].split('\n')
 
-        #     self.n_ac_align_rows = self.n_ac_align_rows - 2
+        elif ds_manufact == config['Equipment.Manufacturer.IGT']['Name']:
+
+            if self._ds_tran_combo in self._equip_combos:
+                power_options = config['Equipment.Manufacturer.IGT']['Power options'].split('\n')
+            else:
+                power_options = [config['General']['Power option.ampl']]
+
+        else:
+            power_options = config['General']['Power options'] .split('\n')
+
+        def_power = power_options[0]
+        def_power_value = 0
+
+        self.power_combo.configure(values=power_options)
+        self.power_combo.set(def_power)
+
+        self.power_entry.delete(0, tk.END)
+        self.power_entry.insert(0, def_power_value)
+
+    def _update_focus_entry(self, focus_option):
+
+        shown_focus = 0
+        if focus_option == config['General']['Focus option.exit']:
+            shown_focus = self.ac_align_seq.focus_wrt_exit_plane
+        elif focus_option == config['General']['Focus option.bowl']:
+            shown_focus = self.ac_align_seq.focus_wrt_mid_bowl
+
+        self.focus_combo.set(focus_option)
+
+        self.focus_entry.delete(0, tk.END)
+        self.focus_entry.insert(0, shown_focus)
 
     def _create_buttons(self):
         """
@@ -333,7 +392,6 @@ class ProtocolDialog():
         # Ok button
         self.ok_button = ctk.CTkButton(master=self.win, text="Ok", command=self._ok_action)
         self.ok_button.grid(row=self.row_nr, column=0, sticky='w', ipadx=53, padx=10, pady=10)
-        # TODO: Change to DISABLED when validating values
         self.ok_button.configure(state=tk.NORMAL)
 
         # Cancel button
@@ -450,6 +508,7 @@ class ProtocolDialog():
 
         for ds in self.input_param.ds_list:
             if ds.name == cur_ds:
+                self.input_param.driving_sys = ds
                 if 'COM' in ds.connect_info:
                     self.input_param.is_ds_com_port = True
 
@@ -469,6 +528,15 @@ class ProtocolDialog():
                         self.com_us_label.grid_remove()
                         self.com_us.grid_remove()
 
+                # Update equipment combo name
+                self._ds_tran_combo = '~'.join([ds.serial,
+                                                self.input_param.tran.serial])
+
+                # Update power options if acoustical alignment is chosen
+                if self.prot_combo.get() == config['Characterization']['Protocol.ac_align']:
+                    self._update_power_options(ds)
+                break
+
         self._event_handling(event)
 
     def _trans_combo_action(self, event):
@@ -481,8 +549,16 @@ class ProtocolDialog():
 
         for tran in self.input_param.tran_list:
             if tran.name == new_tran_name:
+                self.input_param.tran = tran
                 self.oper_freq_entr.delete(0, tk.END)
                 self.oper_freq_entr.insert(0, int(tran.fund_freq))
+
+                # Update equipment combo name
+                self._ds_tran_combo = '~'.join([self.input_param.driving_sys.serial,
+                                                tran.serial])
+
+                self._event_handling(event)
+                break
 
     def _prot_combo_action(self, event):
 
@@ -512,9 +588,7 @@ class ProtocolDialog():
         self.row_nr = self.insert_row - 1
 
         cur_prot = self.prot_combo.get()
-
-        # Protocols[0]: Select protocol excel file...
-        if cur_prot == self.protocols[0]:
+        if cur_prot == config['Characterization']['Protocol.excel']:
             self.input_param.is_ac_align = False
 
             # Shift widgets below this point down by updating their grid positions
@@ -532,8 +606,7 @@ class ProtocolDialog():
             button = ctk.CTkButton(master=self.win, text="Browse", command=self._get_filename)
             button.grid(row=self.row_nr, column=1, padx=10, sticky="e")
 
-        # Protocols[1]: acoustical alignment
-        elif cur_prot == self.protocols[1]:
+        elif cur_prot == config['Characterization']['Protocol.ac_align']:
             self.input_param.is_ac_align = True
 
             # Shift widgets below this point down by updating their grid positions
@@ -542,6 +615,8 @@ class ProtocolDialog():
                     widget.grid(row=widget.grid_info()['row'] + self.n_ac_align_rows, column=widget.grid_info()['column'])
 
             self._create_ac_align_entries()
+
+        self._event_handling(event)
 
         self._resize_window()
 
@@ -556,14 +631,28 @@ class ProtocolDialog():
 
         self.path_prot.delete(0, tk.END)
         self.path_prot.insert(0, filename)
-        
+
         self.input_param.is_ac_align = False
-        self.chosen_prot = self.protocols[0]
 
         # Lift window
         self._resize_window()
 
-        #self._event_handling(None)
+        self._event_handling(None)
+
+    def _get_directory(self):
+        """
+        Opens a file dialog to select a folder and updates the corresponding entry field.
+        """
+
+        directory = tk.filedialog.askdirectory(initialdir=self.input_param.dir_output)
+
+        self.output_path.delete(0, tk.END)
+        self.output_path.insert(0, directory)
+
+        # Lift window
+        self._resize_window()
+
+        self._event_handling(None)
 
     def _event_handling(self, event):
         """
@@ -574,18 +663,54 @@ class ProtocolDialog():
         if ctk.get_appearance_mode() == 'Dark':
             def_color = 'white'
 
-        # error_message = self._validate_inputs()
+        error_message = self._validate_inputs()
 
-        # if error_message == '':
-        #     self.ok_button.configure(state=tk.NORMAL)
-        #     self.error_label.configure(
-        #             text=error_message,
-        #             text_color=def_color)
-        # else:
-        #     self.ok_button.configure(state=tk.DISABLED)
-        #     self.error_label.configure(
-        #             text=error_message,
-        #             text_color="red")
+        if error_message == '':
+            self.ok_button.configure(state=tk.NORMAL)
+            self.error_label.configure(
+                    text=error_message,
+                    text_color=def_color)
+        else:
+            self.ok_button.configure(state=tk.DISABLED)
+            self.error_label.configure(
+                    text=error_message,
+                    text_color="red")
+
+        self._resize_window()
+
+    def _graph_check_action(self, event):
+        check_value = self.create_graphs.get() == 1
+
+        if check_value:
+            self.y_lim_label.grid()
+            self.y_lim.grid()
+
+        else:
+            self.y_lim_label.grid_remove()
+            self.y_lim.grid_remove()
+
+        self._event_handling(event)
+        self._resize_window()
+
+    def _axis_file_check_action(self, event):
+        check_value = self.create_axis_file.get() == 1
+
+        if check_value:
+            self.axial_len_label.grid()
+            self.axial_len.grid()
+
+            self.axial_step_label.grid()
+            self.axial_step.grid()
+
+        else:
+            self.axial_len_label.grid_remove()
+            self.axial_len.grid_remove()
+
+            self.axial_step_label.grid_remove()
+            self.axial_step.grid_remove()
+
+        self._event_handling(event)
+        self._resize_window()
 
     def _validate_inputs(self):
         """
@@ -598,42 +723,99 @@ class ProtocolDialog():
 
         error_message = ''
 
+        # widget, is_float, check_positive, check_nonzero, selected_combo, is_dir, excel,
+        # check_array, check_focus
+
         fields_to_validate = {
-            'path_protocol_excel_file': (self.path_prot, False, False, '.xlsx or .xls extension',
-                                         False),
-            'driving system': (self.ds_combo, False, False, None, True),
-            'transducer': (self.trans_combo, False, False, None, True),
-            'operating frequency': (self.oper_freq_entr, True, True, None, False),
+            'driving system': (self.ds_combo, False, False, False, True, False, False, False,
+                               False),
+            'transducer': (self.trans_combo, False, False, False, True, False, False, False, False),
+            'operating frequency': (self.oper_freq_entr, True, True, True, False, False, False,
+                                    False, False),
+            'protocol': (self.prot_combo, False, False, False, True, False, False, False, False)
+
         }
 
         if self.input_param.is_ds_com_port:
             fields_to_validate.update({'COM port number of driving system':
-                                       (self.com_us, True, True, None, False)})
+                                       (self.com_us, True, True, True, False, False, False, False,
+                                        False)})
 
-        for field_name, (widget, is_float, check_positive, ext,
-                         selected_combo) in fields_to_validate.items():
-            error_message = self._check_field(error_message, widget, is_float,
-                                              check_positive, field_name, ext, selected_combo)
+        if self.input_param.is_ac_align:
+            fields_to_validate.update({
+                'output path': (self.output_path, False, False, False, False, True, False, False,
+                                False),
+                'pulse duration': (self.pulse_dur, True, True, True, False, False, False, False,
+                                   False),
+                'pulse rep. interval': (self.pulse_rep_int, True, True, True, False, False, False,
+                                        False, False),
+                'power setting': (self.power_combo, False, False, False, True, False, False, False,
+                                  False),
+                'power value': (self.power_entry, True, True, True, False, False, False, False,
+                                False),
+                'focus setting': (self.focus_combo, False, False, False, True, False, False, False,
+                                  False),
+                'focus value': (self.focus_entry, True, True, True, False, False, False, False,
+                                True),
+                'distance from focus wrt exit plane': (self.focus_dist, False, False, False, False,
+                                                       False, False, True, False),
+                'initial line length': (self.init_line_len, True, True, True, False, False, False,
+                                        False, False),
+                'initial line stepsize': (self.init_line_step, True, True, True, False, False,
+                                          False, False, False),
+                'initial threshold': (self.init_threshold, True, True, True, False, False, False,
+                                      False, False),
+                'reduction fact.': (self.reduc_factor, True, True, True, False, False, False, False,
+                                    False),
+                'n reduction iterations': (self.max_red_iter, True, True, False, False, False,
+                                           False, False, False)
+                })
+
+            if self.create_graphs.get():
+                fields_to_validate.update({'y axis limit':
+                                           (self.y_lim, True, True, True, False, False, False,
+                                            False, False)})
+            if self.create_axis_file.get():
+                fields_to_validate.update({'length of axial meas.':
+                                           (self.axial_len, True, True, True, False, False, False,
+                                            False, False),
+                                          'stepsize of axial meas.':
+                                           (self.axial_step, True, True, True, False, False, False,
+                                            False, False)})
+        else:
+            fields_to_validate.update({'path_protocol_excel_file': (self.path_prot, False, False,
+                                                                    False, False, True, True, False,
+                                                                    False)})
+
+        for field_name, (widget, is_float, check_positive, check_nonzero, selected_combo, is_dir,
+                         excel, check_array, check_focus) in fields_to_validate.items():
+            error_message = self._check_field(error_message, widget, field_name, is_float,
+                                              check_positive, check_nonzero, selected_combo,
+                                              is_dir, excel, check_array, check_focus)
 
         return error_message
 
-    def _check_field(self, error_message, widget, is_float, check_positive, field_name, ext,
-                     selected_combo):
+    def _check_field(self, error_message, widget, field_name, is_float, check_positive,
+                     check_nonzero, selected_combo, is_dir, excel, check_array, check_focus):
         """
         Checks validity of a specific input field.
 
         Args:
-            error_message (str): Current error message.
-            widget (tk.Widget): Widget to validate.
-            is_float (bool): Flag indicating if the field value should be float.
+            error_message (str): Current error message to be updated if validation fails.
+            widget (tk.Widget): Widget containing the value to validate.
+            field_name (str): Name of the field being validated, used in error messages.
+            is_float (bool): Flag indicating if the field value should be converted to a float.
             check_positive (bool): Flag indicating if the field value should be positive.
-            field_name (str): Name of the field being validated.
-            ext (str or None): Expected file extension if the field represents a file.
-            selected_combo (bool): Flag indicating if the field is a combobox. If so, it is checked
-            if a value is selected.
+            check_nonzero (bool): Flag indicating if the field value should be non-zero.
+            selected_combo (bool): Flag indicating if the field is a combobox. If true, it checks
+                if a value has been selected.
+            is_dir (bool): Flag indicating if the field value represents a directory path.
+            excel (bool): Flag indicating if the field value should point to a valid Excel file.
+            check_array (bool): Flag indicating if the field value should be a valid array.
+            check_focus (bool): Flag indicating if the field value should meet set focus limits.
 
         Returns:
-            str: Updated error message.
+            str: Updated error message with details of any validation issues.
             str: Default text color based on appearance mode.
         """
 
@@ -644,22 +826,35 @@ class ProtocolDialog():
         widget.configure(text_color=def_color)
         value = widget.get()
 
-        if ext:
-            path, file_ext = os.path.splitext(value)
-            if file_ext not in ['.xlsx', '.xls', '.csv']:
-                widget.configure(text_color="red")
-                error_message += (f'Error: No {ext} file is selected.'
-                                  + ' Please select a file with {ext}. \n ')
-                return error_message
+        if is_dir:
             if not os.path.exists(value):
                 widget.configure(text_color="red")
                 error_message += 'Error: File doesn\'t exist. Please change value. \n '
-                return error_message
+
+            if excel:
+                path, file_ext = os.path.splitext(value)
+                excel_ext = ['.xlsx', '.xls', '.csv']
+                if file_ext not in excel_ext:
+                    widget.configure(text_color="red")
+                    error_message += (f'Error: No {excel_ext} file is selected.'
+                                      + ' Please select a file with {excel_ext}. \n ')
         elif selected_combo:
             if value == '':
                 widget.configure(text_color="red")
                 error_message += f'Error: A {field_name} must be selected. Please change value. \n '
-                return error_message
+
+        # Check if value is an array
+        elif check_array:
+            try:
+                distance_str_array = value.strip('][').split(',')
+                distance_array = [float(value) for value in distance_str_array]
+                if not isinstance(distance_array, list):
+                    raise ValueError
+            except (ValueError, SyntaxError):
+                widget.configure(text_color="red")
+                error_message += (f'Error: The value of {field_name} is not a valid array. ' +
+                                  'Please provide a valid array format (e.g., [1, 2, 3]). \n')
+
         else:
             try:
                 if is_float:
@@ -670,12 +865,43 @@ class ProtocolDialog():
                     widget.configure(text_color="red")
                     error_message += (f'Error: {field_name} cannot be a negative value.' +
                                       ' Please change value. \n ')
-                    return error_message
+                if check_nonzero and value == 0:
+                    widget.configure(text_color="red")
+                    error_message += (f'Error: {field_name} cannot be zero.' +
+                                      ' Please change value. \n ')
+                if check_focus:
+                    focus = float(value)
+
+                    chosen_focus = self.focus_combo.get()
+                    if chosen_focus == config['General']['Focus option.exit']:
+                        focus_wrt_exit_plane = focus
+                    elif chosen_focus == config['General']['Focus option.bowl']:
+                        # Convert wrt mid bowl to wrt exit plane
+                        if self._ds_tran_combo in self._equip_combos:
+                            self.ac_align_seq._update_conv_param()
+                            if self.ac_align_seq.DF2SF_a != 0:
+                                focus_wrt_exit_plane = (focus - self.ac_align_seq.DF2SF_b) / self.ac_align_seq.DF2SF_a
+                        else:
+                            focus_wrt_exit_plane = focus - self.input_param.tran.exit_plane_dist
+
+                    # Check if focus is within range if compensation equations are not applicable
+                    if self._ds_tran_combo not in self._equip_combos:
+                        low_lim = self.input_param.tran.min_foc
+                        up_lim = self.input_param.tran.max_foc
+
+                    else:
+                        low_lim = self.ac_align_seq.F2EQF1_low_lim
+                        up_lim = self.ac_align_seq.F2EQF2_up_lim
+
+                    if focus_wrt_exit_plane < low_lim or focus_wrt_exit_plane > up_lim:
+                        widget.configure(text_color="red")
+                        error_message += (f'Error: The value of {field_name} is not within ' +
+                                          f'set limits of {low_lim} and {up_lim} [mm]. \n')
+
                 if field_name == 'sampling frequency multiplication factor' and value < 2:
                     widget.configure(text_color="red")
                     error_message += ('Error: Picoscope sampling frequency multiplication' +
                                       'factor needs to be at least 2. Please change value. \n ')
-                    return error_message
             except ValueError:
                 widget.configure(text_color="red")
                 error_message += (f'Error: value of {field_name} is not a number or contains a ' +
@@ -696,12 +922,14 @@ class ProtocolDialog():
             for ds in self.input_param.ds_list:
                 if ds.name == ds_name:
                     self.input_param.driving_sys = ds
+                    break
 
             # Save selected transducer object
             td_name = self.trans_combo.get()
             for tran in self.input_param.tran_list:
                 if tran.name == td_name:
                     self.input_param.tran = tran
+                    break
 
             # Save numeric and boolean parameters
             self.input_param.oper_freq = int(self.oper_freq_entr.get())
@@ -716,20 +944,24 @@ class ProtocolDialog():
             self.ac_align_seq.oper_freq = self.input_param.oper_freq  # [kHz]
 
             chosen_prot = self.prot_combo.get()
-            if chosen_prot == 'Select protocol excel file...':
+            if chosen_prot == config['Characterization']['Protocol.excel']:
                 self.input_param.is_ac_align = False
 
                 # Save protocol file path and main directory
-                self.input_param.path_protocol_excel_file = self.path_prot.get()
-                self.input_param.main_dir = os.path.dirname(self.input_param.path_protocol_excel_file)
-                self.input_param.protocol = self.input_param.path_protocol_excel_file
+                exc_path = self.path_prot.get()
+                self.input_param.path_protocol_excel_file = exc_path
+                self.input_param.dir_output = os.path.dirname(self.input_param.path_protocol_excel_file)
+                filename_ext = os.path.basename(exc_path)
+                self.input_param.protocol = os.path.splitext(filename_ext)
 
                 self.ac_align_seq.is_ac_align = False
 
-            else:
-                self.input_param.protocol = 'Acoustical alignment'
+            elif chosen_prot == config['Characterization']['Protocol.ac_align']:
+                self.input_param.protocol = chosen_prot
                 self.input_param.is_ac_align = True
                 self.ac_align_seq.is_ac_align = True
+
+                self.input_param.dir_output = self.output_path.get()
 
                 self.ac_align_seq.pulse_dur = abs(float(self.pulse_dur.get()))/1e3  # [us] to [ms]
                 self.ac_align_seq.pulse_rep_int = abs(float(self.pulse_rep_int.get()))  # [ms]
@@ -737,22 +969,28 @@ class ProtocolDialog():
                 self.ac_align_seq.pulse_train_rep_int = self.ac_align_seq.pulse_rep_int
                 self.ac_align_seq.pulse_train_rep_dur = self.ac_align_seq.pulse_rep_int/1000  # [s]
 
-                self.ac_align_seq.focus_wrt_exit_plane = abs(float(self.focus.get()))
+                chosen_focus = self.focus_combo.get()
+                if chosen_focus == config['General']['Focus option.exit']:
+                    self.ac_align_seq.focus_wrt_exit_plane = abs(float(self.focus_entry.get()))
+                elif chosen_focus == config['General']['Focus option.bowl']:
+                    self.ac_align_seq.focus_wrt_mid_bowl = abs(float(self.focus_entry.get()))
 
                 chosen_power = self.power_combo.get()
-                # TODO: add chosen powers to config
-                if chosen_power == "Global power [mW]":
+                if chosen_power == config['General']['Power option.glob_pow']:
                     self.ac_align_seq.global_power = abs(float(self.power_entry.get()))/1000  # SC: gp [W]
-                elif chosen_power == "Max. pressure in free water [MPa]":
+                elif chosen_power == config['General']['Power option.press']:
                     self.ac_align_seq.press = abs(float(self.power_entry.get()))
-                elif chosen_power == "Voltage [V]":
+                elif chosen_power == config['General']['Power option.volt']:
                     self.ac_align_seq.volt = abs(float(self.power_entry.get()))
-                elif chosen_power == "Amplitude [%]":
+                elif chosen_power == config['General']['Power option.ampl']:
                     self.ac_align_seq.ampl = abs(float(self.power_entry.get()))
 
                 # Assign the values from the input fields to the ac_align parameters
                 # Parse float entries from entry fields
-                self.ac_align_seq.ac_align['distance_from_foc'] = abs(float(self.focus_dist.get()))
+                distance_str_array = self.focus_dist.get().strip('][').split(',')
+                distance_array = [float(value) for value in distance_str_array]
+
+                self.ac_align_seq.ac_align['distance_from_foc'] = distance_array
                 self.ac_align_seq.ac_align['init_line_len'] = abs(float(self.init_line_len.get()))
                 self.ac_align_seq.ac_align['init_line_step'] = abs(float(self.init_line_step.get()))
                 self.ac_align_seq.ac_align['init_threshold'] = abs(float(self.init_threshold.get()))
@@ -765,16 +1003,13 @@ class ProtocolDialog():
 
                 # Parse boolean values from checkboxes
                 self.ac_align_seq.ac_align['create_graphs'] = self.create_graphs.get() == 1
+                self.ac_align_seq.ac_align['y_lim'] = float(self.y_lim.get())
+
                 self.ac_align_seq.ac_align['create_axis_file'] = self.create_axis_file.get() == 1
 
                 # Parse float entries for axis length and stepsize
                 self.ac_align_seq.ac_align['axis_length'] = abs(float(self.axial_len.get()))
                 self.ac_align_seq.ac_align['axis_stepsize'] = abs(float(self.axial_step.get()))
-
-                if self.input_param.is_ac_align is False:
-                    # Extract protocol excel filename without extension
-                    self.input_param.protocol = os.path.splitext(
-                        os.path.basename(self.input_param.path_protocol_excel_file))[0]
 
                 self.input_param.sequences = [self.ac_align_seq]
 
@@ -790,6 +1025,6 @@ class ProtocolDialog():
         Closes the input dialog.
         """
 
-        if self.not_exited_flag:
-            self.not_exited_flag = False
-            self.win.destroy()
+        if self.win and self.win.winfo_exists():
+            self.win.grab_release()  # release main dialog
+            self.win.withdraw()  # hide subdialog

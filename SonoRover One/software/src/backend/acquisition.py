@@ -84,6 +84,21 @@ class Acquisition:
 
         self.input_param = input_param
 
+        self.pico_sampling_freq = 0
+        self.sampling_duration_us = 0
+        self.sample_count = 0
+
+        self.proces_param = {
+            "eiwt": 0,
+            "adjust": 0,
+            "row_pixel_us": 0,
+            "begus": 0,
+            "endus": 0,
+            "begn": 0,
+            "endn": 0,
+            "npoints": 0
+            }
+
         # # Global acquisition parameters
         # Initialize equipment
         self.equipment = {
@@ -159,7 +174,7 @@ class Acquisition:
                     os.path.basename(self.input_param.path_protocol_excel_file))[0]
 
             self.equipment["ds"].connect(self.input_param.driving_sys.connect_info,
-                                         config_info['Characterization']['Temporary output path'],
+                                         config_info['Characterization']['Temporary logging path'],
                                          self.input_param.protocol)
         else:
             logger.error(f"Unknown driving system manufacturer: {ds_manufact}")
@@ -276,8 +291,11 @@ class Acquisition:
 
         # Check existance of directory
         outfile = os.path.join(self.input_param.temp_dir_output, 'sequence_' +
-                               str(sequence.seq_number) + '_output_data.raw')
+                               str(sequence.seq_number) + '_output_data.ini')
         self._check_file(outfile)
+
+        self._save_params_ini()
+        logger.info('Used parameters have been saved in a file.')
 
         if sequence.use_coord_excel:
             self._init_grid_excel()
@@ -290,12 +308,8 @@ class Acquisition:
         self.equipment["ds"].send_sequence(self.sequence)
         logger.info('All driving system parameters are set')
 
-        self._save_params_ini()
-        logger.info('Used parameters have been saved in a file.')
-
         self._scan_grid()
         logger.info('Pipeline for current sequence is finished.')
-
 
 ####################################################################
 
@@ -310,13 +324,13 @@ class Acquisition:
         by appending a number.
         """
 
-        self.output["outputRAW"] = outfile
-        head, tail = os.path.split(self.output["outputRAW"])
+        self.output["outputINI"] = outfile
+        head, tail = os.path.split(self.output["outputINI"])
         if not os.path.isdir(head):  # if incorrect directory or no directory is given use CWD
             head = os.getcwd()
             raise OSError(f'directory does not exist: {head}')
 
-        fileok = not os.path.isfile(self.output["outputRAW"])
+        fileok = not os.path.isfile(self.output["outputINI"])
         i = 0
         imax = int(config_info['General']['Maximum number of output filename'])
         filename = os.path.join(head, tail)
@@ -345,7 +359,7 @@ class Acquisition:
         initial CSV file structure.
         """
 
-        self.output["outputRAW"] = filename
+        self.output["outputINI"] = filename
         self.output["outputACD"] = os.path.splitext(filename)[0]+'.acd'
         self.output["outputRAWCoord"] = os.path.splitext(filename)[0] + '_coord.raw'
         self.output["outputCoord"] = os.path.splitext(filename)[0]+'.csv'
@@ -362,7 +376,7 @@ class Acquisition:
                                                           'Absolute Z-coordinate [mm]'])
 
         self.output["outputJSON"] = os.path.splitext(filename)[0]+'.json'
-        self.output["outputINI"] = os.path.splitext(filename)[0]+'.ini'
+        self.output["outputRAW"] = os.path.splitext(filename)[0]+'.raw'
         logger.debug(f'file name raw: {self.output["outputRAW"]}, file name acd: ' +
                      f'{self.output["outputACD"]}')
 
@@ -419,8 +433,9 @@ class Acquisition:
             self.grid_param["nsl"] = (self.grid_param["coord_excel_data"].loc[:, "Slice number"]
                                       .max())
 
-            self.sequence.nslices_nrow_ncol = np.array((self.grid_param["nsl"], self.grid_param["nrow"],
-                                               self.grid_param["ncol"]))
+            self.sequence.nslices_nrow_ncol = np.array((self.grid_param["nsl"],
+                                                        self.grid_param["nrow"],
+                                                        self.grid_param["ncol"]))
 
         else:
             logger.error("Pipeline is cancelled. The following direction cannot be found: "
@@ -607,26 +622,27 @@ class Acquisition:
         params['Grid']['Use coordinate excel as input?'] = str(self.sequence.use_coord_excel)
         params['Grid']['Path of coordinate excel'] = str(self.sequence.path_coord_excel)
 
-        params['Grid']['Acoustical alignment.Distance from focus wrt exit plane [mm]'] = str(
-            self.sequence.ac_align['distance_from_foc'])
-        params['Grid']['Acoustical alignment.Initial line length [mm]'] = str(
-            self.sequence.ac_align['init_line_len'])
-        params['Grid']['Acoustical alignment.Initial line stepsize [mm]'] = str(
-            self.sequence.ac_align['init_line_step'])
-        params['Grid']['Acoustical alignment.Initial threshold [mm]'] = str(
-            self.sequence.ac_align['init_threshold'])
-        params['Grid']['Acoustical alignment.Reduction factor'] = str(
-            self.sequence.ac_align['reduction_factor'])
-        params['Grid']['Acoustical alignment.Maximum reduction iterations'] = str(
-            self.sequence.ac_align['max_red_iter'])
-        params['Grid']['Acoustical alignment.Create graphs?'] = str(
-            self.sequence.ac_align['create_graphs'])
-        params['Grid']['Acoustical alignment.Create axis file?'] = str(
-            self.sequence.ac_align['create_axis_file'])
-        params['Grid']['Acoustical alignment.Axis length [mm]'] = str(
-            self.sequence.ac_align['axis_length'])
-        params['Grid']['Acoustical alignment.Axis step size [mm]'] = str(
-            self.sequence.ac_align['axis_stepsize'])
+        if self.sequence.is_ac_align:
+            params['Grid']['Acoustical alignment.Distance from focus wrt exit plane [mm]'] = str(
+                self.sequence.ac_align['distance_from_foc'])
+            params['Grid']['Acoustical alignment.Initial line length [mm]'] = str(
+                self.sequence.ac_align['init_line_len'])
+            params['Grid']['Acoustical alignment.Initial line stepsize [mm]'] = str(
+                self.sequence.ac_align['init_line_step'])
+            params['Grid']['Acoustical alignment.Initial threshold [mm]'] = str(
+                self.sequence.ac_align['init_threshold'])
+            params['Grid']['Acoustical alignment.Reduction factor'] = str(
+                self.sequence.ac_align['reduction_factor'])
+            params['Grid']['Acoustical alignment.Maximum reduction iterations'] = str(
+                self.sequence.ac_align['max_red_iter'])
+            params['Grid']['Acoustical alignment.Create graphs?'] = str(
+                self.sequence.ac_align['create_graphs'])
+            params['Grid']['Acoustical alignment.Create axis file?'] = str(
+                self.sequence.ac_align['create_axis_file'])
+            params['Grid']['Acoustical alignment.Axis length [mm]'] = str(
+                self.sequence.ac_align['axis_length'])
+            params['Grid']['Acoustical alignment.Axis step size [mm]'] = str(
+                self.sequence.ac_align['axis_stepsize'])
 
         if self.sequence.use_coord_excel:
             params['Grid']['Number of slices, rows, columns (z-dir, x-dir, y-dir)'] = (
@@ -947,7 +963,7 @@ class Acquisition:
         Close all connected devices and release resources.
         """
 
-        if self.equipment["motors"].connected:
+        if self.equipment["motors"] is not None and self.equipment["motors"].connected:
             self.equipment["motors"].disconnect()
 
         if self.equipment["scope"] is not None:

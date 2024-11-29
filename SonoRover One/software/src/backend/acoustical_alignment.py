@@ -34,6 +34,8 @@ https://github.com/Donders-Institute/Radboud-FUS-measurement-kit
 import os
 
 # Miscellaneous packages
+import configparser
+import math
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -42,6 +44,7 @@ from scipy.integrate import cumulative_trapezoid
 
 # Own packages
 import backend.acquisition as acq
+from config.config import config_info as config
 from config.logging_config import logger
 
 
@@ -66,15 +69,15 @@ class AcousticalAlignment(acq.Acquisition):
 
         # Validate and prepare output directory and files
         outfile = os.path.join(self.input_param.temp_dir_output,
-                               f'sequence_{sequence.seq_number}_output_data.raw')
+                               f'sequence_{sequence.seq_number}_output_data.ini')
         self._check_file(outfile)
-
-        self.equipment["ds"].send_sequence(self.sequence)
-        logger.info('All driving system parameters are set')
 
         # Save parameters and prepare for alignment
         self._save_params_ini()
         logger.info('Used parameters have been saved in a file.')
+
+        self.equipment["ds"].send_sequence(self.sequence)
+        logger.info('All driving system parameters are set')
 
         # Prepare and define coordinates for alignment
         distance_from_foc = self.sequence.ac_align["distance_from_foc"]
@@ -88,6 +91,8 @@ class AcousticalAlignment(acq.Acquisition):
         # Set up parameters for iterative alignment
         middle_points = self._perform_alignment(z_coords)
 
+        self._write_average_to_cache()
+
         # Calculate and save acoustical axis if needed
         self._calculate_acoustical_axis(middle_points)
         if self.sequence.ac_align["create_axis_file"]:
@@ -99,7 +104,7 @@ class AcousticalAlignment(acq.Acquisition):
 
         Parameters:
         -----------
-        distance_from_foc : float
+        distance_from_foc : float array
             Distance from the focus point in millimeters.
 
         Returns:
@@ -107,12 +112,12 @@ class AcousticalAlignment(acq.Acquisition):
         list of float
             Z-coordinates for pre-focus and post-focus alignment.
         """
+        z_coords = []
+        for dist in distance_from_foc:
+            dist_foc = self.input_param.coord_zero[2] + self.sequence.focus_wrt_exit_plane + dist
+            z_coords.append(dist_foc)
 
-        pre_foc = (self.input_param.coord_zero[2] + self.sequence.focus_wrt_exit_plane -
-                   distance_from_foc)
-        post_foc = (self.input_param.coord_zero[2] + self.sequence.focus_wrt_exit_plane +
-                    distance_from_foc)
-        return [pre_foc, post_foc]
+        return z_coords
 
     def _perform_alignment(self, z_coords):
         """
@@ -137,14 +142,43 @@ class AcousticalAlignment(acq.Acquisition):
             line_n_points = line_n_points + 1
 
         self.grid_param["ncol"] = line_n_points
-        self.sequence.nslices_nrow_ncol = [self.grid_param["nsl"], self.grid_param["nrow"], self.grid_param["ncol"]]
+        self.sequence.nslices_nrow_ncol = [self.grid_param["nsl"], self.grid_param["nrow"],
+                                           self.grid_param["ncol"]]
 
         reduction_factor = self.sequence.ac_align["reduction_factor"]
         threshold = self.sequence.ac_align["init_threshold"]
 
         middle_points = np.zeros((len(z_coords), 3))
 
+        # history plot for all middle points
+        fig_hist, axes_hist = plt.subplots(len(z_coords), 2)
+
+        x_x_upper_lim = self.input_param.coord_zero[0] + self.sequence.ac_align["init_line_len"]/2
+        x_x_lower_lim = self.input_param.coord_zero[0] - self.sequence.ac_align["init_line_len"]/2
+
+        y_x_upper_lim = self.input_param.coord_zero[1] + self.sequence.ac_align["init_line_len"]/2
+        y_x_lower_lim = self.input_param.coord_zero[1] - self.sequence.ac_align["init_line_len"]/2
+
         for idx, z_coord in enumerate(z_coords):
+            ax_hist = axes_hist[idx, :]
+
+            # set axis for x and y plots
+            if len(z_coords) == idx + 1:
+                ax_hist[0].set_xlabel('Elevational [mm]')
+                ax_hist[1].set_xlabel('Lateral [mm]')
+            else:
+                ax_hist[0].get_xaxis().set_visible(False)
+                ax_hist[1].get_xaxis().set_visible(False)
+
+            ax_hist[0].set_yaxis(f'Z wrt exit plane: {z_coord:.2f} [mm] \n Pulse RMS [mV]')
+
+            ax_hist[0].set_xlim(x_x_lower_lim - 15, x_x_upper_lim + 15)
+            ax_hist[0].set_ylim(0, self.sequence.ac_align["y_lim"])
+
+            ax_hist[1].get_yaxis().set_visible(False)
+            ax_hist[1].set_xlim(y_x_lower_lim - 15, y_x_upper_lim + 15)
+            ax_hist[1].set_ylim(0, self.sequence.ac_align["y_lim"])
+
             z_coord_wrt_exit_plane = abs(self.input_param.coord_zero[2] - z_coord)
             logger.info(f"Finding acoustical axis coordinate for z = {round(z_coord_wrt_exit_plane, 2)} mm")
             self.sequence.coord_start[2] = z_coord
@@ -152,15 +186,24 @@ class AcousticalAlignment(acq.Acquisition):
             # Perform iterative search for alignment
             found_x_coords, found_y_coords = self._search_alignment(threshold, initial_line_length,
                                                                     initial_line_step_size,
-                                                                    reduction_factor)
+                                                                    reduction_factor, ax_hist)
 
             # Save the middle point of the scan
             middle_points[idx] = [found_x_coords[-1], found_y_coords[-1], z_coord]
             print(f"Found middle_point: {middle_points[idx]}")
 
+            ax_hist[0].set_title(f'CoM x = {found_x_coords[-1]} [mm]')
+            ax_hist[1].set_title(f'CoM y = {found_y_coords[-1]} [mm]')
+
+            filename = os.path.join(self.input_param.temp_dir_output,
+                                    'acoustical_alignment_history_plot.png')
+
+            fig_hist.savefig(filename)
+            fig_hist.show()
+
         return middle_points
 
-    def _search_alignment(self, threshold, line_length, line_step_size, reduction_factor):
+    def _search_alignment(self, threshold, line_length, line_step_size, reduction_factor, ax_hist):
         """
         Iteratively search and converge towards the acoustical center of mass.
 
@@ -174,6 +217,8 @@ class AcousticalAlignment(acq.Acquisition):
             Initial step size for scanning in millimeters.
         reduction_factor : float
             Factor by which line length and step size are reduced in each iteration.
+        ax_hist : matplotlib.axes.Axes or array-like
+            The axes on which the history plot is drawn: separate axes for x and y coordinates.
 
         Returns:
         --------
@@ -198,9 +243,8 @@ class AcousticalAlignment(acq.Acquisition):
             found_x_coords.append(self._scan_and_find_center_of_mass(found_x_coords, found_y_coords,
                                                                      line_length,
                                                                      line_step_size,
-                                                                     'x', 
-                                                                     iteration, max_diff,
-                                                                     fig, ax1))
+                                                                     'x', iteration, max_diff,
+                                                                     fig, ax1, ax_hist[0]))
 
             max_diff = max(abs(found_x_coords[-2] - found_x_coords[-1]), abs(found_y_coords[-2] -
                                                                              found_y_coords[-1]))
@@ -209,7 +253,7 @@ class AcousticalAlignment(acq.Acquisition):
                                                                      line_step_size,
                                                                      'y',
                                                                      iteration, max_diff,
-                                                                     fig, ax2))
+                                                                     fig, ax2, ax_hist[1]))
 
             max_diff = max(abs(found_x_coords[-2] - found_x_coords[-1]), abs(found_y_coords[-2] -
                                                                              found_y_coords[-1]))
@@ -228,7 +272,7 @@ class AcousticalAlignment(acq.Acquisition):
                                     f'iter_{iteration}.png')
 
             fig.savefig(filename)
-            plt.show()
+            fig.show()
 
             if iteration != 0 and iteration % (self.sequence.ac_align['max_red_iter']) == 0:
                 # Reduce line length and step size
@@ -241,14 +285,15 @@ class AcousticalAlignment(acq.Acquisition):
                     line_n_points = line_n_points + 1
 
                 self.grid_param["ncol"] = line_n_points
-                self.sequence.nslices_nrow_ncol = [self.grid_param["nsl"], self.grid_param["nrow"], self.grid_param["ncol"]]
+                self.sequence.nslices_nrow_ncol = [self.grid_param["nsl"], self.grid_param["nrow"],
+                                                   self.grid_param["ncol"]]
 
                 logger.info(f"Reducing search area. New line_length: {line_length:.2f}mm, " +
                             f"new line_step_size: {line_step_size:.2f}mm")
 
         return found_x_coords, found_y_coords
 
-    def _scan_and_find_center_of_mass(self, found_x_coords, found_y_coords, line_length, line_step_size, direction, iteration, max_diff, fig, ax):
+    def _scan_and_find_center_of_mass(self, found_x_coords, found_y_coords, line_length, line_step_size, direction, iteration, max_diff, fig, ax, ax_hist):
         """
         Scan in the specified direction and find the center of mass of voltage data.
 
@@ -302,16 +347,11 @@ class AcousticalAlignment(acq.Acquisition):
         logger.info(f"Found center of mass in {direction}-direction: {center_of_mass_coord:.3f} mm")
 
         if self.sequence.ac_align["create_graphs"]:
-            z_coord = round(self.sequence.coord_start[2], 2)
-            title = (f'Center of mass in {direction}-direction, {center_of_mass_coord:.2f} [mm]' +
-                     f' Z-coord: {z_coord},  \n ' +
-                     f'Iter. {iteration}, Max diff. = {max_diff:.3f} mm, Line length:' +
-                     f' {line_length:.1f}, stepsize: {line_step_size:.1f}')
-            self._plot_center_of_mass_graph(direction, dest_xyz_list, rms, center_of_mass_coord, iteration, title, fig, ax)
+            self._plot_center_of_mass_graph(direction, dest_xyz_list, rms, center_of_mass_coord, iteration, ax, ax_hist)
 
         return center_of_mass_coord
 
-    def _plot_center_of_mass_graph(self, direction, dest_xyz_list, rms, center_of_mass_coord, iteration, title, fig, ax):
+    def _plot_center_of_mass_graph(self, direction, dest_xyz_list, rms, center_of_mass_coord, iteration, ax, ax_hist):
         """
         Plot the center of mass graph for the scanned data.
 
@@ -330,6 +370,9 @@ class AcousticalAlignment(acq.Acquisition):
         coord_index = [0 if direction == 'x' else 1]
         coords = dest_xyz_list[:, :, :, coord_index].flatten()
 
+        # Plot points to save history
+        ax_hist.plot(coords, rms*1000, linestyle='-', linewidth=0.5, marker='.', markersize=2)
+
         ax.plot(coords, rms*1000, linestyle='-', linewidth=0.5, marker='.', markersize=2)
         ax.axvline(x=center_of_mass_coord, color='r', linestyle='--', linewidth=0.5)
         print(f'red line center_of_mass_coord: {center_of_mass_coord}')
@@ -346,7 +389,7 @@ class AcousticalAlignment(acq.Acquisition):
         if direction == 'y':
             ax.get_yaxis().set_visible(False)
 
-        ax.set_ylim(0, 200)
+        ax.set_ylim(0, self.sequence.ac_align["y_lim"])
         ax.set_xlabel(f'{direction.upper()}-coordinates [mm]')
 
     def _calculate_acoustical_axis(self, middle_points):
@@ -366,6 +409,12 @@ class AcousticalAlignment(acq.Acquisition):
             # Calculate direction vector and unit vector for the acoustical axis
             direction_vector = point2 - point1
             unit_vector = direction_vector / np.linalg.norm(direction_vector)
+            azimuth_dir = np.degrees(math.atan(unit_vector[1]/unit_vector[0]))
+            elev_dir = np.degrees(math.asin(unit_vector[2]))
+
+            average_point = np.mean(middle_points, axis=0)
+            azimuth_av = np.degrees(math.atan(average_point[1]/average_point[0]))
+            elev_av = np.degrees(math.asin(average_point[2]))
 
             # Calculate the point where z-coordinate is equal to self.input_param.coord_zero[2]
             t = (self.input_param.coord_zero[2] - point1[2]) / direction_vector[2]
@@ -374,14 +423,50 @@ class AcousticalAlignment(acq.Acquisition):
             # Store the origin and direction of the acoustical axis
             self.acoustical_axis = {
                 'origin': transducer_z_point,
-                'direction': unit_vector
+                'direction': unit_vector,
+                'azimuth of direction': azimuth_dir,
+                'elevation of direction': elev_dir,
+                'average': average_point,
+                'azimuth of average': azimuth_av,
+                'elevation of average': elev_av
             }
 
             # Log the calculated axis details
             logger.info("Acoustical axis equation:")
             logger.info(f"Origin point: {self.acoustical_axis['origin']}")
             logger.info(f"Direction vector: {self.acoustical_axis['direction']}")
+            logger.info("Direction vector angles: \n :")
+            logger.info(f"    aximuth: {self.acoustical_axis['azimuth_dir']}")
+            logger.info(f"    elevation: {self.acoustical_axis['elev_dir']}")
+
+            logger.info(f"Average vector: {self.acoustical_axis['average_point']}")
+            logger.info("Average vector angles: \n :")
+            logger.info(f"    aximuth: {self.acoustical_axis['azimuth_av']}")
+            logger.info(f"    elevation: {self.acoustical_axis['elev_av']}")
+
             logger.info("Equation: xyz_coordinate = origin + t * direction, where t is a scalar parameter")
+
+    def _write_average_to_cache(self):
+        """
+        Save average acoustical axis coordinates to the cached input parameters file.
+
+        Updates the `Absolute G code` x, y, and z coordinates in the `Input parameters` section
+        of the file specified by `Path of input parameters cache` in the configuration. The
+        coordinates are taken from `self.acoustical_axis['average_point']`.
+
+        """
+
+        cached_path = config['Characterization']['Path of input parameters cache']
+        if os.path.exists(cached_path):
+
+            cached_input = configparser.ConfigParser(interpolation=None)
+            cached_input.read(cached_path)
+            cached_input['Input parameters']['Absolute G code x-coordinate of relative zero'] = str(self.acoustical_axis['average_point'][0])
+            cached_input['Input parameters']['Absolute G code y-coordinate of relative zero'] = str(self.acoustical_axis['average_point'][1])
+            cached_input['Input parameters']['Absolute G code z-coordinate of relative zero'] = str(self.acoustical_axis['average_point'][2])
+
+            with open(cached_path, 'w') as inputfile:
+                cached_input.write(inputfile)
 
     def _save_acoustical_axis_to_excel(self):
         """

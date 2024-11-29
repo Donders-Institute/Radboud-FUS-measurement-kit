@@ -32,7 +32,6 @@ https://github.com/Donders-Institute/Radboud-FUS-measurement-kit
 
 # Basic packages
 import os
-import sys
 
 # Miscellaneous packages
 from datetime import datetime
@@ -64,21 +63,17 @@ def initialize_logger(log_dir, filename):
     date_time = datetime.now()
     timestamp = date_time.strftime('%Y-%m-%d_%H-%M-%S')
 
-    # create file handler
+    # Create directory if it doesn't exist and create file handler
+    os.makedirs(log_dir, exist_ok=True)
     file_handler = logging.FileHandler(os.path.join(log_dir, f'log_{timestamp}_' + filename
                                                     + '.txt'), mode='w')
-
-    # create console handler
-    #console_handler = logging.StreamHandler(sys.stdout)
 
     # create formatter and add it to the handlers
     formatterCompact = logging.Formatter("%(asctime)s - %(levelname)s - %(module)s - " +
                                          "%(funcName)s line %(lineno)d %(message)s")
     file_handler.setFormatter(formatterCompact)
-   # console_handler.setFormatter(formatterCompact)
 
     # add the handlers to the logger
     logger.addHandler(file_handler)
-    #logger.addHandler(console_handler)
 
     return logger

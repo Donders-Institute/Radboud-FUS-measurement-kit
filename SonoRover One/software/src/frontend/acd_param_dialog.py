@@ -40,6 +40,7 @@ import customtkinter as ctk
 import logging
 
 # Own packages
+from config.config import config_info as config
 
 
 class ACDParamDialog():
@@ -53,17 +54,17 @@ class ACDParamDialog():
         acd_param (dict): Dictionary storing ACD processing parameters.
     """
 
-    def __init__(self, acd_param, adjust_param):
+    def __init__(self, root_win, acd_param):
         """
         Initializes the ACDParamDialog instance.
         """
 
+        self.root_win = root_win
         self.win = None
         self.not_exited_flag = True
         self.row_nr = 0
 
         self.acd_param = acd_param
-        self.adjust_param = adjust_param
 
         self._build_dialog()
 
@@ -74,7 +75,10 @@ class ACDParamDialog():
 
         # Get input parameters from user
         try:
-            self.win = ctk.CTk()
+            # Block main window until action within subdialog is finished
+            self.win = ctk.CTkToplevel(self.root_win)
+            self.win.grab_set()
+
             ctk.set_appearance_mode("System")
             self.win.title('Set ACD processing parameters')
 
@@ -124,7 +128,8 @@ class ACDParamDialog():
                                         width=200)
 
         self.adjust = self._create_combo("Moving processing window along?",
-                                         self.adjust_param, self.acd_param["adjust"],
+                                         config['Characterization']['ACD adjustment'].split('\n'),
+                                         self.acd_param["adjust"],
                                          self._event_handling)
 
         # Error message label

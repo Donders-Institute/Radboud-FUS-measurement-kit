@@ -31,6 +31,7 @@ https://github.com/Donders-Institute/Radboud-FUS-measurement-kit
 """
 
 # Basic packages
+import os
 
 # Miscellaneous packages
 from importlib import resources as impresources
@@ -43,6 +44,7 @@ from fus_driving_systems import config as fds_config
 from fus_driving_systems.config import logging_config as fds_logging_config
 
 from distutils.dir_util import copy_tree
+from pathlib import Path
 import shutil
 
 test_scanner_only = False
@@ -50,8 +52,6 @@ init_motor = True
 init_ds = True
 init_pico = False
 is_testing = test_scanner_only  # | other test examples
-# TODO: add to front-end!, change this value to move acoustical alignment results to correct location!
-ac_align_network_drive = '//ru.nl//WrkGrp//FUS_Hub//Hydrophone measurements//Measurements//2024'
 
 
 def main():
@@ -59,11 +59,12 @@ def main():
     Main function to run the characterization pipeline.
     """
 
+    # Check if temporary output folder exists and is empty, otherwise archive contents
+    move_to_archive(config_info['Characterization']['Temporary output path'])
+
     # Initialize logger
-    log_path = config_info['Characterization']['Temporary output path']
-    # TODO: add to config
-    log_name = 'SonoRover_One'
-    logger = initialize_logger(log_path, log_name)
+    log_path = config_info['Characterization']['Temporary logging path']
+    logger = initialize_logger(log_path, config_info['General']['Logger name'])
 
     version = config_info['Versions']['SonoRover One software']
     logger.info(f'Characterization performed with the following software: {version}')
@@ -118,13 +119,16 @@ def main():
                         acquisition.check_scan_ds_combo(seq)
                 else:
                     if seq.is_ac_align:
-                        input_param.dir_output = ac_align_network_drive
                         acquisition.acoustical_alignment(seq)
                     else:
                         acquisition.acquire_sequence(seq)
 
-            # All sequences are finished, so move data
-            move_output_data(logger, input_param.temp_dir_output, input_param.dir_output)
+            # Move logging data
+            move_output_data(logger, log_path, input_param.temp_dir_output)
+
+            # All sequences are finished, so move data and remove second folder
+            move_output_data(logger, input_param.temp_dir_output, input_param.dir_output, True)
+
         finally:
             acquisition.close_all()
 
@@ -132,7 +136,47 @@ def main():
         print('No input parameters found.')
 
 
-def move_output_data(logger, from_dir, to_dir):
+def move_to_archive(folder_path):
+    folder = Path(folder_path)
+    archive_folder = folder / "archive"
+
+    # Check if the folder exists
+    if not folder.exists():
+        folder.mkdir()
+        return
+
+    # Create the archive folder if it doesn't exist
+    if not archive_folder.exists():
+        archive_folder.mkdir()
+
+    # Check if the folder is empty
+    if any(folder.iterdir()):  # Check if folder is empty
+
+        # Move all files and subfolders to the archive folder
+        for item in folder.iterdir():
+            if item.name == "archive":  # Skip the archive folder itself
+                continue
+            destination = archive_folder / item.name
+
+            # Handle conflict if the destination already exists
+            if destination.exists():
+                counter = 1
+                new_destination = destination.with_name(f"{item.stem}_{counter}{item.suffix}")
+                while new_destination.exists():
+                    counter += 1
+                    new_destination = destination.with_name(f"{item.stem}_{counter}{item.suffix}")
+                destination = new_destination  # Use the new unique name
+
+            shutil.move(str(item), destination)
+            print(f"Moved '{item}' to '{destination}'.")
+
+    else:
+        print(f"The folder '{folder}' is empty; nothing to move.")
+
+    print(f"All content moved to archive folder: {archive_folder}")
+
+
+def move_output_data(logger, from_dir, to_dir, remove_sec_dir=False):
     """
     Move output data to the final directory in case it is a internet drive to save acquisition time.
 
@@ -144,6 +188,10 @@ def move_output_data(logger, from_dir, to_dir):
     try:
         copy_tree(from_dir, to_dir)
         shutil.rmtree(from_dir)
+
+        if remove_sec_dir:
+            shutil.rmtree(os.path.dirname(from_dir))
+
         logger.info(f'Output files have been moved to {to_dir}')
     except Exception as e:
         logger.info(f'Moving output files failed: {e}. Output files can be found in {from_dir}.')

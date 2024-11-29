@@ -38,7 +38,7 @@ CONFIG_FILE = 'characterization_config.ini'
 config = configparser.ConfigParser(interpolation=None)
 
 config['General'] = {}
-config['General']['Logger name'] = 'characterization'
+config['General']['Logger name'] = 'SonoRover_One'
 config['General']['Maximum number of output filename'] = str(1000)
 
 config['Versions'] = {}
@@ -49,6 +49,7 @@ config['Characterization']['Path of input parameters cache'] = ('config//' +
                                                                 'characterization_input_cache.ini')
 
 config['Characterization']['Temporary output path'] = 'C:\\Temp\\General output folder'
+config['Characterization']['Temporary logging path'] = config['Characterization']['Temporary output path']  + '\\logs'
 config['Characterization']['Default protocol directory'] = ('//ru.nl//WrkGrp//FUS_Hub//' +
                                                             'Hydrophone measurements' +
                                                             '//Measurements//2024')
@@ -67,7 +68,13 @@ config['Characterization']['Continue acquisition message'] = ('Continue acquisit
 
 ACD_ADJUST = ['0 - no adjustment', '+1 - axial measurement moving from transducer',
               '-1 - axial measurement moving towards transducer']
-config['Characterization']['ACD adjustment'] = ', '.join(ACD_ADJUST)
+config['Characterization']['ACD adjustment'] = '\n'.join(ACD_ADJUST)
+
+PROT_EXCEL = 'Select protocol excel file...'
+PROT_AC_ALIGN = 'Acoustical alignment'
+config['Characterization']['Protocols'] = '\n'.join([PROT_EXCEL, PROT_AC_ALIGN])
+config['Characterization']['Protocol.excel'] = PROT_EXCEL
+config['Characterization']['Protocol.ac_align'] = PROT_AC_ALIGN
 
 config['Characterization.Equipment'] = {}
 

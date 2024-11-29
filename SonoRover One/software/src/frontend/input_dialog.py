@@ -67,7 +67,6 @@ class InputDialog():
         """
 
         self.win = None
-        self.not_exited_flag = True
         self.row_nr = 0
 
         self.input_param = None
@@ -125,8 +124,7 @@ class InputDialog():
 
         except AttributeError:
             logger.error(logging.exception('AttributeError'))
-            if self.not_exited_flag:
-                self.win.destroy()
+            self._cancel_action()
 
     def _resize_window(self):
         """
@@ -479,11 +477,11 @@ class InputDialog():
         return error_message
 
     def _select_prot_action(self):
-        prot_dialog = pd.ProtocolDialog(self.input_param, self.path_prot)
+        prot_dialog = pd.ProtocolDialog(self.win, self.input_param, self.path_prot)
         self.input_param = prot_dialog.input_param
 
     def _acd_action(self):
-        acd_dialog = apd.ACDParamDialog(self.input_param.acd_param, self.input_param.adjust_param)
+        acd_dialog = apd.ACDParamDialog(self.win, self.input_param.acd_param)
         self.input_param.acd_param = acd_dialog.acd_param
 
     def _ok_action(self):
@@ -492,21 +490,11 @@ class InputDialog():
         """
 
         if self.win:
-            if self.input_param.is_ac_align is False:
-                # Extract protocol excel filename without extension
-                self.input_param.protocol = os.path.splitext(
-                    os.path.basename(self.input_param.path_protocol_excel_file))[0]
-                
             # Define temporary and main output directories based on selected parameters
             folder_struct = f'Output of T [{self.input_param.tran.name}] - DS [{self.input_param.driving_sys.name}]'
             self.input_param.temp_dir_output = os.path.join(
                 config['Characterization']['Temporary output path'], folder_struct,
                 f'P [{self.input_param.protocol}]')
-            self.input_param.dir_output = self.input_param.temp_dir_output
-
-            # Create directories if they don't exist
-            os.makedirs(self.input_param.temp_dir_output, exist_ok=True)
-            # os.makedirs(self.input_param.dir_output, exist_ok=True)
 
             self.input_param.pos_com_port = f'COM{self.com_pos.get()}'
 
@@ -545,6 +533,5 @@ class InputDialog():
         Closes the input dialog.
         """
 
-        if self.not_exited_flag:
-            self.not_exited_flag = False
+        if self.win and self.win.winfo_exists():
             self.win.destroy()

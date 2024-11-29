@@ -73,13 +73,14 @@ class CharacSequence(sequence.Sequence):
         # boolean if acoustical alignment is performed, if so, no grid input required.
         self.is_ac_align = False
         self.ac_align = {
-            "distance_from_foc": 10,  # [mm] distance from the focus point in millimeters.
+            "distance_from_foc": [-10, 10],  # [mm] distance from the focus point in millimeters.
             'init_line_len': 40,  # [mm] initial line length used for alignment.
             'init_line_step': 0.5,  # [mm] step size for alignment in millimeters.
             'init_threshold': 0.001,  # [mm] threshold for initial alignment error in millimeters.
             'reduction_factor': 0.5,  # [-] reduction factor for iterative alignment steps.
             'max_red_iter': 5,  # [-] maximum number of reduction iterations allowed.
             'create_graphs': True,  # boolean to indicate if graphs should be created for visualization.
+            'y_lim': 200,  # [mV], y axis limit used for plotting
             'create_axis_file': False,  # boolean to indicate if an axis file should be generated.
             'axis_length': 140,  # [mm] total length of the axis in millimeters.
             'axis_stepsize': 0.5  # [mm] step size for each point along the axis in millimeters.
@@ -120,6 +121,7 @@ class CharacSequence(sequence.Sequence):
         info += f"  - Reduction factor: {self.ac_align['reduction_factor']} \n"
         info += f"  - Maximum reduction iterations: {self.ac_align['max_red_iter']} \n"
         info += f"  - Create graphs?: {self.ac_align['create_graphs']} \n"
+        info += f"  - Y axis limit [mV]: {self.ac_align['y_lim']} \n"
         info += f"  - Create axis file?: {self.ac_align['create_axis_file']} \n"
         info += f"  - Axis length [mm]: {self.ac_align['axis_length']} \n"
         info += f"  - Axis step size [mm]: {self.ac_align['axis_stepsize']} \n"

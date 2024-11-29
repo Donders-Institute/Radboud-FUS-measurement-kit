@@ -57,7 +57,6 @@ class InputParameters:
 
     Attributes:
         temp_dir_output (str): Temporary local output directory path.
-        main_dir (str): Main protocol directory path.
         dir_output (str): Directory of output path on drive. (moving of results is done at the end
                                                               to minimize acquisition time)
         path_protocol_excel_file (str): Path to protocol Excel file.
@@ -99,9 +98,8 @@ class InputParameters:
         """
 
         self.temp_dir_output = config['Characterization']['Temporary output path']
-        self.main_dir = config['Characterization']['Default protocol directory']
         self.dir_output = config['Characterization']['Default output directory']
-        self.path_protocol_excel_file = self.main_dir
+        self.path_protocol_excel_file = config['Characterization']['Default protocol directory']
 
         # Get available driving systems and use the first one as default
         self.ds_list = ds.get_ds_list()
@@ -136,9 +134,9 @@ class InputParameters:
         self.coord_zero = [-62.2, -60.6, -155.528]
         self.perform_all_seqs = True
 
-        self.adjust_param = config['Characterization']['ACD adjustment'].split(', ')
+        adjust_param = config['Characterization']['ACD adjustment'].split('\n')
         self.acd_param = {
-            "adjust": self.adjust_param[0],
+            "adjust": adjust_param[0],
             "begus": 0,
             "endus": 0,
             }
@@ -179,6 +177,9 @@ class InputParameters:
 
         cached_input['Input parameters']['Operating frequency [kHz]'] = str(int(self.oper_freq))
 
+        cached_input['Input parameters']['Temporary output path'] = str(self.temp_dir_output)
+        cached_input['Input parameters']['Output path'] = str(self.dir_output)
+
         cached_input['Input parameters.Protocol'] = {}
         cached_input['Input parameters.Protocol']['Alignment.Acoustical'] = str(self.is_ac_align)
 
@@ -193,20 +194,19 @@ class InputParameters:
             cached_input['Input parameters.Protocol']['Alignment.pulse_dur'] = str(seq.pulse_dur)
             cached_input['Input parameters.Protocol']['Alignment.pulse_rep_int'] = str(seq.pulse_rep_int)
 
-            if seq.chosen_power == "Global power [mW]":
-                cached_input['Input parameters.Protocol']['Alignment.power_option'] = "Global power [mW]"
+            cached_input['Input parameters.Protocol']['Alignment.power_option'] = seq.chosen_power
+            if seq.chosen_power == config['General']['Power option.glob_pow']:
                 cached_input['Input parameters.Protocol']['Alignment.power_value'] = str(seq.global_power)
-            elif seq.chosen_power == "Max. pressure in free water [MPa]":
-                cached_input['Input parameters.Protocol']['Alignment.power_option'] = "Max. pressure in free water [MPa]"
+            elif seq.chosen_power == config['General']['Power option.press']:
                 cached_input['Input parameters.Protocol']['Alignment.power_value'] = str(seq.press)
-            elif seq.chosen_power == "Voltage [V]":
-                cached_input['Input parameters.Protocol']['Alignment.power_option'] = "Voltage [V]"
+            elif seq.chosen_power == config['General']['Power option.volt']:
                 cached_input['Input parameters.Protocol']['Alignment.power_value'] = str(seq.volt)
-            elif seq.chosen_power == "Amplitude [%]":
-                cached_input['Input parameters.Protocol']['Alignment.power_option'] = "Amplitude [%]"
+            elif seq.chosen_power == config['General']['Power option.ampl']:
                 cached_input['Input parameters.Protocol']['Alignment.power_value'] = str(seq.ampl)
 
+            cached_input['Input parameters.Protocol']['Alignment.chosen_focus'] = str(seq.chosen_focus)
             cached_input['Input parameters.Protocol']['Alignment.focus_wrt_exit_plane'] = str(seq.focus_wrt_exit_plane)
+            cached_input['Input parameters.Protocol']['Alignment.focus_wrt_mid_bowl'] = str(seq.focus_wrt_mid_bowl)
 
             cached_input['Input parameters.Protocol']['Alignment.distance_from_foc'] = str(seq.ac_align['distance_from_foc'])
             cached_input['Input parameters.Protocol']['Alignment.init_line_len'] = str(seq.ac_align['init_line_len'])
@@ -215,6 +215,7 @@ class InputParameters:
             cached_input['Input parameters.Protocol']['Alignment.reduction_factor'] = str(seq.ac_align['reduction_factor'])
             cached_input['Input parameters.Protocol']['Alignment.max_red_iter'] = str(seq.ac_align['max_red_iter'])
             cached_input['Input parameters.Protocol']['Alignment.create_graphs'] = str(seq.ac_align['create_graphs'])
+            cached_input['Input parameters.Protocol']['Alignment.y_lim'] = str(seq.ac_align['y_lim'])
             cached_input['Input parameters.Protocol']['Alignment.create_axis_file'] = str(seq.ac_align['create_axis_file'])
             cached_input['Input parameters.Protocol']['Alignment.axis_length'] = str(seq.ac_align['axis_length'])
             cached_input['Input parameters.Protocol']['Alignment.axis_stepsize'] = str(seq.ac_align['axis_stepsize'])
@@ -283,20 +284,12 @@ class InputParameters:
 
         self.oper_freq = int(cached_input['Input parameters']['Operating frequency [kHz]'])
 
+        self.temp_dir_output = cached_input['Input parameters']['Temporary output path']
+        self.dir_output = cached_input['Input parameters']['Output path']
+
         self.sequences = []
         self.is_ac_align = cached_input['Input parameters.Protocol']['Alignment.Acoustical'] == 'True'
         if self.is_ac_align is True:
-            # Define temporary and main output directories based on selected parameters
-            folder_struct = f'Output of T [{self.tran.name}] - DS [{self.driving_sys.name}]'
-            self.temp_dir_output = os.path.join(
-                config['Characterization']['Temporary output path'], folder_struct,
-                f'P [Acoustical alignment]')
-            self.dir_output = self.temp_dir_output
-
-            # Create directories if they don't exist
-            os.makedirs(self.temp_dir_output, exist_ok=True)
-            # os.makedirs(self.input_param.dir_output, exist_ok=True)
-
             seq = sequence.CharacSequence()
 
             seq.is_ac_align = True
@@ -307,29 +300,39 @@ class InputParameters:
             seq.pulse_dur = float(cached_input['Input parameters.Protocol']['Alignment.pulse_dur'])
             seq.pulse_rep_int = float(cached_input['Input parameters.Protocol']['Alignment.pulse_rep_int'])
 
-            seq.focus_wrt_exit_plane = float(cached_input['Input parameters.Protocol']['Alignment.focus_wrt_exit_plane'])
+            seq.chosen_focus = cached_input['Input parameters.Protocol']['Alignment.chosen_focus']
+
+            if seq.chosen_focus == config['General']['Focus option.exit']:
+                seq.focus_wrt_exit_plane = float(cached_input['Input parameters.Protocol']['Alignment.focus_wrt_exit_plane'])
+            elif seq.chosen_focus == config['General']['Focus option.bowl']:
+                seq.focus_wrt_mid_bowl = float(cached_input['Input parameters.Protocol']['Alignment.focus_wrt_mid_bowl'])
 
             # Retrieve and set power parameters based on the power option.
             power_option = cached_input['Input parameters.Protocol']['Alignment.power_option']
             power_value = float(cached_input['Input parameters.Protocol']['Alignment.power_value'])
 
             seq.chosen_power = power_option
-            if power_option == "Global power [mW]":
-                seq.global_power = power_value
-            elif power_option == "Max. pressure in free water [MPa]":
+            if power_option == config['General']['Power option.glob_pow']:
+                seq.global_power = power_value*1000  # [W] to [mW]
+            elif power_option == config['General']['Power option.press']:
                 seq.press = power_value
-            elif power_option == "Voltage [V]":
+            elif power_option == config['General']['Power option.volt']:
                 seq.volt = power_value
-            elif power_option == "Amplitude [%]":
+            elif power_option == config['General']['Power option.ampl']:
                 seq.ampl = power_value
 
-            seq.ac_align['distance_from_foc'] = float(cached_input['Input parameters.Protocol']['Alignment.distance_from_foc'])
+            distance_str = cached_input['Input parameters.Protocol']['Alignment.distance_from_foc']
+            distance_str_array = distance_str.strip('][').split(',')
+            distance_array = [float(value) for value in distance_str_array]
+
+            seq.ac_align['distance_from_foc'] = distance_array
             seq.ac_align['init_line_len'] = float(cached_input['Input parameters.Protocol']['Alignment.init_line_len'])
             seq.ac_align['init_line_step'] = float(cached_input['Input parameters.Protocol']['Alignment.init_line_step'])
             seq.ac_align['init_threshold'] = float(cached_input['Input parameters.Protocol']['Alignment.init_threshold'])
             seq.ac_align['reduction_factor'] = float(cached_input['Input parameters.Protocol']['Alignment.reduction_factor'])
             seq.ac_align['max_red_iter'] = int(cached_input['Input parameters.Protocol']['Alignment.max_red_iter'])
             seq.ac_align['create_graphs'] = cached_input['Input parameters.Protocol']['Alignment.create_graphs'] == 'True'
+            seq.ac_align['y_lim'] = float(cached_input['Input parameters.Protocol']['Alignment.y_lim'])
             seq.ac_align['create_axis_file'] = cached_input['Input parameters.Protocol']['Alignment.create_axis_file'] == 'True'
             seq.ac_align['axis_length'] = float(cached_input['Input parameters.Protocol']['Alignment.axis_length'])
             seq.ac_align['axis_stepsize'] = float(cached_input['Input parameters.Protocol']['Alignment.axis_stepsize'])
