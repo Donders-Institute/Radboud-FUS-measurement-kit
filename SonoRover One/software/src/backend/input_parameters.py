@@ -168,10 +168,10 @@ class InputParameters:
         cached_input['Input parameters']['Transducer.name'] = self.tran.name
         cached_input['Input parameters']['Transducer.manufact'] = self.tran.manufact
         cached_input['Input parameters']['Transducer.elements'] = str(self.tran.elements)
-        cached_input['Input parameters']['Transducer.fund_freq'] = str(self.tran.fund_freq)
-        cached_input['Input parameters']['Transducer.natural_foc'] = str(self.tran.natural_foc)
-        cached_input['Input parameters']['Transducer.min_foc'] = str(self.tran.min_foc)
-        cached_input['Input parameters']['Transducer.max_foc'] = str(self.tran.max_foc)
+        cached_input['Input parameters']['Transducer.fund_freq_khz'] = str(self.tran.fund_freq)
+        cached_input['Input parameters']['Transducer.natural_foc_mm'] = str(self.tran.natural_foc)
+        cached_input['Input parameters']['Transducer.min_foc_mm'] = str(self.tran.min_foc)
+        cached_input['Input parameters']['Transducer.max_foc_mm'] = str(self.tran.max_foc)
         cached_input['Input parameters']['Transducer.steer_info'] = self.tran.steer_info
         cached_input['Input parameters']['Transducer.is_active'] = str(self.tran.is_active)
 
@@ -187,12 +187,18 @@ class InputParameters:
         if self.is_ac_align is False:
             cached_input['Input parameters.Protocol']['Path and filename of protocol excel file'] = str(self.path_protocol_excel_file)
         else:
-            if len(self.sequences) > 1:
-                logger.error('Handling a regular sequence collected by the GUI has not been implemented yet.')
+            # Collect focus data from all sequences
+            focus_wrt_exit_plane_array = []
+            focus_wrt_mid_bowl_array = []
+            for seq in self.sequences:
+                focus_wrt_exit_plane_array.append(seq.focus_wrt_exit_plane)
+                focus_wrt_mid_bowl_array.append(seq.focus_wrt_mid_bowl)
+
+            # Save all parameters except for focus based on first sequence
             seq = self.sequences[0]
 
-            cached_input['Input parameters.Protocol']['Alignment.pulse_dur'] = str(seq.pulse_dur)
-            cached_input['Input parameters.Protocol']['Alignment.pulse_rep_int'] = str(seq.pulse_rep_int)
+            cached_input['Input parameters.Protocol']['Alignment.pulse_dur_ms'] = str(seq.pulse_dur)
+            cached_input['Input parameters.Protocol']['Alignment.pulse_rep_int_ms'] = str(seq.pulse_rep_int)
 
             cached_input['Input parameters.Protocol']['Alignment.power_option'] = seq.chosen_power
             if seq.chosen_power == config['General']['Power option.glob_pow']:
@@ -205,20 +211,20 @@ class InputParameters:
                 cached_input['Input parameters.Protocol']['Alignment.power_value'] = str(seq.ampl)
 
             cached_input['Input parameters.Protocol']['Alignment.chosen_focus'] = str(seq.chosen_focus)
-            cached_input['Input parameters.Protocol']['Alignment.focus_wrt_exit_plane'] = str(seq.focus_wrt_exit_plane)
-            cached_input['Input parameters.Protocol']['Alignment.focus_wrt_mid_bowl'] = str(seq.focus_wrt_mid_bowl)
+            cached_input['Input parameters.Protocol']['Alignment.focus_wrt_exit_plane_mm'] = str(focus_wrt_exit_plane_array)
+            cached_input['Input parameters.Protocol']['Alignment.focus_wrt_mid_bowl_mm'] = str(focus_wrt_mid_bowl_array)
 
-            cached_input['Input parameters.Protocol']['Alignment.distance_from_foc'] = str(seq.ac_align['distance_from_foc'])
-            cached_input['Input parameters.Protocol']['Alignment.init_line_len'] = str(seq.ac_align['init_line_len'])
-            cached_input['Input parameters.Protocol']['Alignment.init_line_step'] = str(seq.ac_align['init_line_step'])
+            cached_input['Input parameters.Protocol']['Alignment.distance_from_foc_mm'] = str(seq.ac_align['distance_from_foc'])
+            cached_input['Input parameters.Protocol']['Alignment.init_line_len_mm'] = str(seq.ac_align['init_line_len'])
+            cached_input['Input parameters.Protocol']['Alignment.init_line_step_mm'] = str(seq.ac_align['init_line_step'])
             cached_input['Input parameters.Protocol']['Alignment.init_threshold'] = str(seq.ac_align['init_threshold'])
             cached_input['Input parameters.Protocol']['Alignment.reduction_factor'] = str(seq.ac_align['reduction_factor'])
             cached_input['Input parameters.Protocol']['Alignment.max_red_iter'] = str(seq.ac_align['max_red_iter'])
             cached_input['Input parameters.Protocol']['Alignment.create_graphs'] = str(seq.ac_align['create_graphs'])
-            cached_input['Input parameters.Protocol']['Alignment.y_lim'] = str(seq.ac_align['y_lim'])
+            cached_input['Input parameters.Protocol']['Alignment.y_lim_mv'] = str(seq.ac_align['y_lim'])
             cached_input['Input parameters.Protocol']['Alignment.create_axis_file'] = str(seq.ac_align['create_axis_file'])
-            cached_input['Input parameters.Protocol']['Alignment.axis_length'] = str(seq.ac_align['axis_length'])
-            cached_input['Input parameters.Protocol']['Alignment.axis_stepsize'] = str(seq.ac_align['axis_stepsize'])
+            cached_input['Input parameters.Protocol']['Alignment.axis_length_mm'] = str(seq.ac_align['axis_length'])
+            cached_input['Input parameters.Protocol']['Alignment.axis_stepsize_mm'] = str(seq.ac_align['axis_stepsize'])
 
         cached_input['Input parameters']['COM port of positioning system'] = str(self.pos_com_port)
         cached_input['Input parameters']['Hydrophone serial number'] = str(self.hydrophone.serial)
@@ -234,9 +240,9 @@ class InputParameters:
         cached_input['Input parameters']['Temperature of water [°C]'] = str(self.temp)
         cached_input['Input parameters']['Dissolved oxygen level of water [mg/L]'] = str(self.dis_oxy)
 
-        cached_input['Input parameters']['Absolute G code x-coordinate of relative zero'] = str(self.coord_zero[0])
-        cached_input['Input parameters']['Absolute G code y-coordinate of relative zero'] = str(self.coord_zero[1])
-        cached_input['Input parameters']['Absolute G code z-coordinate of relative zero'] = str(self.coord_zero[2])
+        cached_input['Input parameters']['Absolute G code x-coordinate of relative zero [mm]'] = str(self.coord_zero[0])
+        cached_input['Input parameters']['Absolute G code y-coordinate of relative zero [mm]'] = str(self.coord_zero[1])
+        cached_input['Input parameters']['Absolute G code z-coordinate of relative zero [mm]'] = str(self.coord_zero[2])
 
         cached_input['Input parameters']['Perform all sequences in sequence without waiting for user input?'] = str(self.perform_all_seqs)
 
@@ -275,10 +281,10 @@ class InputParameters:
         self.tran.name = cached_input['Input parameters']['Transducer.name']
         self.tran.manufact = cached_input['Input parameters']['Transducer.manufact']
         self.tran.elements = int(cached_input['Input parameters']['Transducer.elements'])
-        self.tran.fund_freq = int(cached_input['Input parameters']['Transducer.fund_freq'])
-        self.tran.natural_foc = float(cached_input['Input parameters']['Transducer.natural_foc'])
-        self.tran.min_foc = float(cached_input['Input parameters']['Transducer.min_foc'])
-        self.tran.max_foc = float(cached_input['Input parameters']['Transducer.max_foc'])
+        self.tran.fund_freq = int(cached_input['Input parameters']['Transducer.fund_freq_khz'])
+        self.tran.natural_foc = float(cached_input['Input parameters']['Transducer.natural_foc_mm'])
+        self.tran.min_foc = float(cached_input['Input parameters']['Transducer.min_foc_mm'])
+        self.tran.max_foc = float(cached_input['Input parameters']['Transducer.max_foc_mm'])
         self.tran.steer_info = cached_input['Input parameters']['Transducer.steer_info']
         self.tran.is_active = cached_input['Input parameters']['Transducer.is_active'] == 'True'
 
@@ -290,6 +296,7 @@ class InputParameters:
         self.sequences = []
         self.is_ac_align = cached_input['Input parameters.Protocol']['Alignment.Acoustical'] == 'True'
         if self.is_ac_align is True:
+            # Create basic sequence
             seq = sequence.CharacSequence()
 
             seq.is_ac_align = True
@@ -297,47 +304,62 @@ class InputParameters:
             seq.transducer = self.tran.serial
             seq.oper_freq = self.oper_freq
 
-            seq.pulse_dur = float(cached_input['Input parameters.Protocol']['Alignment.pulse_dur'])
-            seq.pulse_rep_int = float(cached_input['Input parameters.Protocol']['Alignment.pulse_rep_int'])
+            seq.pulse_dur = float(cached_input['Input parameters.Protocol']['Alignment.pulse_dur_ms'])
+            seq.pulse_rep_int = float(cached_input['Input parameters.Protocol']['Alignment.pulse_rep_int_ms'])
 
-            seq.chosen_focus = cached_input['Input parameters.Protocol']['Alignment.chosen_focus']
-
-            if seq.chosen_focus == config['General']['Focus option.exit']:
-                seq.focus_wrt_exit_plane = float(cached_input['Input parameters.Protocol']['Alignment.focus_wrt_exit_plane'])
-            elif seq.chosen_focus == config['General']['Focus option.bowl']:
-                seq.focus_wrt_mid_bowl = float(cached_input['Input parameters.Protocol']['Alignment.focus_wrt_mid_bowl'])
-
-            # Retrieve and set power parameters based on the power option.
-            power_option = cached_input['Input parameters.Protocol']['Alignment.power_option']
-            power_value = float(cached_input['Input parameters.Protocol']['Alignment.power_value'])
-
-            seq.chosen_power = power_option
-            if power_option == config['General']['Power option.glob_pow']:
-                seq.global_power = power_value*1000  # [W] to [mW]
-            elif power_option == config['General']['Power option.press']:
-                seq.press = power_value
-            elif power_option == config['General']['Power option.volt']:
-                seq.volt = power_value
-            elif power_option == config['General']['Power option.ampl']:
-                seq.ampl = power_value
-
-            distance_str = cached_input['Input parameters.Protocol']['Alignment.distance_from_foc']
+            distance_str = cached_input['Input parameters.Protocol']['Alignment.distance_from_foc_mm']
             distance_str_array = distance_str.strip('][').split(',')
             distance_array = [float(value) for value in distance_str_array]
 
             seq.ac_align['distance_from_foc'] = distance_array
-            seq.ac_align['init_line_len'] = float(cached_input['Input parameters.Protocol']['Alignment.init_line_len'])
-            seq.ac_align['init_line_step'] = float(cached_input['Input parameters.Protocol']['Alignment.init_line_step'])
+            seq.ac_align['init_line_len'] = float(cached_input['Input parameters.Protocol']['Alignment.init_line_len_mm'])
+            seq.ac_align['init_line_step'] = float(cached_input['Input parameters.Protocol']['Alignment.init_line_step_mm'])
             seq.ac_align['init_threshold'] = float(cached_input['Input parameters.Protocol']['Alignment.init_threshold'])
             seq.ac_align['reduction_factor'] = float(cached_input['Input parameters.Protocol']['Alignment.reduction_factor'])
             seq.ac_align['max_red_iter'] = int(cached_input['Input parameters.Protocol']['Alignment.max_red_iter'])
             seq.ac_align['create_graphs'] = cached_input['Input parameters.Protocol']['Alignment.create_graphs'] == 'True'
-            seq.ac_align['y_lim'] = float(cached_input['Input parameters.Protocol']['Alignment.y_lim'])
+            seq.ac_align['y_lim'] = float(cached_input['Input parameters.Protocol']['Alignment.y_lim_mv'])
             seq.ac_align['create_axis_file'] = cached_input['Input parameters.Protocol']['Alignment.create_axis_file'] == 'True'
-            seq.ac_align['axis_length'] = float(cached_input['Input parameters.Protocol']['Alignment.axis_length'])
-            seq.ac_align['axis_stepsize'] = float(cached_input['Input parameters.Protocol']['Alignment.axis_stepsize'])
+            seq.ac_align['axis_length'] = float(cached_input['Input parameters.Protocol']['Alignment.axis_length_mm'])
+            seq.ac_align['axis_stepsize'] = float(cached_input['Input parameters.Protocol']['Alignment.axis_stepsize_mm'])
 
-            self.sequences.append(seq)
+            # Add every focus to a seperate sequence
+            seq.chosen_focus = cached_input['Input parameters.Protocol']['Alignment.chosen_focus']
+
+            if seq.chosen_focus == config['General']['Focus option.exit']:
+                focus_str = cached_input['Input parameters.Protocol']['Alignment.focus_wrt_exit_plane_mm']
+            elif seq.chosen_focus == config['General']['Focus option.bowl']:
+                focus_str = cached_input['Input parameters.Protocol']['Alignment.focus_wrt_mid_bowl_mm']
+
+            focus_str_array = focus_str.strip('][').split(',')
+            focus_array = [float(value) for value in focus_str_array]
+
+            # Retrieve and set power parameters based on the power option.
+            power_option = cached_input['Input parameters.Protocol']['Alignment.power_option']
+            power_value = float(cached_input['Input parameters.Protocol']['Alignment.power_value'])
+            for focus in focus_array:
+                basic_seq = seq.clone()
+
+                # Due to compensation equations, first set focus and then the power. Otherwise, when
+                # setting the focus after the amplitude, it will modify the amplitude value due to
+                # the updated equalization factor.
+                if basic_seq.chosen_focus == config['General']['Focus option.exit']:
+                    basic_seq.focus_wrt_exit_plane = focus
+                elif basic_seq.chosen_focus == config['General']['Focus option.bowl']:
+                    basic_seq.focus_wrt_mid_bowl = focus
+
+                basic_seq.chosen_power = power_option
+                if power_option == config['General']['Power option.glob_pow']:
+                    basic_seq.global_power = power_value
+                elif power_option == config['General']['Power option.press']:
+                    basic_seq.press = power_value
+                elif power_option == config['General']['Power option.volt']:
+                    basic_seq.volt = power_value
+                elif power_option == config['General']['Power option.ampl']:
+                    basic_seq.ampl = power_value
+
+                self.sequences.append(basic_seq)
+
         else:
             self.path_protocol_excel_file = cached_input['Input parameters.Protocol']['Path and filename of protocol excel file']
 
@@ -357,9 +379,9 @@ class InputParameters:
         self.temp = float(cached_input['Input parameters']['Temperature of water [°C]'])
         self.dis_oxy = float(cached_input['Input parameters']['Dissolved oxygen level of water [mg/L]'])
 
-        self.coord_zero[0] = float(cached_input['Input parameters']['Absolute G code x-coordinate of relative zero'])
-        self.coord_zero[1] = float(cached_input['Input parameters']['Absolute G code y-coordinate of relative zero'])
-        self.coord_zero[2] = float(cached_input['Input parameters']['Absolute G code z-coordinate of relative zero'])
+        self.coord_zero[0] = float(cached_input['Input parameters']['Absolute G code x-coordinate of relative zero [mm]'])
+        self.coord_zero[1] = float(cached_input['Input parameters']['Absolute G code y-coordinate of relative zero [mm]'])
+        self.coord_zero[2] = float(cached_input['Input parameters']['Absolute G code z-coordinate of relative zero [mm]'])
 
         self.perform_all_seqs = cached_input['Input parameters']['Perform all sequences in sequence without waiting for user input?'] == 'True'
 
@@ -398,7 +420,7 @@ class InputParameters:
         info += f"Temperature of water [°C]: {self.temp} \n "
         info += f"Dissolved oxygen level of water [mg/L]: {self.dis_oxy} \n "
 
-        info += f"Absolute G code xyz-coordinates of relative zero: [{self.coord_zero[0]}, {self.coord_zero[1]}, {self.coord_zero[2]}] \n "
+        info += f"Absolute G code xyz-coordinates of relative zero [mm]: [{self.coord_zero[0]}, {self.coord_zero[1]}, {self.coord_zero[2]}] \n "
 
         info += f"Perform all sequences in sequence without waiting for user input?: {self.perform_all_seqs} \n "
 

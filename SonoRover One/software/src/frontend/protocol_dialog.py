@@ -69,17 +69,25 @@ class ProtocolDialog():
 
         self.input_param = input_param
 
-        self._equip_combos = config['Equipment']['Combinations']
+        self._equip_combos = config['Equipment']['Combinations'].split('\n')
         self._ds_tran_combo = '~'.join([self.input_param.driving_sys.serial,
                                         self.input_param.tran.serial])
 
+        self.focus_wrt_exit_plane_array = []
+        self.focus_wrt_mid_bowl_array = []
         if not self.input_param.sequences:
             self.ac_align_seq = sequence.CharacSequence()
+            self.focus_wrt_exit_plane_array.append(self.ac_align_seq.focus_wrt_exit_plane)
+            self.focus_wrt_mid_bowl_array.append(self.ac_align_seq.focus_wrt_mid_bowl)
         else:
-            if len(self.input_param.sequences) > 1:
-                logger.error('Handling a regular sequence collected by the GUI has not been implemented yet.')
-
+            # Use first sequence to set all parameters
             self.ac_align_seq = self.input_param.sequences[0]
+
+            # Use all sequences to extract the focus array
+
+            for seq in self.input_param.sequences:
+                self.focus_wrt_exit_plane_array.append(seq.focus_wrt_exit_plane)
+                self.focus_wrt_mid_bowl_array.append(seq.focus_wrt_mid_bowl)
 
         self.n_ac_align_rows = 16
 
@@ -216,7 +224,20 @@ class ProtocolDialog():
                                                 width=500)
 
         power_options = config['General']['Power options'].split('\n')
-        def_power = power_options[0]
+
+        def_power = self.ac_align_seq.chosen_power
+        if def_power is not None:
+            if self.ac_align_seq.chosen_power == config['General']['Power option.glob_pow']:
+                def_power_value = self.ac_align_seq.global_power*1000  # [W] to [mW]
+            elif self.ac_align_seq.chosen_power == config['General']['Power option.press']:
+                def_power_value = self.ac_align_seq.press
+            elif self.ac_align_seq.chosen_power == config['General']['Power option.volt']:
+                def_power_value = self.ac_align_seq.volt
+            elif self.ac_align_seq.chosen_power == config['General']['Power option.ampl']:
+                def_power_value = self.ac_align_seq.ampl
+        else:
+            def_power = power_options[0]
+            def_power_value = 0
 
         self.power_combo = self._create_combo("Power setting", power_options, def_power,
                                               self._event_handling, width=240)
@@ -224,13 +245,12 @@ class ProtocolDialog():
         self.power_entry = ctk.CTkEntry(master=self.win, width=240)
         self.power_entry.bind('<Return>', self._event_handling)
         self.power_entry.bind('<1>', self._event_handling)
-        self.power_entry.insert(0, 0)
         self.power_entry.grid(row=self.row_nr, column=1, padx=10, pady=5, sticky="e")
 
         cur_ds_system = self.ds_combo.get()
         for ds in self.input_param.ds_list:
             if ds.name == cur_ds_system:
-                self._update_power_options(ds)
+                self._update_power_options(ds, def_power_value, self.ac_align_seq.chosen_power)
                 break
 
         focus_settings = config['General']['Focus options'].split('\n')
@@ -241,32 +261,9 @@ class ProtocolDialog():
         self.focus_entry = ctk.CTkEntry(master=self.win, width=240)
         self.focus_entry.bind('<Return>', self._event_handling)
         self.focus_entry.bind('<1>', self._event_handling)
-        self.focus_entry.insert(0, 0)
         self.focus_entry.grid(row=self.row_nr, column=1, padx=10, pady=5, sticky="e")
 
-        # Set known power information from ini
-        if self.input_param.sequences:
-            if len(self.input_param.sequences) > 1:
-                logger.error('Handling a regular sequence collected by the GUI has not been implemented yet.')
-
-            seq = self.input_param.sequences[0]
-
-            def_power = seq.chosen_power
-            if seq.chosen_power == config['General']['Power option.glob_pow']:
-                def_power_value = seq.global_power*1000  # [W] to [mW]
-            elif seq.chosen_power == config['General']['Power option.press']:
-                def_power_value = seq.press
-            elif seq.chosen_power == config['General']['Power option.volt']:
-                def_power_value = seq.volt
-            elif seq.chosen_power == config['General']['Power option.ampl']:
-                def_power_value = seq.ampl
-
-            self.power_combo.set(def_power)
-
-            self.power_entry.delete(0, tk.END)
-            self.power_entry.insert(0, def_power_value)
-
-            self._update_focus_entry(seq.chosen_focus)
+        self._update_focus_entry(self.ac_align_seq.chosen_focus)
 
         self.focus_dist = self._create_entry("Distance from focus wrt exit plane [mm] array",
                                              str(self.ac_align_seq.ac_align['distance_from_foc']),
@@ -318,8 +315,6 @@ class ProtocolDialog():
                                                       self.ac_align_seq.ac_align['create_axis_file'],
                                                       True, self._axis_file_check_action)
 
-        # TODO: create self._create_axis_file_combo to enable/disable below entries
-
         self.axial_len_label, self.axial_len = self._create_entry("Length of axial measurement [mm]",
                                                                   self.ac_align_seq.ac_align['axis_length'],
                                                                   is_event=True, event_handling=self._event_handling,
@@ -344,7 +339,7 @@ class ProtocolDialog():
 
         self.n_ac_align_rows = end_row - start_row
 
-    def _update_power_options(self, cur_ds):
+    def _update_power_options(self, cur_ds, def_power_value=0, def_power=None):
 
         ds_manufact = str(cur_ds.manufact)
         if ds_manufact == config['Equipment.Manufacturer.SC']['Name']:
@@ -360,8 +355,8 @@ class ProtocolDialog():
         else:
             power_options = config['General']['Power options'] .split('\n')
 
-        def_power = power_options[0]
-        def_power_value = 0
+        if def_power is None:
+            def_power = power_options[0]
 
         self.power_combo.configure(values=power_options)
         self.power_combo.set(def_power)
@@ -373,14 +368,14 @@ class ProtocolDialog():
 
         shown_focus = 0
         if focus_option == config['General']['Focus option.exit']:
-            shown_focus = self.ac_align_seq.focus_wrt_exit_plane
+            shown_focus = self.focus_wrt_exit_plane_array
         elif focus_option == config['General']['Focus option.bowl']:
-            shown_focus = self.ac_align_seq.focus_wrt_mid_bowl
+            shown_focus = self.focus_wrt_mid_bowl_array
 
         self.focus_combo.set(focus_option)
 
         self.focus_entry.delete(0, tk.END)
-        self.focus_entry.insert(0, shown_focus)
+        self.focus_entry.insert(0, str(shown_focus))
 
     def _create_buttons(self):
         """
@@ -509,6 +504,7 @@ class ProtocolDialog():
         for ds in self.input_param.ds_list:
             if ds.name == cur_ds:
                 self.input_param.driving_sys = ds
+                self.ac_align_seq.driving_sys = ds.serial
                 if 'COM' in ds.connect_info:
                     self.input_param.is_ds_com_port = True
 
@@ -550,6 +546,7 @@ class ProtocolDialog():
         for tran in self.input_param.tran_list:
             if tran.name == new_tran_name:
                 self.input_param.tran = tran
+                self.ac_align_seq.transducer = tran.serial
                 self.oper_freq_entr.delete(0, tk.END)
                 self.oper_freq_entr.insert(0, int(tran.fund_freq))
 
@@ -755,9 +752,9 @@ class ProtocolDialog():
                                 False),
                 'focus setting': (self.focus_combo, False, False, False, True, False, False, False,
                                   False),
-                'focus value': (self.focus_entry, True, True, True, False, False, False, False,
+                'focus value': (self.focus_entry, True, True, True, False, False, False, True,
                                 True),
-                'distance from focus wrt exit plane': (self.focus_dist, False, False, False, False,
+                'distance from focus wrt exit plane': (self.focus_dist, True, False, False, False,
                                                        False, False, True, False),
                 'initial line length': (self.init_line_len, True, True, True, False, False, False,
                                         False, False),
@@ -847,7 +844,25 @@ class ProtocolDialog():
         elif check_array:
             try:
                 distance_str_array = value.strip('][').split(',')
-                distance_array = [float(value) for value in distance_str_array]
+                distance_array = []
+                for value in distance_str_array:
+                    error_message_result, is_valueError = self._value_checks(value, is_float,
+                                                                             check_positive,
+                                                                             check_nonzero,
+                                                                             check_focus,
+                                                                             field_name,
+                                                                             widget,
+                                                                             error_message)
+                    if not is_valueError:
+                        error_message = error_message_result
+                        distance_array.append(float(value))
+                    else:
+                        # Ignore other remarks until valid input is given
+                        widget.configure(text_color="red")
+                        error_message += (f'Error: Value {value} of {field_name} is invalid. ' +
+                                          'Please provide a valid array format (e.g., [1, 2, 3]' +
+                                          '). \n')
+
                 if not isinstance(distance_array, list):
                     raise ValueError
             except (ValueError, SyntaxError):
@@ -856,58 +871,116 @@ class ProtocolDialog():
                                   'Please provide a valid array format (e.g., [1, 2, 3]). \n')
 
         else:
-            try:
-                if is_float:
-                    value = float(value)
-                else:
-                    value = int(value)
-                if check_positive and value < 0:
-                    widget.configure(text_color="red")
-                    error_message += (f'Error: {field_name} cannot be a negative value.' +
-                                      ' Please change value. \n ')
-                if check_nonzero and value == 0:
-                    widget.configure(text_color="red")
-                    error_message += (f'Error: {field_name} cannot be zero.' +
-                                      ' Please change value. \n ')
-                if check_focus:
-                    focus = float(value)
+            error_message, is_valueError = self._value_checks(value, is_float, check_positive,
+                                                              check_nonzero, check_focus,
+                                                              field_name, widget, error_message)
 
-                    chosen_focus = self.focus_combo.get()
-                    if chosen_focus == config['General']['Focus option.exit']:
-                        focus_wrt_exit_plane = focus
-                    elif chosen_focus == config['General']['Focus option.bowl']:
-                        # Convert wrt mid bowl to wrt exit plane
-                        if self._ds_tran_combo in self._equip_combos:
-                            self.ac_align_seq._update_conv_param()
-                            if self.ac_align_seq.DF2SF_a != 0:
-                                focus_wrt_exit_plane = (focus - self.ac_align_seq.DF2SF_b) / self.ac_align_seq.DF2SF_a
-                        else:
-                            focus_wrt_exit_plane = focus - self.input_param.tran.exit_plane_dist
+        return error_message
 
-                    # Check if focus is within range if compensation equations are not applicable
-                    if self._ds_tran_combo not in self._equip_combos:
-                        low_lim = self.input_param.tran.min_foc
-                        up_lim = self.input_param.tran.max_foc
+    def _value_checks(self, value, is_float, check_positive, check_nonzero, check_focus, field_name,
+                      widget, error_message):
+        """
+        Validates a value based on various criteria and updates the error message if validation
+        fails.
 
-                    else:
-                        low_lim = self.ac_align_seq.F2EQF1_low_lim
-                        up_lim = self.ac_align_seq.F2EQF2_up_lim
+        Parameters:
+            value (str): The value to validate.
+            is_float (bool): Whether the value should be a float (otherwise treated as an int).
+            check_positive (bool): Flag to check if the value is non-negative.
+            check_nonzero (bool): Flag to check if the value is non-zero.
+            check_focus (bool): Flag to perform additional focus validation.
+            field_name (str): Name of the field for error context.
+            widget (customtkinter.CTkWidget): Widget to update styling for errors.
+            error_message (str): Current error messages to append to.
 
-                    if focus_wrt_exit_plane < low_lim or focus_wrt_exit_plane > up_lim:
-                        widget.configure(text_color="red")
-                        error_message += (f'Error: The value of {field_name} is not within ' +
-                                          f'set limits of {low_lim} and {up_lim} [mm]. \n')
+        Returns:
+            str: Updated error message if validation fails.
 
-                if field_name == 'sampling frequency multiplication factor' and value < 2:
-                    widget.configure(text_color="red")
-                    error_message += ('Error: Picoscope sampling frequency multiplication' +
-                                      'factor needs to be at least 2. Please change value. \n ')
-            except ValueError:
-                widget.configure(text_color="red")
-                error_message += (f'Error: value of {field_name} is not a number or contains a ' +
-                                  'comma as a decimal separator. Please change value or decimal' +
-                                  ' separator. \n ')
-                return error_message
+        Notes:
+            - Converts the value to float or int based on `is_float`.
+            - Checks for positivity, non-zero value, and specific focus constraints.
+            - Validates sampling frequency multiplication factor (minimum 2) if applicable.
+            - Handles invalid number formats and updates the widget's text color to red on error.
+        """
+
+        is_valueError = False
+        try:
+            if is_float:
+                value = float(value)
+            else:
+                value = int(value)
+        except ValueError:
+            is_valueError = True
+            widget.configure(text_color="red")
+            error_message += (f'Error: value of {field_name} is not a number or contains a ' +
+                              'comma as a decimal separator. Please change value or decimal' +
+                              ' separator. \n ')
+
+            return error_message, is_valueError
+
+        if check_positive and value < 0:
+            widget.configure(text_color="red")
+            error_message += (f'Error: {field_name} cannot be a negative value.' +
+                              ' Please change value. \n ')
+        if check_nonzero and value == 0:
+            widget.configure(text_color="red")
+            error_message += (f'Error: {field_name} cannot be zero.' +
+                              ' Please change value. \n ')
+        if check_focus:
+            error_message = self._check_focus(value, field_name, widget, error_message)
+
+        if field_name == 'sampling frequency multiplication factor' and value < 2:
+            widget.configure(text_color="red")
+            error_message += ('Error: Picoscope sampling frequency multiplication' +
+                              'factor needs to be at least 2. Please change value. \n ')
+
+        return error_message, is_valueError
+
+    def _check_focus(self, value, field_name, widget, error_message):
+        """
+        Validates the focus value against configured limits.
+
+        Parameters:
+            value (str): Input focus value to validate.
+            field_name (str): Name of the field for error context.
+            widget (customtkinter.CTkWidget): Widget to update styling for errors.
+            error_message (str): Current error messages to append to.
+
+        Returns:
+            str: Updated error message if the focus value is out of bounds.
+
+        Notes:
+            - Converts the input focus to relative exit-plane value if needed.
+            - Validates focus against pre-defined limits.
+            - Sets the widget text color to red and appends an error message if out of bounds.
+        """
+
+        focus = float(value)
+
+        chosen_focus = self.focus_combo.get()
+        if chosen_focus == config['General']['Focus option.exit']:
+            focus_wrt_exit_plane = focus
+        elif chosen_focus == config['General']['Focus option.bowl']:
+            # Convert wrt mid bowl to wrt exit plane
+            if self._ds_tran_combo in self._equip_combos:
+                if self.ac_align_seq.DF2SF_a != 0:
+                    focus_wrt_exit_plane = (focus - self.ac_align_seq.DF2SF_b) / self.ac_align_seq.DF2SF_a
+            else:
+                focus_wrt_exit_plane = focus - self.input_param.tran.exit_plane_dist
+
+        # Check if focus is within range if compensation equations are not applicable
+        if self._ds_tran_combo not in self._equip_combos:
+            low_lim = self.input_param.tran.min_foc
+            up_lim = self.input_param.tran.max_foc
+
+        else:
+            low_lim = self.ac_align_seq.F2EQF1_low_lim
+            up_lim = self.ac_align_seq.F2EQF2_up_lim
+
+        if focus_wrt_exit_plane < low_lim or focus_wrt_exit_plane > up_lim:
+            widget.configure(text_color="red")
+            error_message += (f'Error: The value of {field_name} is not within ' +
+                              f'set limits of {low_lim} and {up_lim} [mm]. \n')
 
         return error_message
 
@@ -955,6 +1028,7 @@ class ProtocolDialog():
                 self.input_param.protocol = os.path.splitext(filename_ext)
 
                 self.ac_align_seq.is_ac_align = False
+                self.input_param.sequences = []
 
             elif chosen_prot == config['Characterization']['Protocol.ac_align']:
                 self.input_param.protocol = chosen_prot
@@ -968,22 +1042,6 @@ class ProtocolDialog():
                 self.ac_align_seq.pulse_train_dur = self.ac_align_seq.pulse_rep_int
                 self.ac_align_seq.pulse_train_rep_int = self.ac_align_seq.pulse_rep_int
                 self.ac_align_seq.pulse_train_rep_dur = self.ac_align_seq.pulse_rep_int/1000  # [s]
-
-                chosen_focus = self.focus_combo.get()
-                if chosen_focus == config['General']['Focus option.exit']:
-                    self.ac_align_seq.focus_wrt_exit_plane = abs(float(self.focus_entry.get()))
-                elif chosen_focus == config['General']['Focus option.bowl']:
-                    self.ac_align_seq.focus_wrt_mid_bowl = abs(float(self.focus_entry.get()))
-
-                chosen_power = self.power_combo.get()
-                if chosen_power == config['General']['Power option.glob_pow']:
-                    self.ac_align_seq.global_power = abs(float(self.power_entry.get()))/1000  # SC: gp [W]
-                elif chosen_power == config['General']['Power option.press']:
-                    self.ac_align_seq.press = abs(float(self.power_entry.get()))
-                elif chosen_power == config['General']['Power option.volt']:
-                    self.ac_align_seq.volt = abs(float(self.power_entry.get()))
-                elif chosen_power == config['General']['Power option.ampl']:
-                    self.ac_align_seq.ampl = abs(float(self.power_entry.get()))
 
                 # Assign the values from the input fields to the ac_align parameters
                 # Parse float entries from entry fields
@@ -1011,7 +1069,38 @@ class ProtocolDialog():
                 self.ac_align_seq.ac_align['axis_length'] = abs(float(self.axial_len.get()))
                 self.ac_align_seq.ac_align['axis_stepsize'] = abs(float(self.axial_step.get()))
 
-                self.input_param.sequences = [self.ac_align_seq]
+                # Extract focus at last to create sequences using the same parameters by only
+                # changing the focus setting
+
+                # Parse float entries from entry fields
+                focus_str_array = self.focus_entry.get().strip('][').split(',')
+                focus_array = [float(value) for value in focus_str_array]
+
+                # Due to compensation equations, first set focus then the power value
+                chosen_focus = self.focus_combo.get()
+                chosen_power = self.power_combo.get()
+                power_value = abs(float(self.power_entry.get()))
+                sequences = []
+                for focus in focus_array:
+                    basic_seq = self.ac_align_seq.clone()
+
+                    if chosen_focus == config['General']['Focus option.exit']:
+                        basic_seq.focus_wrt_exit_plane = focus
+                    elif chosen_focus == config['General']['Focus option.bowl']:
+                        basic_seq.focus_wrt_mid_bowl = focus
+
+                    if chosen_power == config['General']['Power option.glob_pow']:
+                        basic_seq.global_power = power_value/1000  # SC: gp [W]
+                    elif chosen_power == config['General']['Power option.press']:
+                        basic_seq.press = power_value
+                    elif chosen_power == config['General']['Power option.volt']:
+                        basic_seq.volt = power_value
+                    elif chosen_power == config['General']['Power option.ampl']:
+                        basic_seq.ampl = power_value
+
+                    sequences.append(basic_seq)
+
+                self.input_param.sequences = sequences
 
             self.main_prot_entry.delete(0, tk.END)
             self.main_prot_entry.insert(0, self.input_param.protocol)

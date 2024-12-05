@@ -36,6 +36,7 @@ import re
 import sys
 
 # Miscellaneous packages
+import copy
 import numpy
 
 import pandas as pd
@@ -136,6 +137,22 @@ class CharacSequence(sequence.Sequence):
         info += f"Column vector [mm]: {self.vect_col} \n "
 
         return info
+
+    def clone(self):
+        """
+        Creates and returns a new instance of the CharacSequence class with the same attribute
+        values.
+
+        The new instance is a deep copy of the current instance, ensuring that changes to the cloned
+        object do not affect the original object.
+
+        Returns:
+            CharacSequence: A new instance of the CharacSequence class with copied attribute values.
+        """
+
+        new_instance = CharacSequence()
+        new_instance.__dict__ = copy.deepcopy(self.__dict__)  # Copy all attributes
+        return new_instance
 
     def _set_start_coord_vector(self, coord_zero, directions, dimensions):
         """

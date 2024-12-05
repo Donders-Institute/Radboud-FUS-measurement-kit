@@ -166,10 +166,12 @@ def move_to_archive(folder_path):
                     counter += 1
                     new_destination = destination.with_name(f"{item.stem}_{counter}{item.suffix}")
                 destination = new_destination  # Use the new unique name
-
-            shutil.move(str(item), destination)
-            print(f"Moved '{item}' to '{destination}'.")
-
+            try:
+                shutil.move(str(item), destination)
+                print(f"Moved '{item}' to '{destination}'.")
+            except PermissionError:
+                print('The process cannot access the file because it is being used by another ' +
+                      'process or you do not have permission to move this file. Skip file for now.')
     else:
         print(f"The folder '{folder}' is empty; nothing to move.")
 
