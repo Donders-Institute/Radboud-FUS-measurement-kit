@@ -980,7 +980,7 @@ class ProtocolDialog():
         if focus_wrt_exit_plane < low_lim or focus_wrt_exit_plane > up_lim:
             widget.configure(text_color="red")
             error_message += (f'Error: The value of {field_name} is not within ' +
-                              f'set limits of {low_lim} and {up_lim} [mm]. \n')
+                              f'set limits of {low_lim} and {up_lim} wrt exit plane [mm]. \n')
 
         return error_message
 
