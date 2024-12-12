@@ -89,7 +89,7 @@ class ProtocolDialog():
                 self.focus_wrt_exit_plane_array.append(seq.focus_wrt_exit_plane)
                 self.focus_wrt_mid_bowl_array.append(seq.focus_wrt_mid_bowl)
 
-        self.n_ac_align_rows = 16
+        self.n_ac_align_rows = 15
 
         self._build_dialog()
 
@@ -160,6 +160,13 @@ class ProtocolDialog():
         self.trans_combo = self._create_combo("Transducer", self.input_param.tran_names,
                                               self.input_param.tran.name,
                                               self._trans_combo_action)
+
+        # Update conversion coefficients according to chosen equipment
+        self._ds_tran_combo = '~'.join([self.input_param.driving_sys.serial, self.input_param.tran.serial])
+        if self._ds_tran_combo in self._equip_combos:
+            # TODO: fix private func
+            self.ac_align_seq._ds_tran_combo = self._ds_tran_combo
+            self.ac_align_seq._update_conv_param()
 
         # Entry field for operating frequency
         self.oper_freq_entr = self._create_entry("Operating frequency [kHz]",
@@ -291,10 +298,11 @@ class ProtocolDialog():
                                                is_event=True, event_handling=self._event_handling,
                                                width=500)
 
-        self.max_red_iter = self._create_entry("Maximum amount of reduction iterations",
-                                               self.ac_align_seq.ac_align['max_red_iter'],
-                                               is_event=True, event_handling=self._event_handling,
-                                               width=500)
+        # TODO: reduction is disabled from the frontend
+        # self.max_red_iter = self._create_entry("Maximum amount of reduction iterations",
+        #                                        self.ac_align_seq.ac_align['max_red_iter'],
+        #                                        is_event=True, event_handling=self._event_handling,
+        #                                        width=500)
 
         self.create_graphs = self._create_checkbox("Create graphs of every line measurement",
                                                    self.ac_align_seq.ac_align['create_graphs'],
@@ -763,9 +771,10 @@ class ProtocolDialog():
                 'initial threshold': (self.init_threshold, True, True, True, False, False, False,
                                       False, False),
                 'reduction fact.': (self.reduc_factor, True, True, True, False, False, False, False,
-                                    False),
-                'n reduction iterations': (self.max_red_iter, True, True, False, False, False,
-                                           False, False, False)
+                                    False)
+                # TODO: reduction is disabled from the frontend
+                #'n reduction iterations': (self.max_red_iter, True, True, False, False, False,
+                #                           False, False, False)
                 })
 
             if self.create_graphs.get():
@@ -962,9 +971,8 @@ class ProtocolDialog():
             focus_wrt_exit_plane = focus
         elif chosen_focus == config['General']['Focus option.bowl']:
             # Convert wrt mid bowl to wrt exit plane
-            if self._ds_tran_combo in self._equip_combos:
-                if self.ac_align_seq.DF2SF_a != 0:
-                    focus_wrt_exit_plane = (focus - self.ac_align_seq.DF2SF_b) / self.ac_align_seq.DF2SF_a
+            if self._ds_tran_combo in self._equip_combos and self.ac_align_seq.DF2SF_a != 0:
+                focus_wrt_exit_plane = (focus - self.ac_align_seq.DF2SF_b) / self.ac_align_seq.DF2SF_a
             else:
                 focus_wrt_exit_plane = focus - self.input_param.tran.exit_plane_dist
 
@@ -1057,7 +1065,8 @@ class ProtocolDialog():
                 self.ac_align_seq.ac_align['reduction_factor'] = abs(float(self.reduc_factor.get()))
 
                 # Parse integer entry for maximum reduction iterations
-                self.ac_align_seq.ac_align['max_red_iter'] = int(self.max_red_iter.get())
+                # TODO: reduction is disabled from the frontend
+                # self.ac_align_seq.ac_align['max_red_iter'] = int(self.max_red_iter.get())
 
                 # Parse boolean values from checkboxes
                 self.ac_align_seq.ac_align['create_graphs'] = self.create_graphs.get() == 1

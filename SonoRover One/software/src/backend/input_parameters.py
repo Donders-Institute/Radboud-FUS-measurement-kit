@@ -114,7 +114,7 @@ class InputParameters:
 
         self.oper_freq = self.tran.fund_freq  # [kHz]
 
-        self.pos_com_port = 'COM4'
+        self.pos_com_port = 'COM3'
 
         # Get available hydrophones, for logging purposes only
         self.hydro_list = hp.get_hydro_list()
@@ -124,7 +124,7 @@ class InputParameters:
 
         # Get available PicoScope list
         self.pico_list = ps.get_pico_list()
-        self.picoscope = self.pico_list[2]
+        self.picoscope = self.pico_list[0]
         self.pico_names = ps.get_pico_names()
         self.sampl_freq_multi = 50
 

@@ -164,7 +164,8 @@ class Acquisition:
         # Driving system of IGT
         elif ds_manufact == config_info['Equipment.Manufacturer.IGT']['Name']:
             add_message = config_info['Equipment.Manufacturer.IGT']['Additional charac. discon. message']
-            self.equipment["ds"] = fds_igt.IGT()
+            log_path = config_info['Characterization']['Temporary logging path']
+            self.equipment["ds"] = fds_igt.IGT(log_path)
 
             check_dialogs.check_disconnection_dialog(add_message)
 
@@ -327,8 +328,8 @@ class Acquisition:
         self.output["outputINI"] = outfile
         head, tail = os.path.split(self.output["outputINI"])
         if not os.path.isdir(head):  # if incorrect directory or no directory is given use CWD
-            head = os.getcwd()
-            raise OSError(f'directory does not exist: {head}')
+            os.makedirs(head, exist_ok=True)
+            logger.info(f'Directory does not exist, so it is created: {head}')
 
         fileok = not os.path.isfile(self.output["outputINI"])
         i = 0

@@ -78,7 +78,7 @@ config['Characterization']['Protocol.ac_align'] = PROT_AC_ALIGN
 
 config['Characterization.Equipment'] = {}
 
-HYDROPHONES = ['HGL 0200 SN2845', 'HNR 0500 SN2439']
+HYDROPHONES = ['HGL 0200 SN2845', 'HGL 0200 SN3030', 'HNR 0500 SN2439']
 config['Characterization.Equipment']['Hydrophones'] = ', '.join(HYDROPHONES)
 
 config['Characterization.Equipment.' + HYDROPHONES[0]] = {}
@@ -89,6 +89,11 @@ config['Characterization.Equipment.' + HYDROPHONES[0]]['Sensitivity (V/Pa) datas
 config['Characterization.Equipment.' + HYDROPHONES[1]] = {}
 config['Characterization.Equipment.' + HYDROPHONES[1]]['Name'] = 'Hydrophone ' + HYDROPHONES[1]
 config['Characterization.Equipment.' + HYDROPHONES[1]]['Sensitivity (V/Pa) datasheet'] = (
+    'config//hydrophones//HGL 0200 SN3030 Calibration datasheet.xlsx')
+
+config['Characterization.Equipment.' + HYDROPHONES[2]] = {}
+config['Characterization.Equipment.' + HYDROPHONES[2]]['Name'] = 'Hydrophone ' + HYDROPHONES[2]
+config['Characterization.Equipment.' + HYDROPHONES[2]]['Sensitivity (V/Pa) datasheet'] = (
     'config//hydrophones//HNR 0500 SN2439 Calibration datasheet.xlsx')
 
 config['Characterization.Equipment']['Hydrophone datasheet freq. header'] = 'Freq(MHz)'
@@ -98,7 +103,8 @@ config['Characterization.Equipment']['PicoScopes'] = ', '.join(PICO_SERIALS)
 
 config['Characterization.Equipment.' + PICO_SERIALS[0]] = {}
 config['Characterization.Equipment.' + PICO_SERIALS[0]]['Name'] = ('PicoScope ' + PICO_SERIALS[0] +
-                                                                   ' - embedded in IGT driving ' +
+                                                                   ' - embedded in characterization '  + 
+                                                                   'setup and IGT driving ' +
                                                                    'system (128 ch.)')
 config['Characterization.Equipment.' + PICO_SERIALS[0]]['Pico.py identification'] = PICO_SERIALS[0]
 
@@ -108,8 +114,7 @@ config['Characterization.Equipment.' + PICO_SERIALS[1]]['Pico.py identification'
 
 config['Characterization.Equipment.' + PICO_SERIALS[2]] = {}
 config['Characterization.Equipment.' + PICO_SERIALS[2]]['Name'] = ('PicoScope ' + PICO_SERIALS[2] +
-                                                                   ' - embedded in ' +
-                                                                   'characterization setup')
+                                                                   ' - test setup')
 config['Characterization.Equipment.' + PICO_SERIALS[2]]['Pico.py identification'] = PICO_SERIALS[2]
 
 with open(CONFIG_FILE, 'w') as configfile:

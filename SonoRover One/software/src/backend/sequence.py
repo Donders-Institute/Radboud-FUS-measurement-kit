@@ -77,7 +77,7 @@ class CharacSequence(sequence.Sequence):
             "distance_from_foc": [-10, 10],  # [mm] distance from the focus point in millimeters.
             'init_line_len': 40,  # [mm] initial line length used for alignment.
             'init_line_step': 0.5,  # [mm] step size for alignment in millimeters.
-            'init_threshold': 0.001,  # [mm] threshold for initial alignment error in millimeters.
+            'init_threshold': 0.01,  # [mm] threshold for initial alignment error in millimeters.
             'reduction_factor': 0.5,  # [-] reduction factor for iterative alignment steps.
             'max_red_iter': 5,  # [-] maximum number of reduction iterations allowed.
             'create_graphs': True,  # boolean to indicate if graphs should be created for visualization.

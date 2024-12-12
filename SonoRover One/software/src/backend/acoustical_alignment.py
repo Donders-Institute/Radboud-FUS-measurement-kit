@@ -70,6 +70,7 @@ class AcousticalAlignment(acq.Acquisition):
         # Validate and prepare output directory and files
         outfile = os.path.join(self.input_param.temp_dir_output,
                                f'sequence_{sequence.seq_number}_output_data.ini')
+        
         self._check_file(outfile)
 
         # Save parameters and prepare for alignment
@@ -90,13 +91,8 @@ class AcousticalAlignment(acq.Acquisition):
 
         # Set up parameters for iterative alignment
         middle_points = self._perform_alignment(z_coords)
-
-        self._write_average_to_cache()
-
-        # Calculate and save acoustical axis if needed
-        self._calculate_acoustical_axis(middle_points)
-        if self.sequence.ac_align["create_axis_file"]:
-            self._save_acoustical_axis_to_excel(sequence)
+        
+        return middle_points
 
     def _calculate_z_coords(self, distance_from_foc):
         """
@@ -152,7 +148,10 @@ class AcousticalAlignment(acq.Acquisition):
 
         # history plot for all middle points
         fig_hist, axes_hist = plt.subplots(len(z_coords), 2)
-
+        fig_hist.suptitle('Focus wrt exit plane ' + 
+                          f'{self.sequence.focus_wrt_exit_plane:.2f} [mm]')
+        fig_hist.text(0.01, 0.5, 'Pulse RMS [mV], Z wrt exit plane [mm]:', va='center', rotation='vertical')
+        
         x_x_upper_lim = self.input_param.coord_zero[0] + self.sequence.ac_align["init_line_len"]/2
         x_x_lower_lim = self.input_param.coord_zero[0] - self.sequence.ac_align["init_line_len"]/2
 
@@ -160,7 +159,10 @@ class AcousticalAlignment(acq.Acquisition):
         y_x_lower_lim = self.input_param.coord_zero[1] - self.sequence.ac_align["init_line_len"]/2
 
         for idx, z_coord in enumerate(z_coords):
-            ax_hist = axes_hist[idx, :]
+            if len(z_coords) == 1:
+                ax_hist = axes_hist
+            else:
+                ax_hist = axes_hist[idx]
 
             # set axis for x and y plots
             if len(z_coords) == idx + 1:
@@ -169,8 +171,10 @@ class AcousticalAlignment(acq.Acquisition):
             else:
                 ax_hist[0].get_xaxis().set_visible(False)
                 ax_hist[1].get_xaxis().set_visible(False)
-
-            ax_hist[0].set_yaxis(f'Z wrt exit plane: {z_coord:.2f} [mm] \n Pulse RMS [mV]')
+            
+            z_coord_wrt_exit_plane = abs(self.input_param.coord_zero[2] - z_coord)
+            
+            ax_hist[0].set_ylabel(f'\n {z_coord_wrt_exit_plane:.1f}')
 
             ax_hist[0].set_xlim(x_x_lower_lim - 15, x_x_upper_lim + 15)
             ax_hist[0].set_ylim(0, self.sequence.ac_align["y_lim"])
@@ -179,7 +183,6 @@ class AcousticalAlignment(acq.Acquisition):
             ax_hist[1].set_xlim(y_x_lower_lim - 15, y_x_upper_lim + 15)
             ax_hist[1].set_ylim(0, self.sequence.ac_align["y_lim"])
 
-            z_coord_wrt_exit_plane = abs(self.input_param.coord_zero[2] - z_coord)
             logger.info(f"Finding acoustical axis coordinate for z = {round(z_coord_wrt_exit_plane, 2)} mm")
             self.sequence.coord_start[2] = z_coord
 
@@ -192,14 +195,16 @@ class AcousticalAlignment(acq.Acquisition):
             middle_points[idx] = [found_x_coords[-1], found_y_coords[-1], z_coord]
             print(f"Found middle_point: {middle_points[idx]}")
 
-            ax_hist[0].set_title(f'CoM x = {found_x_coords[-1]} [mm]')
-            ax_hist[1].set_title(f'CoM y = {found_y_coords[-1]} [mm]')
+            ax_hist[0].set_title(f'CoM x = {found_x_coords[-1]:.2f} [mm]')
+            ax_hist[1].set_title(f'CoM y = {found_y_coords[-1]:.2f} [mm]')
 
-            filename = os.path.join(self.input_param.temp_dir_output,
-                                    'acoustical_alignment_history_plot.png')
+        filename = os.path.join(self.input_param.temp_dir_output,
+                                'acoustical_alignment_history_plot_f_wrt_ep_'  + 
+                                f'{self.sequence.focus_wrt_exit_plane:.2f}.png'
+                                )
 
-            fig_hist.savefig(filename)
-            fig_hist.show()
+        fig_hist.tight_layout()
+        fig_hist.savefig(filename)
 
         return middle_points
 
@@ -272,24 +277,24 @@ class AcousticalAlignment(acq.Acquisition):
                                     f'iter_{iteration}.png')
 
             fig.savefig(filename)
-            fig.show()
 
-            if iteration != 0 and iteration % (self.sequence.ac_align['max_red_iter']) == 0:
-                # Reduce line length and step size
-                line_length *= reduction_factor
-                line_step_size *= reduction_factor
+            # TODO: reduction is disabled from the frontend
+            # if iteration != 0 and iteration % (self.sequence.ac_align['max_red_iter']) == 0:
+            #     # Reduce line length and step size
+            #     line_length *= reduction_factor
+            #     line_step_size *= reduction_factor
 
-                line_n_points = round(line_length / line_step_size)
+            #     line_n_points = round(line_length / line_step_size)
 
-                if (line_n_points % 2) == 0:
-                    line_n_points = line_n_points + 1
+            #     if (line_n_points % 2) == 0:
+            #         line_n_points = line_n_points + 1
 
-                self.grid_param["ncol"] = line_n_points
-                self.sequence.nslices_nrow_ncol = [self.grid_param["nsl"], self.grid_param["nrow"],
-                                                   self.grid_param["ncol"]]
+            #     self.grid_param["ncol"] = line_n_points
+            #     self.sequence.nslices_nrow_ncol = [self.grid_param["nsl"], self.grid_param["nrow"],
+            #                                        self.grid_param["ncol"]]
 
-                logger.info(f"Reducing search area. New line_length: {line_length:.2f}mm, " +
-                            f"new line_step_size: {line_step_size:.2f}mm")
+            #     logger.info(f"Reducing search area. New line_length: {line_length:.2f}mm, " +
+            #                 f"new line_step_size: {line_step_size:.2f}mm")
 
         return found_x_coords, found_y_coords
 
@@ -392,137 +397,150 @@ class AcousticalAlignment(acq.Acquisition):
         ax.set_ylim(0, self.sequence.ac_align["y_lim"])
         ax.set_xlabel(f'{direction.upper()}-coordinates [mm]')
 
-    def _calculate_acoustical_axis(self, middle_points):
-        """
-        Calculate the acoustical axis based on the middle points.
 
-        Parameters:
-        middle_points (ndarray): Array of middle points [x, y, z] for the scanned z-coordinates.
+def save_acoustical_axis_to_excel(main_sequence, acoustical_axis, coord_zero, output_name):
+    """
+    Save acoustical axis data to an Excel file if `create_axis_file` is enabled.
 
-        Returns:
-        dict: Acoustical axis data containing the origin point and direction vector.
-        """
-        if len(middle_points) > 1:  # We need at least two points to determine a linear relationship
-            point1 = middle_points[0]
-            point2 = middle_points[1]
+    Parameters:
+    sequence (object): The sequence object containing alignment parameters and details.
+    """
+    axial_measurement_length = main_sequence.ac_align["axis_length"]  # [mm]
+    axial_measurement_step_size = main_sequence.ac_align["axis_stepsize"]  # [mm]
 
-            # Calculate direction vector and unit vector for the acoustical axis
-            direction_vector = point2 - point1
-            unit_vector = direction_vector / np.linalg.norm(direction_vector)
-            azimuth_dir = np.degrees(math.atan(unit_vector[1]/unit_vector[0]))
-            elev_dir = np.degrees(math.asin(unit_vector[2]))
+    # Define the range of t values based on axis length and step size
+    t_values = np.arange(0, axial_measurement_length + axial_measurement_step_size,
+                         axial_measurement_step_size)
 
-            average_point = np.mean(middle_points, axis=0)
-            azimuth_av = np.degrees(math.atan(average_point[1]/average_point[0]))
-            elev_av = np.degrees(math.asin(average_point[2]))
+    # Create rows to store data for Excel output
+    rows = []
+    cluster_nr = 1
 
-            # Calculate the point where z-coordinate is equal to self.input_param.coord_zero[2]
-            t = (self.input_param.coord_zero[2] - point1[2]) / direction_vector[2]
-            transducer_z_point = point1 + t * direction_vector
+    # Calculate coordinates for each t value
+    for i, t in enumerate(t_values):
+        point = acoustical_axis['origin'] + t * acoustical_axis['direction']
 
-            # Store the origin and direction of the acoustical axis
-            self.acoustical_axis = {
-                'origin': transducer_z_point,
-                'direction': unit_vector,
-                'azimuth of direction': azimuth_dir,
-                'elevation of direction': elev_dir,
-                'average': average_point,
-                'azimuth of average': azimuth_av,
-                'elevation of average': elev_av
-            }
+        measurement_nr = i + 1  # Measurement number
+        # Store row data for each t value
+        rows.append([measurement_nr, cluster_nr, measurement_nr, point[0],
+                     point[1], point[2], 1, measurement_nr, 1,
+                     point[0] - coord_zero[0],
+                     point[1] - coord_zero[1],
+                     point[2] - coord_zero[2]
+                     ])
 
-            # Log the calculated axis details
-            logger.info("Acoustical axis equation:")
-            logger.info(f"Origin point: {self.acoustical_axis['origin']}")
-            logger.info(f"Direction vector: {self.acoustical_axis['direction']}")
-            logger.info("Direction vector angles: \n :")
-            logger.info(f"    aximuth: {self.acoustical_axis['azimuth_dir']}")
-            logger.info(f"    elevation: {self.acoustical_axis['elev_dir']}")
+    # Define Excel filename
+    excel_filename = output_name + '_acoustical_axis.xlsx'
 
-            logger.info(f"Average vector: {self.acoustical_axis['average_point']}")
-            logger.info("Average vector angles: \n :")
-            logger.info(f"    aximuth: {self.acoustical_axis['azimuth_av']}")
-            logger.info(f"    elevation: {self.acoustical_axis['elev_av']}")
+    # Save the data using the _save_acoustical_axis_data method
+    save_acoustical_axis_data(rows, excel_filename)
+    logger.info(f"Acoustical axis coordinates saved to: {excel_filename}")
 
-            logger.info("Equation: xyz_coordinate = origin + t * direction, where t is a scalar parameter")
+def save_acoustical_axis_data(rows, filename):
+    """
+    Save acoustical axis data to an Excel file.
 
-    def _write_average_to_cache(self):
-        """
-        Save average acoustical axis coordinates to the cached input parameters file.
+    Parameters:
+    rows (list): List of rows containing acoustical axis data.
+    filename (str): Name of the Excel file to save the data.
+    """
+    df = pd.DataFrame(rows, columns=['Measurement number', 'Cluster number',
+                                     'Indices number', 'X-coordinate [mm]',
+                                     'Y-coordinate [mm]', 'Z-coordinate [mm]',
+                                     'Row number', 'Column number',
+                                     'Slice number',
+                                     'Absolute X-coordinate [mm]',
+                                     'Absolute Y-coordinate [mm]',
+                                     'Absolute Z-coordinate [mm]'])
 
-        Updates the `Absolute G code` x, y, and z coordinates in the `Input parameters` section
-        of the file specified by `Path of input parameters cache` in the configuration. The
-        coordinates are taken from `self.acoustical_axis['average_point']`.
+    df.to_excel(filename, index=False)
 
-        """
+    logger.info(f"Acoustical axis coordinates saved to: {filename}")
 
-        cached_path = config['Characterization']['Path of input parameters cache']
-        if os.path.exists(cached_path):
+def calculate_acoustical_axis(middle_points, z_exit_plane):
+    """
+    Calculate the acoustical axis based on the middle points.
 
-            cached_input = configparser.ConfigParser(interpolation=None)
-            cached_input.read(cached_path)
-            cached_input['Input parameters']['Absolute G code x-coordinate of relative zero'] = str(self.acoustical_axis['average_point'][0])
-            cached_input['Input parameters']['Absolute G code y-coordinate of relative zero'] = str(self.acoustical_axis['average_point'][1])
-            cached_input['Input parameters']['Absolute G code z-coordinate of relative zero'] = str(self.acoustical_axis['average_point'][2])
+    Parameters:
+    middle_points (ndarray): Array of middle points [x, y, z] for the scanned z-coordinates.
 
-            with open(cached_path, 'w') as inputfile:
-                cached_input.write(inputfile)
+    Returns:
+    dict: Acoustical axis data containing the origin point and direction vector.
+    """
+    if len(middle_points) > 1:  # We need at least two points to determine a linear relationship
+        point1 = middle_points[0]
+        point2 = middle_points[-1]  # grab last point to calculate directional vector
 
-    def _save_acoustical_axis_to_excel(self):
-        """
-        Save acoustical axis data to an Excel file if `create_axis_file` is enabled.
+        # Calculate direction vector and unit vector for the acoustical axis
+        direction_vector = point2 - point1
+        unit_vector = direction_vector / np.linalg.norm(direction_vector)
+        azimuth_dir = np.degrees(np.arctan2(unit_vector[1], unit_vector[0]))
+        elev_dir = np.degrees(math.atan(unit_vector[2]/(math.sqrt(math.pow(unit_vector[0],2)+math.pow(unit_vector[1],2)))))
 
-        Parameters:
-        sequence (object): The sequence object containing alignment parameters and details.
-        """
-        axial_measurement_length = self.sequence.ac_align["axis_length"]  # [mm]
-        axial_measurement_step_size = self.sequence.ac_align["axis_stepsize"]  # [mm]
+        average_point = np.mean(middle_points, axis=0)
+        azimuth_av = np.degrees(np.arctan2(average_point[1], average_point[0]))
+        elev_av = np.degrees(math.atan(average_point[2]/(math.sqrt(math.pow(average_point[0],2)+math.pow(average_point[1],2)))))
 
-        # Define the range of t values based on axis length and step size
-        t_values = np.arange(0, axial_measurement_length + axial_measurement_step_size,
-                             axial_measurement_step_size)
+        # Calculate the point where z-coordinate is equal to self.input_param.coord_zero[2]
+        t = (z_exit_plane - point1[2]) / direction_vector[2]
+        transducer_z_point = point1 + t * direction_vector
 
-        # Create rows to store data for Excel output
-        rows = []
-        cluster_nr = 1
+        # Store the origin and direction of the acoustical axis
+        acoustical_axis = {
+            'origin': transducer_z_point,
+            'direction': unit_vector,
+            'azimuth of direction': azimuth_dir,
+            'elevation of direction': elev_dir,
+            'average': average_point,
+            'azimuth of average': azimuth_av,
+            'elevation of average': elev_av
+        }
 
-        # Calculate coordinates for each t value
-        for i, t in enumerate(t_values):
-            point = self.acoustical_axis['origin'] + t * self.acoustical_axis['direction']
+        # Log the calculated axis details
+        logger.info("Acoustical axis equation:")
+        logger.info(f"Origin point: {acoustical_axis['origin']}")
+        logger.info(f"Direction vector: {acoustical_axis['direction']}")
+        logger.info("Direction vector angles: \n :")
+        logger.info(f"    aximuth: {acoustical_axis['azimuth of direction']}")
+        logger.info(f"    elevation: {acoustical_axis['elevation of direction']}")
 
-            measurement_nr = i + 1  # Measurement number
-            # Store row data for each t value
-            rows.append([measurement_nr, cluster_nr, measurement_nr, point[0],
-                         point[1], point[2], 1, measurement_nr, 1,
-                         point[0] - self.input_param.coord_zero[0],
-                         point[1] - self.input_param.coord_zero[1],
-                         point[2] - self.input_param.coord_zero[2]
-                         ])
+        logger.info(f"Average vector: {acoustical_axis['average']}")
+        logger.info("Average vector angles: \n :")
+        logger.info(f"    aximuth: {acoustical_axis['azimuth of average']}")
+        logger.info(f"    elevation: {acoustical_axis['elevation of average']}")
 
-        # Define Excel filename
-        excel_filename = os.path.splitext(self.output["outputRAW"])[0] + '_acoustical_axis.xlsx'
+        logger.info("Equation: xyz_coordinate = origin + t * direction, where t is a scalar parameter")
+        
+        return acoustical_axis
+    else:
+        logger.error('At least two middle points are needed to calculate ' + 
+                     'the acoustical axis.')
 
-        # Save the data using the _save_acoustical_axis_data method
-        self._save_acoustical_axis_data(rows, excel_filename)
-        logger.info(f"Acoustical axis coordinates saved to: {excel_filename}")
+def write_average_to_cache(acoustical_axis):
+    """
+    Save average acoustical axis coordinates to the cached input parameters file.
 
-    def _save_acoustical_axis_data(self, rows, filename):
-        """
-        Save acoustical axis data to an Excel file.
+    Updates the `Absolute G code` x, y, and z coordinates in the `Input parameters` section
+    of the file specified by `Path of input parameters cache` in the configuration. The
+    coordinates are taken from `self.acoustical_axis['average_point']`.
 
-        Parameters:
-        rows (list): List of rows containing acoustical axis data.
-        filename (str): Name of the Excel file to save the data.
-        """
-        df = pd.DataFrame(rows, columns=['Measurement number', 'Cluster number',
-                                         'Indices number', 'X-coordinate [mm]',
-                                         'Y-coordinate [mm]', 'Z-coordinate [mm]',
-                                         'Row number', 'Column number',
-                                         'Slice number',
-                                         'Absolute X-coordinate [mm]',
-                                         'Absolute Y-coordinate [mm]',
-                                         'Absolute Z-coordinate [mm]'])
+    """
 
-        df.to_excel(filename, index=False)
+    cached_path = config['Characterization']['Path of input parameters cache']
+    if os.path.exists(cached_path):
 
-        logger.info(f"Acoustical axis coordinates saved to: {filename}")
+        cached_input = configparser.ConfigParser(interpolation=None)
+        cached_input.read(cached_path)
+        cached_input['Input parameters']['Absolute G code x-coordinate of relative zero [mm]'] = str(acoustical_axis['average'][0])
+        cached_input['Input parameters']['Absolute G code y-coordinate of relative zero [mm]'] = str(acoustical_axis['average'][1])
+        
+        with open(cached_path, 'w') as inputfile:
+            cached_input.write(inputfile)
+
+def process_acoustical_alignment(main_sequence, coord_zero, middle_points, output_name):
+    # Calculate and save acoustical axis if needed
+    logger.info(f'Found middle points: {middle_points}')
+    acoustical_axis = calculate_acoustical_axis(middle_points, coord_zero[2])
+    write_average_to_cache(acoustical_axis)
+    if main_sequence.ac_align['create_axis_file']:
+        save_acoustical_axis_to_excel(main_sequence, acoustical_axis, coord_zero, output_name)

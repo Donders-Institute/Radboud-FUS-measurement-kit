@@ -35,6 +35,7 @@ import os
 
 # Miscellaneous packages
 from importlib import resources as impresources
+import numpy as np
 
 # Own packages
 from config.config import config_info, read_additional_config
@@ -101,11 +102,15 @@ def main():
             acquisition = test_aq.TestAcquisition(input_param, init_motor, init_ds, init_pico)
         elif input_param.is_ac_align:
             acquisition = ac_align.AcousticalAlignment(input_param)
+            n_dist = len(input_param.sequences[0].ac_align['distance_from_foc'])
+            n_foci = len(input_param.sequences)
+            middle_points = np.zeros([n_dist*n_foci, 3])
         else:
             acquisition = aq.Acquisition(input_param)
 
         try:
-            for seq in input_param.sequences:
+            for i in range(len(input_param.sequences)):
+                seq = input_param.sequences[i]
                 if not input_param.perform_all_seqs:
                     # Wait for user input before continuing
                     check_dialogs.continue_acquisition_dialog(seq)
@@ -119,15 +124,23 @@ def main():
                         acquisition.check_scan_ds_combo(seq)
                 else:
                     if seq.is_ac_align:
-                        acquisition.acoustical_alignment(seq)
+                        found_middle_points = acquisition.acoustical_alignment(seq)
+                        if n_dist == 1:
+                            middle_points[n_dist*i:n_dist*(i+1), :] = found_middle_points
+                        else:
+                            middle_points[n_dist*i:n_dist*(i+1), :] = found_middle_points
                     else:
                         acquisition.acquire_sequence(seq)
+
+            if input_param.is_ac_align:
+                output_name = os.path.splitext(acquisition.output["outputRAW"])[0]
+                ac_align.process_acoustical_alignment(input_param.sequences[0], input_param.coord_zero, middle_points, output_name)
 
             # Move logging data
             move_output_data(logger, log_path, input_param.temp_dir_output)
 
             # All sequences are finished, so move data and remove second folder
-            move_output_data(logger, input_param.temp_dir_output, input_param.dir_output, True)
+            move_output_data(logger, input_param.temp_dir_output, input_param.dir_output)
 
         finally:
             acquisition.close_all()
@@ -142,12 +155,12 @@ def move_to_archive(folder_path):
 
     # Check if the folder exists
     if not folder.exists():
-        folder.mkdir()
+        folder.mkdir(parents=True, exist_ok=True)
         return
 
     # Create the archive folder if it doesn't exist
     if not archive_folder.exists():
-        archive_folder.mkdir()
+        archive_folder.mkdir(parents=True, exist_ok=True)
 
     # Check if the folder is empty
     if any(folder.iterdir()):  # Check if folder is empty
@@ -178,7 +191,7 @@ def move_to_archive(folder_path):
     print(f"All content moved to archive folder: {archive_folder}")
 
 
-def move_output_data(logger, from_dir, to_dir, remove_sec_dir=False):
+def move_output_data(logger, from_dir, to_dir):
     """
     Move output data to the final directory in case it is a internet drive to save acquisition time.
 
@@ -189,10 +202,6 @@ def move_output_data(logger, from_dir, to_dir, remove_sec_dir=False):
 
     try:
         copy_tree(from_dir, to_dir)
-        shutil.rmtree(from_dir)
-
-        if remove_sec_dir:
-            shutil.rmtree(os.path.dirname(from_dir))
 
         logger.info(f'Output files have been moved to {to_dir}')
     except Exception as e:
