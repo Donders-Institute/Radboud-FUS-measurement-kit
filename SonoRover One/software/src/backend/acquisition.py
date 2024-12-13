@@ -295,15 +295,15 @@ class Acquisition:
                                str(sequence.seq_number) + '_output_data.ini')
         self._check_file(outfile)
 
-        self._save_params_ini()
-        logger.info('Used parameters have been saved in a file.')
-
         if sequence.use_coord_excel:
             self._init_grid_excel()
         else:
             self._init_grid()
 
         logger.info('Grid is initialized')
+
+        self._save_params_ini()
+        logger.info('Used parameters have been saved in a file.')
 
         # Send sequence to driving system
         self.equipment["ds"].send_sequence(self.sequence)
