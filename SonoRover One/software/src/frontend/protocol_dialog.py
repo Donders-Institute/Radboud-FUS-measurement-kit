@@ -41,7 +41,6 @@ import logging
 
 # Own packages
 from config.config import config_info as config
-from config.logging_config import logger
 
 from backend import sequence
 
@@ -162,7 +161,9 @@ class ProtocolDialog():
                                               self._trans_combo_action)
 
         # Update conversion coefficients according to chosen equipment
-        self._ds_tran_combo = '~'.join([self.input_param.driving_sys.serial, self.input_param.tran.serial])
+        self._ds_tran_combo = '~'.join([self.input_param.driving_sys.serial,
+                                        self.input_param.tran.serial])
+        
         if self._ds_tran_combo in self._equip_combos:
             # TODO: fix private func
             self.ac_align_seq._ds_tran_combo = self._ds_tran_combo
