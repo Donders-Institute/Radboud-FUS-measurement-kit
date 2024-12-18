@@ -195,6 +195,7 @@ class AcousticalAlignment(acq.Acquisition):
 
             # Save the middle point of the scan
             middle_points[idx] = [found_x_coords[-1], found_y_coords[-1], z_coord]
+
             print(f"Found middle_point: {middle_points[idx]}")
 
             ax_hist[0].set_title(f'CoM x = {found_x_coords[-1]:.2f} [mm]')
@@ -502,13 +503,13 @@ def calculate_acoustical_axis(middle_points, z_exit_plane):
 
         # Store the origin and direction of the acoustical axis
         acoustical_axis = {
-            'origin': transducer_z_point,
-            'direction': unit_vector,
-            'azimuth of direction': azimuth_dir,
-            'elevation of direction': elev_dir,
-            'average': average_point,
-            'azimuth of average': azimuth_av,
-            'elevation of average': elev_av
+            'origin': np.round(transducer_z_point, 2),
+            'direction': np.round(unit_vector, 2),
+            'azimuth of direction': round(azimuth_dir, 2),
+            'elevation of direction': round(elev_dir, 2),
+            'average': np.round(average_point, 2),
+            'azimuth of average': round(azimuth_av, 2),
+            'elevation of average': round(elev_av, 2)
         }
 
         # Log the calculated axis details
