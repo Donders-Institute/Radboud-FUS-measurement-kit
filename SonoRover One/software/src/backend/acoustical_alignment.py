@@ -236,7 +236,7 @@ class AcousticalAlignment(acq.Acquisition):
 
         while abs(found_x_coords[-2] - found_x_coords[-1]) > threshold or (
                 abs(found_y_coords[-2] - found_y_coords[-1]) > threshold):
-            iteration = len(found_x_coords) - 2
+            iteration = len(found_x_coords) - 1  # start with 1
             logger.info(f"Iteration {iteration}: X difference = " +
                         f"{abs(found_x_coords[-2] - found_x_coords[-1]):.4f} mm, " +
                         f"Y difference = {abs(found_y_coords[-2] - found_y_coords[-1]):.4f} mm")
@@ -266,17 +266,19 @@ class AcousticalAlignment(acq.Acquisition):
             z_coord_wrt_exit_plane = abs(self.input_param.coord_zero[2] -
                                          self.sequence.coord_start[2])
 
-            title = (f'CoM [{found_x_coords[-1]:.2f}, {found_y_coords[-1]:.2f}] [mm], Z-coord wrt' +
-                     f' exit plane: {z_coord_wrt_exit_plane:.2f} \n ' +
-                     f'Iter. {iteration}, Max diff. = {max_diff:.5f} mm, Line length:' +
-                     f' {line_length:.1f}, stepsize: {line_step_size:.2f}')
+            title = (f'Iter. {iteration}, focus & z wrt ex. pl.: ' +
+                     f'{self.sequence.focus_wrt_exit_plane:.2f}, {z_coord_wrt_exit_plane:.2f}, ' +
+                     f'diff. = {max_diff:.3f} [mm] \n ' +
+                     f'CoM [{found_x_coords[-1]:.2f}, {found_y_coords[-1]:.2f}], ' +
+                     f'length: {line_length:.1f}, stepsize: {line_step_size:.2f} [mm]')
 
             fig.suptitle(title)
             fig.supylabel('RMS of total acq. time per grid point [mV]')
 
             filename = os.path.join(self.input_param.temp_dir_output,
-                                    f'acoustical_alignment_foc_{z_coord_wrt_exit_plane:.2f}_' +
-                                    f'iter_{iteration}.png')
+                                    'acoustical_alignment_foc_wep_' +
+                                    f'{self.sequence.focus_wrt_exit_plane:.2f}_z_coord_wep_plane_' +
+                                    f'{z_coord_wrt_exit_plane:.2f}_iter_{iteration}.png')
 
             fig.savefig(filename)
 
@@ -357,13 +359,13 @@ class AcousticalAlignment(acq.Acquisition):
         logger.info(f"Found center of mass in {direction}-direction: {center_of_mass_coord:.3f} mm")
 
         if self.sequence.ac_align["create_graphs"]:
-            self._plot_center_of_mass_graph(direction, dest_xyz_list, rms, center_of_mass_coord,
-                                            iteration, ax, ax_hist)
+            self._plot_center_of_mass_graph(direction, dest_xyz_list, rms, center_of_mass_coord, ax,
+                                            ax_hist)
 
         return center_of_mass_coord
 
-    def _plot_center_of_mass_graph(self, direction, dest_xyz_list, rms, center_of_mass_coord,
-                                   iteration, ax, ax_hist):
+    def _plot_center_of_mass_graph(self, direction, dest_xyz_list, rms, center_of_mass_coord, ax,
+                                   ax_hist):
         """
         Plot the center of mass graph for the scanned data.
 
