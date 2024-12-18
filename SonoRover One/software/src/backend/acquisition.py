@@ -847,7 +847,9 @@ class Acquisition:
         logger.info(f'Moving to position: {dest_xyz[0]:.3f}, {dest_xyz[1]:.3f}, {dest_xyz[2]:.3f}')
 
         n = i*self.grid_param["nrow"]*self.grid_param["ncol"]+j*self.grid_param["ncol"]+k
-        logger.info(f'i: {i}, j: {j}, k: {k}, n: {n}')
+        total_n = self.grid_param["nrow"]*self.grid_param["ncol"]*self.grid_param["nsl"]
+        logger.info(f'i: {i}, j: {j}, k: {k}, n: {n} of {total_n}')
+        print(f'Measurement {n} of {total_n}.', end="\r")
 
         # Save data in excel
         # [Measurement nr, Cluster nr, indices nr, relatXcor(mm), relatYcor(mm),
