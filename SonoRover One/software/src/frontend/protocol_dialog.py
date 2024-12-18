@@ -45,7 +45,7 @@ from config.config import config_info as config
 from backend import sequence
 
 
-class ProtocolDialog():
+class ProtocolDialog(ctk.CTkToplevel):
     """
     GUI dialog for setting additional ACD procesing parameters.
 
@@ -60,9 +60,8 @@ class ProtocolDialog():
         """
         Initializes the ProtocolDialog instance.
         """
+        super().__init__(root_win)
 
-        self.root_win = root_win
-        self.win = None
         self.main_prot_entry = prot_entry
         self.row_nr = 0
 
@@ -100,11 +99,11 @@ class ProtocolDialog():
         # Get input parameters from user
         try:
             # Block main window until action within subdialog is finished
-            self.win = ctk.CTkToplevel(self.root_win)
-            self.win.grab_set()
+            self.grab_set()
+            self.protocol("WM_DELETE_WINDOW", self._cancel_action)
 
             ctk.set_appearance_mode("System")
-            self.win.title('Choose protocol')
+            self.title('Choose protocol')
 
             self._create_us_equip_entries()
 
@@ -113,8 +112,6 @@ class ProtocolDialog():
             self._event_handling(None)  # perform initial event handling
 
             self._resize_window()
-
-            self.win.mainloop()
 
         except AttributeError:
             print(logging.exception('AttributeError'))
@@ -125,15 +122,15 @@ class ProtocolDialog():
         Resizes window according to content and displays the window on top of all windows.
         """
         # Update window to calculate required size
-        self.win.update_idletasks()
+        self.update_idletasks()
 
         # Automatic resizing
-        self.win.geometry(f"{self.win.winfo_reqwidth()}x{self.win.winfo_reqheight()}")
+        self.geometry(f"{self.winfo_reqwidth()}x{self.winfo_reqheight()}")
 
         # Display this window on top of all windows
-        self.win.lift()
-        self.win.attributes('-topmost', True)
-        self.win.after(5000, lambda: self.win.attributes('-topmost', False))  # stay for 5s
+        self.lift()
+        self.attributes('-topmost', True)
+        self.after(5000, lambda: self.attributes('-topmost', False))  # stay for 5s
 
     def _create_us_equip_entries(self):
         # Dropdown for selecting US Driving System
@@ -202,7 +199,7 @@ class ProtocolDialog():
 
         # Error message label
         self._add_row()
-        self.error_label = ctk.CTkLabel(master=self.win, text="")
+        self.error_label = ctk.CTkLabel(master=self, text="")
         self.error_label.grid(row=self.row_nr, columnspan=2)
 
     def _create_ac_align_entries(self):
@@ -218,7 +215,7 @@ class ProtocolDialog():
                                               event_handling=self._event_handling, width=350)
 
         # Browse button to select output directory
-        button = ctk.CTkButton(master=self.win, text="Browse", command=self._get_directory)
+        button = ctk.CTkButton(master=self, text="Browse", command=self._get_directory)
         button.grid(row=self.row_nr, column=1, padx=10, sticky="e")
 
         self.pulse_dur = self._create_entry("Pulse duration [us]",
@@ -250,7 +247,7 @@ class ProtocolDialog():
         self.power_combo = self._create_combo("Power setting", power_options, def_power,
                                               self._event_handling, width=240)
 
-        self.power_entry = ctk.CTkEntry(master=self.win, width=240)
+        self.power_entry = ctk.CTkEntry(master=self, width=240)
         self.power_entry.bind('<Return>', self._event_handling)
         self.power_entry.bind('<1>', self._event_handling)
         self.power_entry.grid(row=self.row_nr, column=1, padx=10, pady=5, sticky="e")
@@ -266,7 +263,7 @@ class ProtocolDialog():
         self.focus_combo = self._create_combo("Focus", focus_settings, def_focus_setting,
                                               self._event_handling, width=240)
 
-        self.focus_entry = ctk.CTkEntry(master=self.win, width=240)
+        self.focus_entry = ctk.CTkEntry(master=self, width=240)
         self.focus_entry.bind('<Return>', self._event_handling)
         self.focus_entry.bind('<1>', self._event_handling)
         self.focus_entry.grid(row=self.row_nr, column=1, padx=10, pady=5, sticky="e")
@@ -394,12 +391,12 @@ class ProtocolDialog():
         self._add_row()
 
         # Ok button
-        self.ok_button = ctk.CTkButton(master=self.win, text="Ok", command=self._ok_action)
+        self.ok_button = ctk.CTkButton(master=self, text="Ok", command=self._ok_action)
         self.ok_button.grid(row=self.row_nr, column=0, sticky='w', ipadx=53, padx=10, pady=10)
         self.ok_button.configure(state=tk.NORMAL)
 
         # Cancel button
-        button = ctk.CTkButton(master=self.win, text="Cancel", command=self._cancel_action)
+        button = ctk.CTkButton(master=self, text="Cancel", command=self._cancel_action)
         button.grid(row=self.row_nr, column=1, sticky='e', ipadx=53, padx=10, pady=10)
 
     def _add_row(self):
@@ -428,9 +425,9 @@ class ProtocolDialog():
 
         self._add_row()
 
-        label = ctk.CTkLabel(master=self.win, text=label_txt)
+        label = ctk.CTkLabel(master=self, text=label_txt)
         label.grid(row=self.row_nr, column=0, padx=20, sticky='w')
-        entry = ctk.CTkEntry(master=self.win, width=width)
+        entry = ctk.CTkEntry(master=self, width=width)
 
         if is_event:
             entry.bind('<Return>', event_handling)
@@ -461,9 +458,9 @@ class ProtocolDialog():
 
         self._add_row()
 
-        label = ctk.CTkLabel(master=self.win, text=label_txt)
+        label = ctk.CTkLabel(master=self, text=label_txt)
         label.grid(row=self.row_nr, column=0, padx=20, sticky='w')
-        combo = ctk.CTkComboBox(master=self.win, width=width, values=value_list,
+        combo = ctk.CTkComboBox(master=self, width=width, values=value_list,
                                 command=combo_action)
 
         combo.set(def_value)
@@ -487,12 +484,12 @@ class ProtocolDialog():
 
         self._add_row()
 
-        label = ctk.CTkLabel(master=self.win, text=label_txt)
+        label = ctk.CTkLabel(master=self, text=label_txt)
         label.grid(row=self.row_nr, column=0, padx=20, sticky='w')
         bool_int = 1 if def_bool else 0
         bool_var = tk.IntVar(value=bool_int)
 
-        checkbox = ctk.CTkCheckBox(master=self.win, text='', variable=bool_var)
+        checkbox = ctk.CTkCheckBox(master=self, text='', variable=bool_var)
 
         if is_event:
             checkbox.bind('<Return>', event_handling)
@@ -570,22 +567,22 @@ class ProtocolDialog():
 
         # First, remove any previously inserted widgets in the specific row range
         if self.row_nr >= self.insert_row + self.n_ac_align_rows - 1:
-            for widget in self.win.grid_slaves():
+            for widget in self.grid_slaves():
                 if self.insert_row <= widget.grid_info()['row'] < self.insert_row + self.n_ac_align_rows:
                     widget.destroy()
 
             # Shift widgets below insert_row up by self.n_ac_align_rows row
-            for widget in self.win.grid_slaves():
+            for widget in self.grid_slaves():
                 current_row = widget.grid_info()['row']
                 if current_row > self.insert_row:
                     widget.grid(row=current_row - self.n_ac_align_rows, column=widget.grid_info()['column'])
         else:
-            for widget in self.win.grid_slaves():
+            for widget in self.grid_slaves():
                 if self.insert_row <= widget.grid_info()['row'] < self.insert_row + 1:
                     widget.destroy()
 
             # Shift widgets below insert_row up by one row
-            for widget in self.win.grid_slaves():
+            for widget in self.grid_slaves():
                 current_row = widget.grid_info()['row']
                 if current_row > self.insert_row:
                     widget.grid(row=current_row - 1, column=widget.grid_info()['column'])
@@ -598,7 +595,7 @@ class ProtocolDialog():
             self.input_param.is_ac_align = False
 
             # Shift widgets below this point down by updating their grid positions
-            for widget in self.win.grid_slaves():
+            for widget in self.grid_slaves():
                 if widget.grid_info()['row'] >= self.insert_row:
                     widget.grid(row=widget.grid_info()['row'] + 1, column=widget.grid_info()['column'])
 
@@ -609,14 +606,14 @@ class ProtocolDialog():
                                                 width=350)
 
             # Browse button to select protocol excel file
-            button = ctk.CTkButton(master=self.win, text="Browse", command=self._get_filename)
+            button = ctk.CTkButton(master=self, text="Browse", command=self._get_filename)
             button.grid(row=self.row_nr, column=1, padx=10, sticky="e")
 
         elif cur_prot == config['Characterization']['Protocol.ac_align']:
             self.input_param.is_ac_align = True
 
             # Shift widgets below this point down by updating their grid positions
-            for widget in self.win.grid_slaves():
+            for widget in self.grid_slaves():
                 if widget.grid_info()['row'] >= self.insert_row:
                     widget.grid(row=widget.grid_info()['row'] + self.n_ac_align_rows, column=widget.grid_info()['column'])
 
@@ -998,7 +995,7 @@ class ProtocolDialog():
         Action function triggered when Ok button is clicked. Saves valid input parameters.
         """
 
-        if self.win:
+        if self:
             # Save selected driving system object
             ds_name = self.ds_combo.get()
             for ds in self.input_param.ds_list:
@@ -1128,12 +1125,11 @@ class ProtocolDialog():
             # Close the dialog
             self._cancel_action()
 
-    def _cancel_action(self):
+    def _cancel_action(self, cancel_script=False):
         """
         Action function triggered when Cancel button is clicked.
         Closes the input dialog.
         """
 
-        if self.win and self.win.winfo_exists():
-            self.win.grab_release()  # release main dialog
-            self.win.withdraw()  # hide subdialog
+        self.grab_release()  # release main dialog
+        self.withdraw()  # hide subdialog

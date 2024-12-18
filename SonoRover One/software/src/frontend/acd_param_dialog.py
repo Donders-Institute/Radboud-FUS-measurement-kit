@@ -43,13 +43,12 @@ import logging
 from config.config import config_info as config
 
 
-class ACDParamDialog():
+class ACDParamDialog(ctk.CTkToplevel):
     """
     GUI dialog for setting additional ACD procesing parameters.
 
     Attributes:
         win (tk.Tk or None): The main tkinter window.
-        not_exited_flag (bool): Flag indicating whether the dialog has not been exited.
         row_nr (int): Current row number for grid layout in the tkinter window.
         acd_param (dict): Dictionary storing ACD processing parameters.
     """
@@ -58,10 +57,8 @@ class ACDParamDialog():
         """
         Initializes the ACDParamDialog instance.
         """
+        super().__init__(root_win)
 
-        self.root_win = root_win
-        self.win = None
-        self.not_exited_flag = True
         self.row_nr = 0
 
         self.acd_param = acd_param
@@ -76,11 +73,11 @@ class ACDParamDialog():
         # Get input parameters from user
         try:
             # Block main window until action within subdialog is finished
-            self.win = ctk.CTkToplevel(self.root_win)
-            self.win.grab_set()
+            self.grab_set()
+            self.protocol("WM_DELETE_WINDOW", self._cancel_action)
 
             ctk.set_appearance_mode("System")
-            self.win.title('Set ACD processing parameters')
+            self.title('Set ACD processing parameters')
 
             self._create_entries()
             self._create_buttons()
@@ -89,27 +86,24 @@ class ACDParamDialog():
 
             self._resize_window()
 
-            self.win.mainloop()
-
         except AttributeError:
             print(logging.exception('AttributeError'))
-            if self.not_exited_flag:
-                self.win.destroy()
+            self._cancel_action()
 
     def _resize_window(self):
         """
         Resizes window according to content and displays the window on top of all windows.
         """
         # Update window to calculate required size
-        self.win.update_idletasks()
+        self.update_idletasks()
 
         # Automatic resizing
-        self.win.geometry(f"{self.win.winfo_reqwidth()}x{self.win.winfo_reqheight()}")
+        self.geometry(f"{self.winfo_reqwidth()}x{self.winfo_reqheight()}")
 
         # Display this window on top of all windows
-        self.win.lift()
-        self.win.attributes('-topmost', True)
-        self.win.after(5000, lambda: self.win.attributes('-topmost', False))  # stay for 5s
+        self.lift()
+        self.attributes('-topmost', True)
+        self.after(5000, lambda: self.attributes('-topmost', False))  # stay for 5s
 
     def _create_entries(self):
         """
@@ -134,7 +128,7 @@ class ACDParamDialog():
 
         # Error message label
         self._add_row()
-        self.error_label = ctk.CTkLabel(master=self.win, text="")
+        self.error_label = ctk.CTkLabel(master=self, text="")
         self.error_label.grid(row=self.row_nr, columnspan=2)
 
     def _create_buttons(self):
@@ -145,12 +139,12 @@ class ACDParamDialog():
         self._add_row()
 
         # Ok button
-        self.ok_button = ctk.CTkButton(master=self.win, text="Ok", command=self._ok_action)
+        self.ok_button = ctk.CTkButton(master=self, text="Ok", command=self._ok_action)
         self.ok_button.grid(row=self.row_nr, column=0, sticky='w', ipadx=53, padx=10, pady=10)
         self.ok_button.configure(state=tk.DISABLED)
 
         # Cancel button
-        button = ctk.CTkButton(master=self.win, text="Cancel", command=self._cancel_action)
+        button = ctk.CTkButton(master=self, text="Cancel", command=self._cancel_action)
         button.grid(row=self.row_nr, column=1, sticky='e', ipadx=53, padx=10, pady=10)
 
     def _add_row(self):
@@ -179,9 +173,9 @@ class ACDParamDialog():
 
         self._add_row()
 
-        label = ctk.CTkLabel(master=self.win, text=label_txt)
+        label = ctk.CTkLabel(master=self, text=label_txt)
         label.grid(row=self.row_nr, column=0, padx=20, sticky='w')
-        entry = ctk.CTkEntry(master=self.win, width=width)
+        entry = ctk.CTkEntry(master=self, width=width)
 
         if is_event:
             entry.bind('<Return>', event_handling)
@@ -212,9 +206,9 @@ class ACDParamDialog():
 
         self._add_row()
 
-        label = ctk.CTkLabel(master=self.win, text=label_txt)
+        label = ctk.CTkLabel(master=self, text=label_txt)
         label.grid(row=self.row_nr, column=0, padx=20, sticky='w')
-        combo = ctk.CTkComboBox(master=self.win, width=200, values=value_list, command=combo_action)
+        combo = ctk.CTkComboBox(master=self, width=200, values=value_list, command=combo_action)
 
         combo.set(def_value)
         combo.grid(row=self.row_nr, column=1, padx=10, pady=5, sticky="w")
@@ -340,13 +334,12 @@ class ACDParamDialog():
         Action function triggered when Ok button is clicked. Saves valid input parameters.
         """
 
-        if self.win:
-            self.acd_param["begus"] = self.begus.get()
-            self.acd_param["endus"] = self.endus.get()
-            self.acd_param["adjust"] = self.adjust.get()
+        self.acd_param["begus"] = self.begus.get()
+        self.acd_param["endus"] = self.endus.get()
+        self.acd_param["adjust"] = self.adjust.get()
 
-            # Close the dialog
-            self._cancel_action()
+        # Close the dialog
+        self._cancel_action()
 
     def _cancel_action(self):
         """
@@ -354,6 +347,5 @@ class ACDParamDialog():
         Closes the input dialog.
         """
 
-        if self.not_exited_flag:
-            self.not_exited_flag = False
-            self.win.destroy()
+        self.grab_release()  # release main dialog
+        self.withdraw()  # hide subdialog

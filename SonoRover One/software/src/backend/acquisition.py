@@ -442,6 +442,7 @@ class Acquisition:
             logger.error("Pipeline is cancelled. The following direction cannot be found: "
                          + excel_path)
 
+    # REMEMBER! THIS WILL AFFECT THE POSTPROCESSING PIPELINE!
     def _save_params_ini(self):
         """
         Save parameters to an INI file.

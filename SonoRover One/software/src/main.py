@@ -32,6 +32,7 @@ https://github.com/Donders-Institute/Radboud-FUS-measurement-kit
 
 # Basic packages
 import os
+import sys
 
 # Miscellaneous packages
 from importlib import resources as impresources
@@ -39,7 +40,7 @@ import numpy as np
 
 # Own packages
 from config.config import config_info, read_additional_config
-from config.logging_config import initialize_logger
+from config.logging_config import initialize_logger, close_logger
 
 from fus_driving_systems import config as fds_config
 from fus_driving_systems.config import logging_config as fds_logging_config
@@ -65,90 +66,93 @@ def main():
 
     # Initialize logger
     log_path = config_info['Characterization']['Temporary logging path']
-    logger = initialize_logger(log_path, config_info['General']['Logger name'])
+    try:
+        logger = initialize_logger(log_path, config_info['General']['Logger name'])
 
-    version = config_info['Versions']['SonoRover One software']
-    logger.info(f'Characterization performed with the following software: {version}')
+        version = config_info['Versions']['SonoRover One software']
+        logger.info(f'Characterization performed with the following software: {version}')
 
-    # Sync fus_driving_systems logging
-    fds_logging_config.sync_logger(logger)
+        # Sync fus_driving_systems logging
+        fds_logging_config.sync_logger(logger)
 
-    # Read additional fus_driving_systems config file
-    inp_file = impresources.files(fds_config) / 'ds_config.ini'
-    read_additional_config(inp_file)
+        # Read additional fus_driving_systems config file
+        inp_file = impresources.files(fds_config) / 'ds_config.ini'
+        read_additional_config(inp_file)
 
-    # Delay import due to initialization of logger
-    from frontend.input_dialog import InputDialog
-    from backend import sequence
-    from backend import test_acquisition as test_aq
-    from backend import acoustical_alignment as ac_align
-    from backend import acquisition as aq
-    from frontend import check_dialogs
+        # Delay import due to initialization of logger
+        from frontend.input_dialog import InputDialog
+        from backend import sequence
+        from backend import test_acquisition as test_aq
+        from backend import acoustical_alignment as ac_align
+        from backend import acquisition as aq
+        from frontend import check_dialogs
 
-    # Create dialog to retrieve input values
-    input_dialog = InputDialog()
-    input_param = input_dialog.input_param
+        # Create dialog to retrieve input values
+        input_dialog = InputDialog()
+        input_param = input_dialog.input_param
 
-    if input_param is not None:
-        logger.info(f'Characterization performed with the following parameters: \n {input_param}')
+        if input_param is not None:
+            logger.info(f'Characterization performed with the following parameters: \n {input_param}')
 
-        # No sequence chosen using GUI, so read excel file
-        if not input_param.sequences:
-            # Import sequences of excel, delay import due to initialization of logger
-            input_param.sequences = sequence.generate_sequence_list(input_param)
+            # No sequence chosen using GUI, so read excel file
+            if not input_param.sequences:
+                # Import sequences of excel, delay import due to initialization of logger
+                input_param.sequences = sequence.generate_sequence_list(input_param)
 
-        # Initialize acquisition by initializing all equipment
-        if is_testing:
-            acquisition = test_aq.TestAcquisition(input_param, init_motor, init_ds, init_pico)
-        elif input_param.is_ac_align:
-            acquisition = ac_align.AcousticalAlignment(input_param)
-            n_dist = len(input_param.sequences[0].ac_align['distance_from_foc'])
-            n_foci = len(input_param.sequences)
-            middle_points = np.zeros([n_dist*n_foci, 3])
-        else:
-            acquisition = aq.Acquisition(input_param)
+            # Initialize acquisition by initializing all equipment
+            if is_testing:
+                acquisition = test_aq.TestAcquisition(input_param, init_motor, init_ds, init_pico)
+            elif input_param.is_ac_align:
+                acquisition = ac_align.AcousticalAlignment(input_param)
+                n_dist = len(input_param.sequences[0].ac_align['distance_from_foc'])
+                n_foci = len(input_param.sequences)
+                middle_points = np.zeros([n_dist*n_foci, 3])
+            else:
+                acquisition = aq.Acquisition(input_param)
 
-        try:
-            for i in range(len(input_param.sequences)):
-                seq = input_param.sequences[i]
-                if not input_param.perform_all_seqs:
-                    # Wait for user input before continuing
-                    check_dialogs.continue_acquisition_dialog(seq)
+            try:
+                for i in range(len(input_param.sequences)):
+                    seq = input_param.sequences[i]
+                    if not input_param.perform_all_seqs:
+                        # Wait for user input before continuing
+                        check_dialogs.continue_acquisition_dialog(seq)
 
-                logger.info(f'Performing the following sequence: \n {seq}')
+                    logger.info(f'Performing the following sequence: \n {seq}')
 
-                if is_testing:
-                    # Test functions
-                    if test_scanner_only:
-                        # acquisition.check_scan(seq)
-                        acquisition.check_scan_ds_combo(seq)
-                else:
-                    if seq.is_ac_align:
-                        found_middle_points = acquisition.acoustical_alignment(seq)
-                        if n_dist == 1:
-                            middle_points[n_dist*i:n_dist*(i+1), :] = found_middle_points
-                        else:
-                            middle_points[n_dist*i:n_dist*(i+1), :] = found_middle_points
+                    if is_testing:
+                        # Test functions
+                        if test_scanner_only:
+                            # acquisition.check_scan(seq)
+                            acquisition.check_scan_ds_combo(seq)
                     else:
-                        acquisition.acquire_sequence(seq)
+                        if seq.is_ac_align:
+                            found_middle_points = acquisition.acoustical_alignment(seq)
+                            if n_dist == 1:
+                                middle_points[n_dist*i:n_dist*(i+1), :] = found_middle_points
+                            else:
+                                middle_points[n_dist*i:n_dist*(i+1), :] = found_middle_points
+                        else:
+                            acquisition.acquire_sequence(seq)
 
-            if input_param.is_ac_align:
-                output_name = os.path.splitext(acquisition.output["outputRAW"])[0]
-                ac_align.process_acoustical_alignment(input_param.sequences[0],
-                                                      input_param.coord_zero, middle_points,
-                                                      output_name, input_param.temp_dir_output)
+                if input_param.is_ac_align:
+                    output_name = os.path.splitext(acquisition.output["outputRAW"])[0]
+                    ac_align.process_acoustical_alignment(input_param.sequences[0],
+                                                          input_param.coord_zero, middle_points,
+                                                          output_name, input_param.temp_dir_output)
 
-            # Move logging data
-            move_output_data(logger, log_path, input_param.temp_dir_output)
+                # Move logging data
+                move_output_data(logger, log_path, input_param.temp_dir_output)
 
-            # All sequences are finished, so move data and remove second folder
-            move_output_data(logger, input_param.temp_dir_output, input_param.dir_output)
+                # All sequences are finished, so move data and remove second folder
+                move_output_data(logger, input_param.temp_dir_output, input_param.dir_output)
 
-        finally:
-            acquisition.close_all()
-
-    else:
-        print('No input parameters found.')
+            finally:
+                acquisition.close_all()
+        else:
+            print('No input parameters found.')
+            sys.exit()
+    finally:
+        close_logger()
 
 
 def move_to_archive(folder_path):

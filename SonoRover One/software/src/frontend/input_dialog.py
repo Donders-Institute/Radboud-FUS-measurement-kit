@@ -33,6 +33,7 @@ https://github.com/Donders-Institute/Radboud-FUS-measurement-kit
 # Basic packages
 from datetime import datetime
 import os
+import sys
 import tkinter as tk
 
 # Miscellaneous packages
@@ -67,6 +68,9 @@ class InputDialog():
         """
 
         self.win = None
+        self.prot_subdialog = None
+        self.acd_subdialog = None
+
         self.row_nr = 0
 
         self.input_param = None
@@ -111,6 +115,9 @@ class InputDialog():
         try:
             self.win = ctk.CTk()
             ctk.set_appearance_mode("System")
+
+            # Ensures it is not called immediately.
+            self.win.protocol("WM_DELETE_WINDOW", lambda: self._cancel_action(True))
             self.win.title('Set input parameters')
 
             self._create_entries()
@@ -478,12 +485,16 @@ class InputDialog():
         return error_message
 
     def _select_prot_action(self):
-        prot_dialog = pd.ProtocolDialog(self.win, self.input_param, self.path_prot)
-        self.input_param = prot_dialog.input_param
+        if self.prot_subdialog is None or not self.prot_subdialog.winfo_exists():
+            self.prot_subdialog = pd.ProtocolDialog(self.win, self.input_param, self.path_prot)
+        else:
+            self.prot_subdialog.deiconify()  # Show the subdialog if it was hidden
 
     def _acd_action(self):
-        acd_dialog = apd.ACDParamDialog(self.win, self.input_param.acd_param)
-        self.input_param.acd_param = acd_dialog.acd_param
+        if self.acd_subdialog is None or not self.acd_subdialog.winfo_exists():
+            self.acd_subdialog = apd.ACDParamDialog(self.win, self.input_param.acd_param)
+        else:
+            self.acd_subdialog.deiconify()  # Show the subdialog if it was hidden
 
     def _ok_action(self):
         """
@@ -523,11 +534,23 @@ class InputDialog():
             # Close the dialog
             self._cancel_action()
 
-    def _cancel_action(self):
+    def _cancel_action(self, cancel_sys=False):
         """
         Action function triggered when Cancel button is clicked.
         Closes the input dialog.
         """
 
         if self.win and self.win.winfo_exists():
+            if self.prot_subdialog and self.prot_subdialog.winfo_exists():
+                self.prot_subdialog.destroy()  # Explicitly destroy the subdialog
+
+            if self.acd_subdialog and self.acd_subdialog.winfo_exists():
+                self.acd_subdialog.destroy()  # Explicitly destroy the subdialog
+
+            self.win.quit()  # Ends the nested mainloop if it was started
             self.win.destroy()
+            self.win = None
+
+        if cancel_sys:
+            sys.exit('Pipeline is cancelled by user.')
+

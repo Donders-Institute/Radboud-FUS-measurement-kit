@@ -77,3 +77,11 @@ def initialize_logger(log_dir, filename):
     logger.addHandler(file_handler)
 
     return logger
+
+
+def close_logger():
+    """ Ensure the logger and its handlers are properly closed """
+    global logger
+    for handler in logger.handlers[:]:
+        handler.close()
+        logger.removeHandler(handler)

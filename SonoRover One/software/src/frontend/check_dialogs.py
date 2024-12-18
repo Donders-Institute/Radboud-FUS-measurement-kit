@@ -31,6 +31,7 @@ https://github.com/Donders-Institute/Radboud-FUS-measurement-kit
 """
 
 # Basic packages
+import sys
 
 # Miscellaneous packages
 from CTkMessagebox import CTkMessagebox
@@ -52,6 +53,9 @@ def continue_acquisition_dialog(sequence):
                                 icon="question", option_1="Confirm")
     response = message_box.get()
 
+    if response is None:
+        sys.exit('Pipeline is cancelled by user.')
+
     logger.info(f"Message box closed with response: {response}")
 
 
@@ -65,5 +69,8 @@ def check_disconnection_dialog(add_message):
     message_box = CTkMessagebox(title="Attention", message=message, icon="warning",
                                 option_1="Confirm")
     response = message_box.get()
+
+    if response is None:
+        sys.exit('Pipeline is cancelled by user.')
 
     logger.info(f"Message box closed with response: {response}")
