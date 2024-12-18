@@ -98,14 +98,13 @@ config['Characterization.Equipment.' + HYDROPHONES[2]]['Sensitivity (V/Pa) datas
 
 config['Characterization.Equipment']['Hydrophone datasheet freq. header'] = 'Freq(MHz)'
 
-PICO_SERIALS = ['5442D', '5242D', '5244D']
+PICO_SERIALS = ['5442D', '5242D', '5442A', '5244D']
 config['Characterization.Equipment']['PicoScopes'] = ', '.join(PICO_SERIALS)
 
 config['Characterization.Equipment.' + PICO_SERIALS[0]] = {}
 config['Characterization.Equipment.' + PICO_SERIALS[0]]['Name'] = ('PicoScope ' + PICO_SERIALS[0] +
-                                                                   ' - embedded in characterization '  + 
-                                                                   'setup and IGT driving ' +
-                                                                   'system (128 ch.)')
+                                                                   ' - embedded in ' +
+                                                                   'characterization setup')
 config['Characterization.Equipment.' + PICO_SERIALS[0]]['Pico.py identification'] = PICO_SERIALS[0]
 
 config['Characterization.Equipment.' + PICO_SERIALS[1]] = {}
@@ -114,8 +113,14 @@ config['Characterization.Equipment.' + PICO_SERIALS[1]]['Pico.py identification'
 
 config['Characterization.Equipment.' + PICO_SERIALS[2]] = {}
 config['Characterization.Equipment.' + PICO_SERIALS[2]]['Name'] = ('PicoScope ' + PICO_SERIALS[2] +
-                                                                   ' - test setup')
+                                                                   ' - embedded in IGT driving ' +
+                                                                   'system (128 ch.)')
 config['Characterization.Equipment.' + PICO_SERIALS[2]]['Pico.py identification'] = PICO_SERIALS[2]
+
+config['Characterization.Equipment.' + PICO_SERIALS[3]] = {}
+config['Characterization.Equipment.' + PICO_SERIALS[3]]['Name'] = ('PicoScope ' + PICO_SERIALS[3] +
+                                                                   ' - test setup')
+config['Characterization.Equipment.' + PICO_SERIALS[3]]['Pico.py identification'] = PICO_SERIALS[3]
 
 with open(CONFIG_FILE, 'w') as configfile:
     config.write(configfile)
