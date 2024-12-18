@@ -1025,16 +1025,22 @@ class ProtocolDialog():
             self.ac_align_seq.transducer = self.input_param.tran.serial
             self.ac_align_seq.oper_freq = self.input_param.oper_freq  # [kHz]
 
+            folder_struct = f'Output of T [{self.input_param.tran.name}] - DS [{self.input_param.driving_sys.name}]'
+
             chosen_prot = self.prot_combo.get()
             if chosen_prot == config['Characterization']['Protocol.excel']:
                 self.input_param.is_ac_align = False
 
                 # Save protocol file path and main directory
                 exc_path = self.path_prot.get()
+
                 self.input_param.path_protocol_excel_file = exc_path
-                self.input_param.dir_output = os.path.dirname(self.input_param.path_protocol_excel_file)
                 filename_ext = os.path.basename(exc_path)
-                self.input_param.protocol = os.path.splitext(filename_ext)
+                self.input_param.protocol = os.path.splitext(filename_ext)[0]
+
+                self.input_param.dir_output = os.path.join(os.path.dirname(
+                    self.input_param.path_protocol_excel_file), folder_struct,
+                    f'P [{self.input_param.protocol}]')
 
                 self.ac_align_seq.is_ac_align = False
                 self.input_param.sequences = []
@@ -1111,6 +1117,10 @@ class ProtocolDialog():
                     sequences.append(basic_seq)
 
                 self.input_param.sequences = sequences
+
+            self.input_param.temp_dir_output = os.path.join(
+                config['Characterization']['Temporary output path'], folder_struct,
+                f'P [{self.input_param.protocol}]')
 
             self.main_prot_entry.delete(0, tk.END)
             self.main_prot_entry.insert(0, self.input_param.protocol)

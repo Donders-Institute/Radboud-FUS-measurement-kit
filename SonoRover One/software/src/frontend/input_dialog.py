@@ -150,7 +150,8 @@ class InputDialog():
         if self.input_param.is_ac_align is True:
             self.input_param.protocol = 'Acoustical alignment'
         else:
-            self.input_param.protocol = self.input_param.path_protocol_excel_file
+            filename_ext = os.path.basename(self.input_param.path_protocol_excel_file)
+            self.input_param.protocol = os.path.splitext(filename_ext)[0]
 
         self.path_prot = self._create_entry("Protocol",
                                             self.input_param.protocol,
@@ -491,11 +492,6 @@ class InputDialog():
 
         if self.win:
             # Define temporary and main output directories based on selected parameters
-            folder_struct = f'Output of T [{self.input_param.tran.name}] - DS [{self.input_param.driving_sys.name}]'
-            self.input_param.temp_dir_output = os.path.join(
-                config['Characterization']['Temporary output path'], folder_struct,
-                f'P [{self.input_param.protocol}]')
-
             self.input_param.pos_com_port = f'COM{self.com_pos.get()}'
 
             # Save selected hydrophone object

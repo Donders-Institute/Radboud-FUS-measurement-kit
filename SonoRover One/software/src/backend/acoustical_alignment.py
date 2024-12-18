@@ -508,7 +508,7 @@ def calculate_acoustical_axis(middle_points, z_exit_plane, temp_dir_output):
         ax.scatter(middle_points[:, 0], middle_points[:, 1], middle_points[:, 2],
                    label="Middle points")
 
-        # Line through the centroid in the direction of the direction_vector
+        # Line through the origin in the direction of the direction_vector
         t = np.linspace(0, 140, 140*0.5)
         line = transducer_z_point + t[:, None] * direction_vector
         ax.plot(line[:, 0], line[:, 1], line[:, 2], color="r", label="Best-fit Line")
