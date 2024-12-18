@@ -134,7 +134,9 @@ def main():
 
             if input_param.is_ac_align:
                 output_name = os.path.splitext(acquisition.output["outputRAW"])[0]
-                ac_align.process_acoustical_alignment(input_param.sequences[0], input_param.coord_zero, middle_points, output_name)
+                ac_align.process_acoustical_alignment(input_param.sequences[0],
+                                                      input_param.coord_zero, middle_points,
+                                                      output_name, input_param.temp_dir_output)
 
             # Move logging data
             move_output_data(logger, log_path, input_param.temp_dir_output)

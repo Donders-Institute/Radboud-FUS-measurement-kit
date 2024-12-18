@@ -469,7 +469,7 @@ def save_acoustical_axis_data(rows, filename):
     logger.info(f"Acoustical axis coordinates saved to: {filename}")
 
 
-def calculate_acoustical_axis(middle_points, z_exit_plane):
+def calculate_acoustical_axis(middle_points, z_exit_plane, temp_dir_output):
     """
     Calculate the acoustical axis based on the middle points.
 
@@ -480,31 +480,46 @@ def calculate_acoustical_axis(middle_points, z_exit_plane):
     dict: Acoustical axis data containing the origin point and direction vector.
     """
     if len(middle_points) > 1:  # We need at least two points to determine a linear relationship
-        point1 = middle_points[0]
-        point2 = middle_points[-1]  # grab last point to calculate directional vector
 
-        # Calculate direction vector and unit vector for the acoustical axis
-        direction_vector = point2 - point1
-        unit_vector = direction_vector / np.linalg.norm(direction_vector)
-        azimuth_dir = np.degrees(np.arctan2(unit_vector[1], unit_vector[0]))
-        elev_dir = np.degrees(math.atan(unit_vector[2]/(math.sqrt(math.pow(unit_vector[0], 2)
-                                                                  + math.pow(unit_vector[1], 2))
-                                                        )))
-
-        average_point = np.mean(middle_points, axis=0)
+        average_point = np.mean(middle_points, axis=0)  # centroid used for best linear fit in 3D
         azimuth_av = np.degrees(np.arctan2(average_point[1], average_point[0]))
         elev_av = np.degrees(math.atan(average_point[2]/(math.sqrt(math.pow(average_point[0], 2)
                                                                    + math.pow(average_point[1], 2))
                                                          )))
 
-        # Calculate the point where z-coordinate is equal to self.input_param.coord_zero[2]
-        t = (z_exit_plane - point1[2]) / direction_vector[2]
-        transducer_z_point = point1 + t * direction_vector
+        # Best linear fit
+        # Subtract the centroid to get the centered points
+        centered_points = middle_points - average_point
+
+        # Perform Singular Value Decomposition (SVD) to find the principal component
+        _, _, vh = np.linalg.svd(centered_points)
+        direction_vector = vh[0]  # First singular vector gives the direction of the best-fit line
+        azimuth_dir = np.degrees(np.arctan2(direction_vector[1], direction_vector[0]))
+        elev_dir = np.degrees(math.atan(direction_vector[2]/(math.sqrt(
+            math.pow(direction_vector[0], 2) + math.pow(direction_vector[1], 2)))))
+
+        # Calculate the point where z-coordinate is equal to exit plane z coordinate
+        t = (z_exit_plane - average_point[2]) / direction_vector[2]
+        transducer_z_point = average_point + t * direction_vector
+
+        # Plot points and best-fit line
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')
+        ax.scatter(middle_points[:, 0], middle_points[:, 1], middle_points[:, 2],
+                   label="Middle points")
+
+        # Line through the centroid in the direction of the direction_vector
+        t = np.linspace(0, 140, 140*0.5)
+        line = transducer_z_point + t[:, None] * direction_vector
+        ax.plot(line[:, 0], line[:, 1], line[:, 2], color="r", label="Best-fit Line")
+
+        ax.legend()
+        fig.savefig(os.path.join(temp_dir_output, 'acoustical_aligment_linear_fit.png'))
 
         # Store the origin and direction of the acoustical axis
         acoustical_axis = {
             'origin': np.round(transducer_z_point, 2),
-            'direction': np.round(unit_vector, 2),
+            'direction': np.round(direction_vector, 2),
             'azimuth of direction': round(azimuth_dir, 2),
             'elevation of direction': round(elev_dir, 2),
             'average': np.round(average_point, 2),
@@ -556,10 +571,11 @@ def write_average_to_cache(acoustical_axis):
             cached_input.write(inputfile)
 
 
-def process_acoustical_alignment(main_sequence, coord_zero, middle_points, output_name):
+def process_acoustical_alignment(main_sequence, coord_zero, middle_points, output_name,
+                                 temp_dir_output):
     # Calculate and save acoustical axis if needed
     logger.info(f'Found middle points: {middle_points}')
-    acoustical_axis = calculate_acoustical_axis(middle_points, coord_zero[2])
+    acoustical_axis = calculate_acoustical_axis(middle_points, coord_zero[2], temp_dir_output)
     write_average_to_cache(acoustical_axis)
     if main_sequence.ac_align['create_axis_file']:
         save_acoustical_axis_to_excel(main_sequence, acoustical_axis, coord_zero, output_name)
