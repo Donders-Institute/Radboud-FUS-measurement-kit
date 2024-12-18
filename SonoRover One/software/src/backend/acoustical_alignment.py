@@ -141,7 +141,8 @@ class AcousticalAlignment(acq.Acquisition):
         self.sequence.nslices_nrow_ncol = [self.grid_param["nsl"], self.grid_param["nrow"],
                                            self.grid_param["ncol"]]
 
-        reduction_factor = self.sequence.ac_align["reduction_factor"]
+        # TODO: reduction is disabled from the frontend
+        # reduction_factor = self.sequence.ac_align["reduction_factor"]
         threshold = self.sequence.ac_align["init_threshold"]
 
         middle_points = np.zeros((len(z_coords), 3))
@@ -190,8 +191,7 @@ class AcousticalAlignment(acq.Acquisition):
 
             # Perform iterative search for alignment
             found_x_coords, found_y_coords = self._search_alignment(threshold, initial_line_length,
-                                                                    initial_line_step_size,
-                                                                    reduction_factor, ax_hist)
+                                                                    initial_line_step_size, ax_hist)
 
             # Save the middle point of the scan
             middle_points[idx] = [found_x_coords[-1], found_y_coords[-1], z_coord]
@@ -210,7 +210,7 @@ class AcousticalAlignment(acq.Acquisition):
 
         return middle_points
 
-    def _search_alignment(self, threshold, line_length, line_step_size, reduction_factor, ax_hist):
+    def _search_alignment(self, threshold, line_length, line_step_size, ax_hist):
         """
         Iteratively search and converge towards the acoustical center of mass.
 
@@ -222,8 +222,6 @@ class AcousticalAlignment(acq.Acquisition):
             Initial line length for scanning in millimeters.
         line_step_size : float
             Initial step size for scanning in millimeters.
-        reduction_factor : float
-            Factor by which line length and step size are reduced in each iteration.
         ax_hist : matplotlib.axes.Axes or array-like
             The axes on which the history plot is drawn: separate axes for x and y coordinates.
 
