@@ -26,7 +26,7 @@ SOFTWARE.
 **Attribution Notice**:
 If you use this kit in your research or project, please include the following attribution:
 Margely Cornelissen, Stein Fekkes (Radboud University, Nijmegen, The Netherlands) & Erik Dumont
-(Image Guided Therapy, Pessac, France) (2024), Radboud FUS measurement kit (version 0.8),
+(Image Guided Therapy, Pessac, France) (2024), Radboud FUS measurement kit (version 1.0),
 https://github.com/Donders-Institute/Radboud-FUS-measurement-kit
 """
 
@@ -56,7 +56,7 @@ class ProtocolDialog(ctk.CTkToplevel):
         acd_param (dict): Dictionary storing ACD processing parameters.
     """
 
-    def __init__(self, root_win, input_param, prot_entry):
+    def __init__(self, root_win, input_param, prot_entry, coord_entries):
         """
         Initializes the ProtocolDialog instance.
         """
@@ -66,6 +66,7 @@ class ProtocolDialog(ctk.CTkToplevel):
         self.row_nr = 0
 
         self.input_param = input_param
+        self.coord_entries = coord_entries
 
         self._equip_combos = config['Equipment']['Combinations'].split('\n')
         self._ds_tran_combo = '~'.join([self.input_param.driving_sys.serial,
@@ -194,7 +195,7 @@ class ProtocolDialog(ctk.CTkToplevel):
                                                 width=350)
 
             # Browse button to select protocol excel file
-            button = ctk.CTkButton(master=self.win, text="Browse", command=self._get_filename)
+            button = ctk.CTkButton(master=self, text="Browse", command=self._get_filename)
             button.grid(row=self.row_nr, column=1, padx=10, sticky="e")
 
         # Error message label
@@ -539,6 +540,11 @@ class ProtocolDialog(ctk.CTkToplevel):
                     self._update_power_options(ds)
                 break
 
+        # Change relative zero coordinates to default due to new equipment
+        for i in range(2):
+            self.coord_entries[i].delete(0, tk.END)
+            self.coord_entries[i].insert(0, self.input_param.coord_zero[i])
+
         self._event_handling(event)
 
     def _trans_combo_action(self, event):
@@ -562,6 +568,11 @@ class ProtocolDialog(ctk.CTkToplevel):
 
                 self._event_handling(event)
                 break
+
+        # Change relative zero coordinates to default due to new equipment
+        for i in range(2):
+            self.coord_entries[i].delete(0, tk.END)
+            self.coord_entries[i].insert(0, self.input_param.coord_zero[i])
 
     def _prot_combo_action(self, event):
 

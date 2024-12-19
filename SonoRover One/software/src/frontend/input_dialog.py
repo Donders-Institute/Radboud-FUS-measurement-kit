@@ -26,7 +26,7 @@ SOFTWARE.
 **Attribution Notice**:
 If you use this kit in your research or project, please include the following attribution:
 Margely Cornelissen, Stein Fekkes (Radboud University, Nijmegen, The Netherlands) & Erik Dumont
-(Image Guided Therapy, Pessac, France) (2024), Radboud FUS measurement kit (version 0.8),
+(Image Guided Therapy, Pessac, France) (2024), Radboud FUS measurement kit (version 1.0),
 https://github.com/Donders-Institute/Radboud-FUS-measurement-kit
 """
 
@@ -486,7 +486,8 @@ class InputDialog():
 
     def _select_prot_action(self):
         if self.prot_subdialog is None or not self.prot_subdialog.winfo_exists():
-            self.prot_subdialog = pd.ProtocolDialog(self.win, self.input_param, self.path_prot)
+            self.prot_subdialog = pd.ProtocolDialog(self.win, self.input_param, self.path_prot,
+                                                    self.coord_entries)
         else:
             self.prot_subdialog.deiconify()  # Show the subdialog if it was hidden
 

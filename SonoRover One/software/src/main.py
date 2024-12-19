@@ -26,7 +26,7 @@ SOFTWARE.
 **Attribution Notice**:
 If you use this kit in your research or project, please include the following attribution:
 Margely Cornelissen, Stein Fekkes (Radboud University, Nijmegen, The Netherlands) & Erik Dumont
-(Image Guided Therapy, Pessac, France) (2024), Radboud FUS measurement kit (version 0.8),
+(Image Guided Therapy, Pessac, France) (2024), Radboud FUS measurement kit (version 1.0),
 https://github.com/Donders-Institute/Radboud-FUS-measurement-kit
 """
 
@@ -112,6 +112,7 @@ def main():
 
             try:
                 for i in range(len(input_param.sequences)):
+                    print('Perform sequence {i+1} of {len(input_param.sequences)}...', end='\r')
                     seq = input_param.sequences[i]
                     if not input_param.perform_all_seqs:
                         # Wait for user input before continuing
@@ -146,11 +147,12 @@ def main():
                 # All sequences are finished, so move data and remove second folder
                 move_output_data(logger, input_param.temp_dir_output, input_param.dir_output)
 
+                print('Pipeline finished.', end='\n')
+
             finally:
                 acquisition.close_all()
         else:
-            print('No input parameters found.')
-            sys.exit()
+            sys.exit('No input parameters found.')
     finally:
         close_logger()
 
@@ -187,14 +189,15 @@ def move_to_archive(folder_path):
                 destination = new_destination  # Use the new unique name
             try:
                 shutil.move(str(item), destination)
-                print(f"Moved '{item}' to '{destination}'.")
+                print(f"Moved '{item}' to '{destination}'.", end='\n')
             except PermissionError:
-                print('The process cannot access the file because it is being used by another ' +
-                      'process or you do not have permission to move this file. Skip file for now.')
+                print('The process cannot access the file because it is being used by another pro' +
+                      f'cess or you do not have permission to move this file. Skip {item} for now.',
+                      end='\n')
     else:
-        print(f"The folder '{folder}' is empty; nothing to move.")
+        print(f"The folder '{folder}' is empty; nothing to move.", end='\n')
 
-    print(f"All content moved to archive folder: {archive_folder}")
+    print(f"All content moved to archive folder: {archive_folder}", end='\n')
 
 
 def move_output_data(logger, from_dir, to_dir):
@@ -209,7 +212,7 @@ def move_output_data(logger, from_dir, to_dir):
     try:
         copy_tree(from_dir, to_dir)
 
-        logger.info(f'Output files have been moved to {to_dir}')
+        logger.info(f'Output files have been moved to {to_dir}', end='\n')
     except Exception as e:
         logger.info(f'Moving output files failed: {e}. Output files can be found in {from_dir}.')
 

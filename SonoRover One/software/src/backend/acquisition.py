@@ -26,7 +26,7 @@ SOFTWARE.
 **Attribution Notice**:
 If you use this kit in your research or project, please include the following attribution:
 Margely Cornelissen, Stein Fekkes (Radboud University, Nijmegen, The Netherlands) & Erik Dumont
-(Image Guided Therapy, Pessac, France) (2024), Radboud FUS measurement kit (version 0.8),
+(Image Guided Therapy, Pessac, France) (2024), Radboud FUS measurement kit (version 1.0),
 https://github.com/Donders-Institute/Radboud-FUS-measurement-kit
 """
 
@@ -109,9 +109,11 @@ class Acquisition:
 
         if init_equip:
             # Connect with driving system
+            print('Initialize driving system connection...', end='\n')
             self._init_ds()
 
             # Connect with PicoScope
+            print('Initialize PicoScope connection...', end='\n')
             self.equipment["scope"] = pico.getScope(self.input_param.picoscope.pico_py_ident)
             self._init_scope(input_param.sampl_freq_multi, input_param.acquisition_time)
 
@@ -119,6 +121,7 @@ class Acquisition:
             self.proces_param = self._init_processing(endus=input_param.acquisition_time)
 
             # Connect with positioning system
+            print('Initialize positioning system connection...', end='\n')
             self.equipment["motors"] = MotorsXYZ()
             self._init_motor(input_param.pos_com_port)
 
@@ -295,6 +298,7 @@ class Acquisition:
                                str(sequence.seq_number) + '_output_data.ini')
         self._check_file(outfile)
 
+        print('Initialize grid...', end='\r')
         if sequence.use_coord_excel:
             self._init_grid_excel()
         else:
@@ -302,13 +306,16 @@ class Acquisition:
 
         logger.info('Grid is initialized')
 
+        print('Save parameters in ini...', end='\r')
         self._save_params_ini()
         logger.info('Used parameters have been saved in a file.')
 
         # Send sequence to driving system
+        print('Send sequence to driving system...', end='\r')
         self.equipment["ds"].send_sequence(self.sequence)
         logger.info('All driving system parameters are set')
 
+        print('Scan grid...', end='\r')
         self._scan_grid()
         logger.info('Pipeline for current sequence is finished.')
 

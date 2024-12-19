@@ -26,7 +26,7 @@ SOFTWARE.
 **Attribution Notice**:
 If you use this kit in your research or project, please include the following attribution:
 Margely Cornelissen, Stein Fekkes (Radboud University, Nijmegen, The Netherlands) & Erik Dumont
-(Image Guided Therapy, Pessac, France) (2024), Radboud FUS measurement kit (version 0.8),
+(Image Guided Therapy, Pessac, France) (2024), Radboud FUS measurement kit (version 1.0),
 https://github.com/Donders-Institute/Radboud-FUS-measurement-kit
 """
 
