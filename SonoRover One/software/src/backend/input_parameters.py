@@ -1,0 +1,434 @@
+# -*- coding: utf-8 -*-
+"""
+Copyright (c) 2024 Margely Cornelissen, Stein Fekkes (Radboud University) and Erik Dumont (Image
+Guided Therapy)
+
+MIT License
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+**Attribution Notice**:
+If you use this kit in your research or project, please include the following attribution:
+Margely Cornelissen, Stein Fekkes (Radboud University, Nijmegen, The Netherlands) & Erik Dumont
+(Image Guided Therapy, Pessac, France) (2024), Radboud FUS measurement kit (version 1.0),
+https://github.com/Donders-Institute/Radboud-FUS-measurement-kit
+"""
+
+# Basic packages
+import os
+
+# Miscellaneous packages
+import configparser
+
+from datetime import datetime
+
+# Own packages
+from fus_driving_systems import driving_system as ds
+from fus_driving_systems import transducer as td
+
+import backend.hydrophone as hp
+import backend.picoscope as ps
+from backend import sequence
+
+
+from config.config import config_info as config
+from config.logging_config import logger
+
+
+class InputParameters:
+    """
+    Class to manage input parameters that are applicable for the whole protocol/all sequences.
+
+    Attributes:
+        temp_dir_output (str): Temporary local output directory path.
+        dir_output (str): Directory of output path on drive. (moving of results is done at the end
+                                                              to minimize acquisition time)
+        path_protocol_excel_file (str): Path to protocol Excel file.
+        ds_list (list): List of available driving systems.
+        driving_sys (ds.DrivingSystem): Selected driving system object.
+        is_ds_com_port (bool): Flag indicating if driving system uses COM port.
+        ds_names (list): Names of available driving systems.
+        tran_list (list): List of available transducers.
+        tran (td.Transducer): Selected transducer object.
+        tran_names (list): Names of available transducers.
+        oper_freq (int): Operating frequency in [kHz].
+        pos_com_port (str): COM port of positioning system.
+        hydro_list (list): List of available hydrophones.
+        hydrophone (hp.Hydrophone): Selected hydrophone object.
+        hydro_names (list): Names of available hydrophones.
+        acquisition_time (float): Hydrophone acquisition time in microseconds.
+        pico_list (list): List of available PicoScopes.
+        picoscope (ps.PicoScope): Selected PicoScope object.
+        pico_names (list): Names of available PicoScopes.
+        sampl_freq_multi (float): Picoscope sampling frequency multiplication factor.
+        temp (float): Temperature of water in Celsius.
+        dis_oxy (float): Dissolved oxygen level of water in mg/L.
+        coord_zero (list): List of x, y, z coordinates of relative zero point.
+        perform_all_seqs (bool): Flag indicating if all sequences should be performed in
+                                      sequence.
+        begus (float): Beginning time of processing window in microseconds.
+        endus (float): End time of processing window in microseconds.
+        adjust (int): Adjustment parameter for time of flight. It will adjust the windows [beg..end]
+        with the time of flight when the row is along US propagation.
+                adjust=-1 if top-left corner is far from transducer (decrease beg)
+                adjust=+1 if top-left corner is close to the transducer (increase beg)
+                adjust=0 : no adjustment
+        sequences (list): List of US sequences to perform.
+    """
+
+    def __init__(self):
+        """
+        Initialize input parameters with default values and configurations.
+        """
+
+        self.temp_dir_output = config['Characterization']['Temporary output path']
+        self.dir_output = config['Characterization']['Default output directory']
+        self.path_protocol_excel_file = config['Characterization']['Default protocol directory']
+
+        # Get available driving systems and use the first one as default
+        self.ds_list = ds.get_ds_list()
+        self.driving_sys = self.ds_list[0]
+        self.is_ds_com_port = 'COM' in self.driving_sys.connect_info
+        self.ds_names = ds.get_ds_names()
+
+        # Get available transducers and use the first one as default
+        self.tran_list = td.get_tran_list()
+        self.tran = self.tran_list[0]
+        self.tran_names = td.get_tran_names()
+
+        self.oper_freq = self.tran.fund_freq  # [kHz]
+
+        self.pos_com_port = 'COM3'
+
+        # Get available hydrophones, for logging purposes only
+        self.hydro_list = hp.get_hydro_list()
+        self.hydrophone = self.hydro_list[0]
+        self.hydro_names = hp.get_hydro_names()
+        self.acquisition_time = 500  # microseconds
+
+        # Get available PicoScope list
+        self.pico_list = ps.get_pico_list()
+        self.picoscope = self.pico_list[0]
+        self.pico_names = ps.get_pico_names()
+        self.sampl_freq_multi = 50
+
+        self.temp = ''  # temperature in celsius
+        self.dis_oxy = ''  # dissolved oxygen in mg/L
+
+        self.coord_zero = [-62.2, -60.6, -155.528]
+        self.perform_all_seqs = True
+
+        adjust_param = config['Characterization']['ACD adjustment'].split('\n')
+        self.acd_param = {
+            "adjust": adjust_param[0],
+            "begus": 0,
+            "endus": 0,
+            }
+
+        self.protocol = ''
+        self.is_ac_align = False
+        self.sequences = []
+
+    def write_to_ini(self):
+        """
+        Write current input parameters to an INI file for caching.
+        """
+
+        cached_input = configparser.ConfigParser(interpolation=None)
+
+        now = datetime.now()
+        cached_input['Input parameters'] = {}
+        cached_input['Input parameters']['Date'] = str(now.strftime("%Y/%m/%d"))
+
+        cached_input['Input parameters']['Driving system.serial_number'] = self.driving_sys.serial
+        cached_input['Input parameters']['Driving system.name'] = self.driving_sys.name
+        cached_input['Input parameters']['Driving system.manufact'] = self.driving_sys.manufact
+        cached_input['Input parameters']['Driving system.available_ch'] = str(self.driving_sys.available_ch)
+        cached_input['Input parameters']['Driving system.connect_info'] = self.driving_sys.connect_info
+        cached_input['Input parameters']['Driving system.tran_comp'] = str(', '.join(self.driving_sys.tran_comp))
+        cached_input['Input parameters']['Driving system.is_active'] = str(self.driving_sys.is_active)
+
+        cached_input['Input parameters']['Transducer.serial_number'] = self.tran.serial
+        cached_input['Input parameters']['Transducer.name'] = self.tran.name
+        cached_input['Input parameters']['Transducer.manufact'] = self.tran.manufact
+        cached_input['Input parameters']['Transducer.elements'] = str(self.tran.elements)
+        cached_input['Input parameters']['Transducer.fund_freq_khz'] = str(self.tran.fund_freq)
+        cached_input['Input parameters']['Transducer.natural_foc_mm'] = str(self.tran.natural_foc)
+        cached_input['Input parameters']['Transducer.min_foc_mm'] = str(self.tran.min_foc)
+        cached_input['Input parameters']['Transducer.max_foc_mm'] = str(self.tran.max_foc)
+        cached_input['Input parameters']['Transducer.steer_info'] = self.tran.steer_info
+        cached_input['Input parameters']['Transducer.is_active'] = str(self.tran.is_active)
+
+        cached_input['Input parameters']['Operating frequency [kHz]'] = str(int(self.oper_freq))
+
+        cached_input['Input parameters']['Temporary output path'] = str(self.temp_dir_output)
+        cached_input['Input parameters']['Output path'] = str(self.dir_output)
+
+        cached_input['Input parameters.Protocol'] = {}
+        cached_input['Input parameters.Protocol']['Alignment.Acoustical'] = str(self.is_ac_align)
+
+        # If no sequence is available, a protocol excel file should be selected.
+        if self.is_ac_align is False:
+            cached_input['Input parameters.Protocol']['Path and filename of protocol excel file'] = str(self.path_protocol_excel_file)
+        else:
+            # Collect focus data from all sequences
+            focus_wrt_exit_plane_array = []
+            focus_wrt_mid_bowl_array = []
+            for seq in self.sequences:
+                focus_wrt_exit_plane_array.append(seq.focus_wrt_exit_plane)
+                focus_wrt_mid_bowl_array.append(seq.focus_wrt_mid_bowl)
+
+            # Save all parameters except for focus based on first sequence
+            seq = self.sequences[0]
+
+            cached_input['Input parameters.Protocol']['Alignment.pulse_dur_ms'] = str(seq.pulse_dur)
+            cached_input['Input parameters.Protocol']['Alignment.pulse_rep_int_ms'] = str(seq.pulse_rep_int)
+
+            cached_input['Input parameters.Protocol']['Alignment.power_option'] = seq.chosen_power
+            if seq.chosen_power == config['General']['Power option.glob_pow']:
+                cached_input['Input parameters.Protocol']['Alignment.power_value'] = str(seq.global_power)
+            elif seq.chosen_power == config['General']['Power option.press']:
+                cached_input['Input parameters.Protocol']['Alignment.power_value'] = str(seq.press)
+            elif seq.chosen_power == config['General']['Power option.volt']:
+                cached_input['Input parameters.Protocol']['Alignment.power_value'] = str(seq.volt)
+            elif seq.chosen_power == config['General']['Power option.ampl']:
+                cached_input['Input parameters.Protocol']['Alignment.power_value'] = str(seq.ampl)
+
+            cached_input['Input parameters.Protocol']['Alignment.chosen_focus'] = str(seq.chosen_focus)
+            cached_input['Input parameters.Protocol']['Alignment.focus_wrt_exit_plane_mm'] = str(focus_wrt_exit_plane_array)
+            cached_input['Input parameters.Protocol']['Alignment.focus_wrt_mid_bowl_mm'] = str(focus_wrt_mid_bowl_array)
+
+            cached_input['Input parameters.Protocol']['Alignment.distance_from_foc_mm'] = str(seq.ac_align['distance_from_foc'])
+            cached_input['Input parameters.Protocol']['Alignment.init_line_len_mm'] = str(seq.ac_align['init_line_len'])
+            cached_input['Input parameters.Protocol']['Alignment.init_line_step_mm'] = str(seq.ac_align['init_line_step'])
+            cached_input['Input parameters.Protocol']['Alignment.init_threshold'] = str(seq.ac_align['init_threshold'])
+            cached_input['Input parameters.Protocol']['Alignment.reduction_factor'] = str(seq.ac_align['reduction_factor'])
+            cached_input['Input parameters.Protocol']['Alignment.max_red_iter'] = str(seq.ac_align['max_red_iter'])
+            cached_input['Input parameters.Protocol']['Alignment.create_graphs'] = str(seq.ac_align['create_graphs'])
+            cached_input['Input parameters.Protocol']['Alignment.y_lim_mv'] = str(seq.ac_align['y_lim'])
+            cached_input['Input parameters.Protocol']['Alignment.create_axis_file'] = str(seq.ac_align['create_axis_file'])
+            cached_input['Input parameters.Protocol']['Alignment.axis_length_mm'] = str(seq.ac_align['axis_length'])
+            cached_input['Input parameters.Protocol']['Alignment.axis_stepsize_mm'] = str(seq.ac_align['axis_stepsize'])
+
+        cached_input['Input parameters']['COM port of positioning system'] = str(self.pos_com_port)
+        cached_input['Input parameters']['Hydrophone serial number'] = str(self.hydrophone.serial)
+        cached_input['Input parameters']['Hydrophone name'] = str(self.hydrophone.name)
+        cached_input['Input parameters']['Hydrophone Sensitivity (V/Pa) datasheet'] = str(self.hydrophone.sens_v_pa)
+        cached_input['Input parameters']['Hydrophone acquisition time [us]'] = str(self.acquisition_time)
+
+        cached_input['Input parameters']['PicoScope serial number'] = str(self.picoscope.serial)
+        cached_input['Input parameters']['Picoscope name'] = str(self.picoscope.name)
+        cached_input['Input parameters']['PicoScope pico.py identification'] = str(self.picoscope.pico_py_ident)
+        cached_input['Input parameters']['Picoscope sampling frequency multiplication factor'] = str(self.sampl_freq_multi)
+
+        cached_input['Input parameters']['Temperature of water [°C]'] = str(self.temp)
+        cached_input['Input parameters']['Dissolved oxygen level of water [mg/L]'] = str(self.dis_oxy)
+
+        cached_input['Input parameters']['Absolute G code x-coordinate of relative zero [mm]'] = str(self.coord_zero[0])
+        cached_input['Input parameters']['Absolute G code y-coordinate of relative zero [mm]'] = str(self.coord_zero[1])
+        cached_input['Input parameters']['Absolute G code z-coordinate of relative zero [mm]'] = str(self.coord_zero[2])
+
+        cached_input['Input parameters']['Perform all sequences in sequence without waiting for user input?'] = str(self.perform_all_seqs)
+
+        cached_input['Input parameters.ACD processing'] = {}
+        cached_input['Input parameters.ACD processing']['Beginning time of processing window [us]'] = str(self.acd_param["begus"])
+        cached_input['Input parameters.ACD processing']['End time of processing window [us]'] = (
+            str(self.acd_param["endus"])
+            )
+        cached_input['Input parameters.ACD processing']['Moving processing window along?'] = (
+            str(self.acd_param["adjust"])
+            )
+
+        cached_path = config['Characterization']['Path of input parameters cache']
+        with open(cached_path, 'w') as inputfile:
+            cached_input.write(inputfile)
+
+    def convert_ini_to_object(self, cached_input):
+        """
+        Convert input parameters from a cached INI file to object attributes.
+
+        Args:
+            cached_input (ConfigParser): ConfigParser object containing cached input parameters.
+        """
+
+        self.driving_sys.serial = cached_input['Input parameters']['Driving system.serial_number']
+        self.driving_sys.name = cached_input['Input parameters']['Driving system.name']
+        self.driving_sys.manufact = cached_input['Input parameters']['Driving system.manufact']
+        self.driving_sys.available_ch = int(cached_input['Input parameters']['Driving system.available_ch'])
+        self.driving_sys.connect_info = cached_input['Input parameters']['Driving system.connect_info']
+        self.is_ds_com_port = 'COM' in self.driving_sys.connect_info
+
+        self.driving_sys.tran_comp = cached_input['Input parameters']['Driving system.tran_comp'].split(', ')
+        self.driving_sys.is_active = cached_input['Input parameters']['Driving system.is_active'] == 'True'
+
+        self.tran.serial = cached_input['Input parameters']['Transducer.serial_number']
+        self.tran.name = cached_input['Input parameters']['Transducer.name']
+        self.tran.manufact = cached_input['Input parameters']['Transducer.manufact']
+        self.tran.elements = int(cached_input['Input parameters']['Transducer.elements'])
+        self.tran.fund_freq = int(cached_input['Input parameters']['Transducer.fund_freq_khz'])
+        self.tran.natural_foc = float(cached_input['Input parameters']['Transducer.natural_foc_mm'])
+        self.tran.min_foc = float(cached_input['Input parameters']['Transducer.min_foc_mm'])
+        self.tran.max_foc = float(cached_input['Input parameters']['Transducer.max_foc_mm'])
+        self.tran.steer_info = cached_input['Input parameters']['Transducer.steer_info']
+        self.tran.is_active = cached_input['Input parameters']['Transducer.is_active'] == 'True'
+
+        self.oper_freq = int(cached_input['Input parameters']['Operating frequency [kHz]'])
+
+        self.temp_dir_output = cached_input['Input parameters']['Temporary output path']
+        self.dir_output = cached_input['Input parameters']['Output path']
+
+        self.sequences = []
+        self.is_ac_align = cached_input['Input parameters.Protocol']['Alignment.Acoustical'] == 'True'
+        if self.is_ac_align is True:
+            # Create basic sequence
+            seq = sequence.CharacSequence()
+
+            seq.is_ac_align = True
+            seq.driving_sys = self.driving_sys.serial
+            seq.transducer = self.tran.serial
+            seq.oper_freq = self.oper_freq
+
+            seq.pulse_dur = float(cached_input['Input parameters.Protocol']['Alignment.pulse_dur_ms'])
+            seq.pulse_rep_int = float(cached_input['Input parameters.Protocol']['Alignment.pulse_rep_int_ms'])
+
+            distance_str = cached_input['Input parameters.Protocol']['Alignment.distance_from_foc_mm']
+            distance_str_array = distance_str.strip('][').split(',')
+            distance_array = [float(value) for value in distance_str_array]
+
+            seq.ac_align['distance_from_foc'] = distance_array
+            seq.ac_align['init_line_len'] = float(cached_input['Input parameters.Protocol']['Alignment.init_line_len_mm'])
+            seq.ac_align['init_line_step'] = float(cached_input['Input parameters.Protocol']['Alignment.init_line_step_mm'])
+            seq.ac_align['init_threshold'] = float(cached_input['Input parameters.Protocol']['Alignment.init_threshold'])
+            seq.ac_align['reduction_factor'] = float(cached_input['Input parameters.Protocol']['Alignment.reduction_factor'])
+            seq.ac_align['max_red_iter'] = int(cached_input['Input parameters.Protocol']['Alignment.max_red_iter'])
+            seq.ac_align['create_graphs'] = cached_input['Input parameters.Protocol']['Alignment.create_graphs'] == 'True'
+            seq.ac_align['y_lim'] = float(cached_input['Input parameters.Protocol']['Alignment.y_lim_mv'])
+            seq.ac_align['create_axis_file'] = cached_input['Input parameters.Protocol']['Alignment.create_axis_file'] == 'True'
+            seq.ac_align['axis_length'] = float(cached_input['Input parameters.Protocol']['Alignment.axis_length_mm'])
+            seq.ac_align['axis_stepsize'] = float(cached_input['Input parameters.Protocol']['Alignment.axis_stepsize_mm'])
+
+            # Add every focus to a seperate sequence
+            seq.chosen_focus = cached_input['Input parameters.Protocol']['Alignment.chosen_focus']
+
+            if seq.chosen_focus == config['General']['Focus option.exit']:
+                focus_str = cached_input['Input parameters.Protocol']['Alignment.focus_wrt_exit_plane_mm']
+            elif seq.chosen_focus == config['General']['Focus option.bowl']:
+                focus_str = cached_input['Input parameters.Protocol']['Alignment.focus_wrt_mid_bowl_mm']
+
+            focus_str_array = focus_str.strip('][').split(',')
+            focus_array = [float(value) for value in focus_str_array]
+
+            # Retrieve and set power parameters based on the power option.
+            power_option = cached_input['Input parameters.Protocol']['Alignment.power_option']
+            power_value = float(cached_input['Input parameters.Protocol']['Alignment.power_value'])
+            for focus in focus_array:
+                basic_seq = seq.clone()
+
+                # Due to compensation equations, first set focus and then the power. Otherwise, when
+                # setting the focus after the amplitude, it will modify the amplitude value due to
+                # the updated equalization factor.
+                if basic_seq.chosen_focus == config['General']['Focus option.exit']:
+                    basic_seq.focus_wrt_exit_plane = focus
+                elif basic_seq.chosen_focus == config['General']['Focus option.bowl']:
+                    basic_seq.focus_wrt_mid_bowl = focus
+
+                basic_seq.chosen_power = power_option
+                if power_option == config['General']['Power option.glob_pow']:
+                    basic_seq.global_power = power_value
+                elif power_option == config['General']['Power option.press']:
+                    basic_seq.press = power_value
+                elif power_option == config['General']['Power option.volt']:
+                    basic_seq.volt = power_value
+                elif power_option == config['General']['Power option.ampl']:
+                    basic_seq.ampl = power_value
+
+                self.sequences.append(basic_seq)
+
+        else:
+            self.path_protocol_excel_file = cached_input['Input parameters.Protocol']['Path and filename of protocol excel file']
+
+        self.pos_com_port = cached_input['Input parameters']['COM port of positioning system']
+
+        self.hydrophone.serial = cached_input['Input parameters']['Hydrophone serial number']
+        self.hydrophone.name = cached_input['Input parameters']['Hydrophone name']
+        self.hydrophone.sens_v_pa = cached_input['Input parameters']['Hydrophone Sensitivity (V/Pa) datasheet']
+
+        self.acquisition_time = float(cached_input['Input parameters']['Hydrophone acquisition time [us]'])
+
+        self.picoscope.serial = cached_input['Input parameters']['PicoScope serial number']
+        self.picoscope.name = cached_input['Input parameters']['Picoscope name']
+        self.picoscope.pico_py_ident = cached_input['Input parameters']['PicoScope pico.py identification']
+        self.sampl_freq_multi = float(cached_input['Input parameters']['Picoscope sampling frequency multiplication factor'])
+
+        self.temp = float(cached_input['Input parameters']['Temperature of water [°C]'])
+        self.dis_oxy = float(cached_input['Input parameters']['Dissolved oxygen level of water [mg/L]'])
+
+        self.coord_zero[0] = float(cached_input['Input parameters']['Absolute G code x-coordinate of relative zero [mm]'])
+        self.coord_zero[1] = float(cached_input['Input parameters']['Absolute G code y-coordinate of relative zero [mm]'])
+        self.coord_zero[2] = float(cached_input['Input parameters']['Absolute G code z-coordinate of relative zero [mm]'])
+
+        self.perform_all_seqs = cached_input['Input parameters']['Perform all sequences in sequence without waiting for user input?'] == 'True'
+
+        self.acd_param["begus"] = float(cached_input['Input parameters.ACD processing']['Beginning time of processing window [us]'])
+        self.acd_param["endus"] = float(cached_input['Input parameters.ACD processing']['End time of processing window [us]'])
+        self.acd_param["adjust"] = cached_input['Input parameters.ACD processing']['Moving processing window along?']
+
+    def __str__(self):
+        '''
+        Returns a formatted string containing information about the input parameters.
+
+        Returns:
+            str: Formatted information about the input parameters.
+
+        '''
+
+        info = ''
+
+        info += f"Path and filename of protocol excel file: {self.path_protocol_excel_file} \n "
+        info += f"Temporary path of output: {self.temp_dir_output} \n "
+        info += f"Path of output: {self.dir_output} \n "
+
+        info += str(self.driving_sys)
+        info += str(self.tran)
+
+        info += f"Operating frequency [kHz]: {self.oper_freq} \n "
+
+        info += f"COM port of positioning system: {self.pos_com_port} \n "
+
+        info += str(self.hydrophone)
+        info += f"Hydrophone acquisition time [us]: {self.acquisition_time} \n "
+
+        info += str(self.picoscope)
+        info += f"Picoscope sampling frequency multiplication factor: {self.sampl_freq_multi} \n "
+
+        info += f"Temperature of water [°C]: {self.temp} \n "
+        info += f"Dissolved oxygen level of water [mg/L]: {self.dis_oxy} \n "
+
+        info += f"Absolute G code xyz-coordinates of relative zero [mm]: [{self.coord_zero[0]}, {self.coord_zero[1]}, {self.coord_zero[2]}] \n "
+
+        info += f"Perform all sequences in sequence without waiting for user input?: {self.perform_all_seqs} \n "
+
+        info += f"Beginning time of processing window [us]: {self.acd_param['begus']} \n "
+        info += f"End time of processing window [us]: {self.acd_param['endus']} \n "
+        info += f"Moving processing window along?: {self.acd_param['adjust']} \n "
+
+        for seq in self.sequences:
+            info += str(seq)
+
+        return info
