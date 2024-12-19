@@ -75,7 +75,7 @@ This project is facilitated by the Radboud Focused Ultrasound Initiative. For mo
 
 If you use this kit in your research or project, please cite it as follows:
 
-Margely Cornelissen, Stein Fekkes (Radboud University, Nijmegen, The Netherlands) & Erik Dumont (Image Guided Therapy, Pessac, France) (2024), Radboud FUS measurement kit (version 0.8), https://github.com/Donders-Institute/Radboud-FUS-measurement-kit
+Margely Cornelissen, Stein Fekkes (Radboud University, Nijmegen, The Netherlands) & Erik Dumont (Image Guided Therapy, Pessac, France) (2024), Radboud FUS measurement kit (version 1.0), https://github.com/Donders-Institute/Radboud-FUS-measurement-kit
 
 <!-- GETTING STARTED -->
 
@@ -243,8 +243,6 @@ After all parameters are set, click 'ok' to start the characterization. Log file
 
 ## Software
 
-- [x] **Implemented driving system abstract class to easily integrate driving systems from other manufacturers**
-- [x] **Cleaner, restructured and more robust code**
 - [ ] **Compatibility check of chosen equipment**
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
