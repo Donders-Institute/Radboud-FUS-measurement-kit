@@ -41,6 +41,8 @@ import numpy
 
 import pandas as pd
 
+import re
+
 # Own packages
 from fus_driving_systems import sequence
 from config.logging_config import logger
@@ -245,10 +247,15 @@ class CharacSequence(sequence.Sequence):
         self.seq_number = int(seq_row[excel_ind["seq_num"]])
         self.tag = str(seq_row[excel_ind["tag"]])
 
-        if str(seq_row[excel_ind["dephasing"]]) == 'nan':
+        dephasing_values = str(seq_row[excel_ind["dephasing"]])
+        if dephasing_values == 'nan':
             self.dephasing_degree = None
         else:
-            self.dephasing_degree = float(seq_row[excel_ind["dephasing"]])
+            # Remove the brackets and normalize the separators (replace commas with spaces)
+            normalized_str = re.sub(r"[,\[\]\s]+", " ", dephasing_values).strip()
+
+            # Convert the string to a list of floats
+            self.dephasing_degree = [float(num) for num in normalized_str.split()]
 
         focus_definition = str(seq_row[excel_ind["focus_def"]])
 
@@ -350,8 +357,8 @@ def _define_excel_indices(data):
     excel_indices = {
         "seq_num": data.columns.get_loc('Sequence number'),
         "tag": data.columns.get_loc('Tag'),
-        "dephasing": data.columns.get_loc('Dephasing degree (None = no dephasing) ' +
-                                          'CURRENTLY ONLY APPLICABLE FOR IGT DS'),
+        "dephasing": data.columns.get_loc('(De)phase array [degree] (None = no (de)phasing) ONLY ' +
+                                          'FOR IGT DS'),
         "pulse_dur": data.columns.get_loc('Pulse duration [us]'),
         "pulse_rep_int": data.columns.get_loc('Pulse Repetition Interval [ms]'),
 
