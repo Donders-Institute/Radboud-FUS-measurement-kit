@@ -114,7 +114,7 @@ class MotorsXYZ:
             ser = serial.Serial(port, self._baudrate, timeout=self._timeout)
             line1=ser.readline()
             line2=ser.readline().decode('ascii',errors='ignore').strip().upper()
-            print('second lines', line2)
+            # print('second lines', line2)
             if line2.startswith('GRBL'):
                 line3=ser.readline().decode('ascii',errors='ignore').strip()
                 if line3[:1]=='[':
@@ -127,9 +127,8 @@ class MotorsXYZ:
                 ser.close()
         else:
             logger.error('error, no port detected')
-        print('ok: ',ok,' error: ',error, ' tooLong: ',tooLong)
-        print('Motor connected: ', self.connected)
-
+        logger.info(f'ok: {ok} - error: {error} - tooLong: {tooLong} - Motor' +
+                    f' connected: {self.connected}')
 
 
     def _send_cmd(self,cmd):
@@ -191,7 +190,7 @@ class MotorsXYZ:
                 self.initialized = True
                 self.ready = True
                 self._send_cmd('$G')
-                print('state: ', self._read_ans())
+                logger.info(f'state: {self._read_ans()}')
 
     def home(self,axis=['X','Y', 'Z'], together=True):
         logger.info('homing: $H')

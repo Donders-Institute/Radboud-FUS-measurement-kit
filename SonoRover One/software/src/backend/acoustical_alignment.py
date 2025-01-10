@@ -208,6 +208,7 @@ class AcousticalAlignment(acq.Acquisition):
 
         fig_hist.tight_layout()
         fig_hist.savefig(filename)
+        fig_hist.close()
 
         return middle_points
 
@@ -234,6 +235,13 @@ class AcousticalAlignment(acq.Acquisition):
 
         found_x_coords = [0, self.input_param.coord_zero[0]]
         found_y_coords = [0, self.input_param.coord_zero[1]]
+        
+        z_wrt_exit_plane = round(self.sequence.coord_start[2] - 
+                                 self.input_param.coord_zero[2], 2)
+        
+        print("Acoustical alignment - focus wrt exit plane: " + 
+              f"{self.sequence.focus_wrt_exit_plane:.2f} [mm], z-measurement" +
+              f" wrt exit plane at {z_wrt_exit_plane:.2f} [mm]", end='\n')
 
         while abs(found_x_coords[-2] - found_x_coords[-1]) > threshold or (
                 abs(found_y_coords[-2] - found_y_coords[-1]) > threshold):
@@ -246,6 +254,10 @@ class AcousticalAlignment(acq.Acquisition):
 
             max_diff = max(abs(found_x_coords[-2] - found_x_coords[-1]), abs(found_y_coords[-2] -
                                                                              found_y_coords[-1]))
+            
+
+            
+            
             # Scan x and y directions
             found_x_coords.append(self._scan_and_find_center_of_mass(found_x_coords, found_y_coords,
                                                                      line_length,
@@ -282,6 +294,7 @@ class AcousticalAlignment(acq.Acquisition):
                                     f'{z_coord_wrt_exit_plane:.2f}_iter_{iteration}.png')
 
             fig.savefig(filename)
+            fig.close()
 
             # TODO: reduction is disabled from the frontend
             # if iteration != 0 and iteration % (self.sequence.ac_align['max_red_iter']) == 0:
@@ -340,7 +353,8 @@ class AcousticalAlignment(acq.Acquisition):
             self.sequence.coord_start[0] = found_x_coords[-1]
             self.sequence.coord_start[1] = found_y_coords[-1] - line_length / 2
 
-        logger.info(f"Scanning in {direction}-direction...")
+        logger.info(f"Iteration {iteration}: Scanning in {direction}-direction...")
+        print(f"Iteration {iteration}: Scanning in {direction}-direction...", end='\n')
         volt_data, dest_xyz_list = self._scan_grid()
 
         # Perform RMS to flatten out fluctations
@@ -390,7 +404,6 @@ class AcousticalAlignment(acq.Acquisition):
 
         ax.plot(coords, rms*1000, linestyle='-', linewidth=0.5, marker='.', markersize=2)
         ax.axvline(x=center_of_mass_coord, color='r', linestyle='--', linewidth=0.5)
-        print(f'red line center_of_mass_coord: {center_of_mass_coord}')
 
         if direction == 'x':
             x_upper_lim = self.input_param.coord_zero[0] + self.sequence.ac_align["init_line_len"]/2
@@ -501,20 +514,32 @@ def calculate_acoustical_axis(middle_points, z_exit_plane, temp_dir_output):
         # Calculate the point where z-coordinate is equal to exit plane z coordinate
         t = (z_exit_plane - average_point[2]) / direction_vector[2]
         transducer_z_point = average_point + t * direction_vector
+        
+        # Line through the origin in the direction of the direction_vector
+        line_length = float(config['Characterization']['Maximum distance wrt exit plane'])  # [mm]
+        stepsize = float(config['Characterization']['Stepsize for distance wrt exit plane'])
+        n_points = int(math.ceil(line_length*stepsize))
+        t = np.linspace(0, line_length, n_points)
+        line = transducer_z_point + t[:, None] * direction_vector
 
         # Plot points and best-fit line
-        fig = plt.figure()
-        ax = fig.add_subplot(111, projection='3d')
-        ax.scatter(middle_points[:, 0], middle_points[:, 1], middle_points[:, 2],
-                   label="Middle points")
+        plt.figure()
+        plt.scatter(middle_points[:, 2] - z_exit_plane, middle_points[:, 0], color='black', label="Middle x-coordinates")
+        plt.scatter(middle_points[:, 2] - z_exit_plane, middle_points[:, 1], color='grey', label="Middle y-coordinates")
+        plt.plot(line[:, 2] - z_exit_plane, line[:, 0], color='black', label="Fitted SVD x-coordinates")
+        plt.plot(line[:, 2] - z_exit_plane, line[:, 1], color='grey', label="Fitted SVD y-coordinates")
 
-        # Line through the origin in the direction of the direction_vector
-        t = np.linspace(0, 140, 140*0.5)
-        line = transducer_z_point + t[:, None] * direction_vector
-        ax.plot(line[:, 0], line[:, 1], line[:, 2], color="r", label="Best-fit Line")
+        plt.hlines(average_point[0], 0, line_length, colors='black', linestyles='--', label="Average x-coordinate")
+        plt.hlines(average_point[1], 0, line_length, colors='grey', linestyles='--', label="Average y-coordinate")
 
-        ax.legend()
-        fig.savefig(os.path.join(temp_dir_output, 'acoustical_aligment_linear_fit.png'))
+        plt.xlabel('Distance wrt exit plane [mm]')
+        plt.ylabel('X-/Y-coordinates [mm]')
+        plt.title(f'Azimuth {azimuth_dir:.2f}, Elevation {elev_dir:.2f} [degrees]')
+        plt.legend(bbox_to_anchor=(1.01, 1.01))
+        plt.grid()
+        
+        plt.savefig(os.path.join(temp_dir_output, 'acoustical_aligment_linear_fit.png'))
+        plt.close()
 
         # Store the origin and direction of the acoustical axis
         acoustical_axis = {
@@ -532,12 +557,12 @@ def calculate_acoustical_axis(middle_points, z_exit_plane, temp_dir_output):
         logger.info(f"Origin point: {acoustical_axis['origin']}")
         logger.info(f"Direction vector: {acoustical_axis['direction']}")
         logger.info("Direction vector angles: \n :")
-        logger.info(f"    aximuth: {acoustical_axis['azimuth of direction']}")
+        logger.info(f"    azimuth: {acoustical_axis['azimuth of direction']}")
         logger.info(f"    elevation: {acoustical_axis['elevation of direction']}")
 
         logger.info(f"Average vector: {acoustical_axis['average']}")
         logger.info("Average vector angles: \n :")
-        logger.info(f"    aximuth: {acoustical_axis['azimuth of average']}")
+        logger.info(f"    azimuth: {acoustical_axis['azimuth of average']}")
         logger.info(f"    elevation: {acoustical_axis['elevation of average']}")
 
         logger.info("Equation: xyz_coordinate = origin + t * direction, where t is a scalar " +

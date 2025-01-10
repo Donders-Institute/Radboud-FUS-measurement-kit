@@ -121,8 +121,8 @@ class CharacSequence(sequence.Sequence):
         info += f"  - Initial line length [mm]: {self.ac_align['init_line_len']} \n"
         info += f"  - Initial line stepsize [mm]: {self.ac_align['init_line_step']} \n"
         info += f"  - Initial threshold [mm]: {self.ac_align['init_threshold']} \n"
-        info += f"  - Reduction factor: {self.ac_align['reduction_factor']} \n"
-        info += f"  - Maximum reduction iterations: {self.ac_align['max_red_iter']} \n"
+        # info += f"  - Reduction factor: {self.ac_align['reduction_factor']} \n"
+        # info += f"  - Maximum reduction iterations: {self.ac_align['max_red_iter']} \n"
         info += f"  - Create graphs?: {self.ac_align['create_graphs']} \n"
         info += f"  - Y axis limit [mV]: {self.ac_align['y_lim']} \n"
         info += f"  - Create axis file?: {self.ac_align['create_axis_file']} \n"
@@ -255,7 +255,14 @@ class CharacSequence(sequence.Sequence):
             normalized_str = re.sub(r"[,\[\]\s]+", " ", dephasing_values).strip()
 
             # Convert the string to a list of floats
-            self.dephasing_degree = [float(num) for num in normalized_str.split()]
+            try:
+                self.dephasing_degree = [float(num) for num in normalized_str.split()]
+            except:
+                self.dephasing_degree = None
+                logger.warning('WARNING (De)phase array cannot be converted to a ' + 
+                               'float array. Disable dephasing.')
+                print('WARNING (De)phase array cannot be converted to a ' + 
+                               'float array. Disable dephasing.')
 
         focus_definition = str(seq_row[excel_ind["focus_def"]])
 

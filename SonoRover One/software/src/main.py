@@ -112,7 +112,7 @@ def main():
 
             try:
                 for i in range(len(input_param.sequences)):
-                    print('Perform sequence {i+1} of {len(input_param.sequences)}...', end='\r')
+                    print(f'Perform sequence {i+1} of {len(input_param.sequences)}...', end='\n')
                     seq = input_param.sequences[i]
                     if not input_param.perform_all_seqs:
                         # Wait for user input before continuing
@@ -213,8 +213,10 @@ def move_output_data(logger, from_dir, to_dir):
         copy_tree(from_dir, to_dir)
 
         logger.info(f'Output files have been moved to {to_dir}', end='\n')
+        print(f'Output files have been moved to {to_dir}', end='\n')
     except Exception as e:
-        logger.info(f'Moving output files failed: {e}. Output files can be found in {from_dir}.')
+        logger.error(f'Moving output files failed: {e}. Output files can be found in {from_dir}.')
+        print(f'WARNING Moving output files failed: {e}. Output files can be found in {from_dir}.')
 
 
 if __name__ == '__main__':

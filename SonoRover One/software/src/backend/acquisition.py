@@ -298,7 +298,7 @@ class Acquisition:
                                str(sequence.seq_number) + '_output_data.ini')
         self._check_file(outfile)
 
-        print('Initialize grid...', end='\r')
+        print('Initialize grid...', end='\n')
         if sequence.use_coord_excel:
             self._init_grid_excel()
         else:
@@ -306,16 +306,16 @@ class Acquisition:
 
         logger.info('Grid is initialized')
 
-        print('Save parameters in ini...', end='\r')
+        print('Save parameters in ini...', end='\n')
         self._save_params_ini()
         logger.info('Used parameters have been saved in a file.')
 
         # Send sequence to driving system
-        print('Send sequence to driving system...', end='\r')
+        print('Send sequence to driving system...', end='\n')
         self.equipment["ds"].send_sequence(self.sequence)
         logger.info('All driving system parameters are set')
 
-        print('Scan grid...', end='\r')
+        print('Scan grid...', end='\n')
         self._scan_grid()
         logger.info('Pipeline for current sequence is finished.')
 
@@ -856,7 +856,7 @@ class Acquisition:
         n = i*self.grid_param["nrow"]*self.grid_param["ncol"]+j*self.grid_param["ncol"]+k
         total_n = self.grid_param["nrow"]*self.grid_param["ncol"]*self.grid_param["nsl"]
         logger.info(f'i: {i}, j: {j}, k: {k}, n: {n} of {total_n}')
-        print(f'Measurement {n} of {total_n}.', end="\r")
+        print(f'Measurement {n+1} of {total_n}.', end="\r")
 
         # Save data in excel
         # [Measurement nr, Cluster nr, indices nr, relatXcor(mm), relatYcor(mm),
