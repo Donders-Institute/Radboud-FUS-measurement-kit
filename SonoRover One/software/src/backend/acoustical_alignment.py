@@ -208,7 +208,7 @@ class AcousticalAlignment(acq.Acquisition):
 
         fig_hist.tight_layout()
         fig_hist.savefig(filename)
-        fig_hist.close()
+        plt.close()
 
         return middle_points
 
@@ -294,7 +294,7 @@ class AcousticalAlignment(acq.Acquisition):
                                     f'{z_coord_wrt_exit_plane:.2f}_iter_{iteration}.png')
 
             fig.savefig(filename)
-            fig.close()
+            plt.close()
 
             # TODO: reduction is disabled from the frontend
             # if iteration != 0 and iteration % (self.sequence.ac_align['max_red_iter']) == 0:
