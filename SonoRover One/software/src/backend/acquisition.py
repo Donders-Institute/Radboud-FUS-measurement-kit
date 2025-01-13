@@ -306,14 +306,14 @@ class Acquisition:
 
         logger.info('Grid is initialized')
 
-        print('Save parameters in ini...', end='\n')
-        self._save_params_ini()
-        logger.info('Used parameters have been saved in a file.')
-
         # Send sequence to driving system
         print('Send sequence to driving system...', end='\n')
         self.equipment["ds"].send_sequence(self.sequence)
         logger.info('All driving system parameters are set')
+        
+        print('Save parameters in ini...', end='\n')
+        self._save_params_ini()
+        logger.info('Used parameters have been saved in a file.')
 
         print('Scan grid...', end='\n')
         self._scan_grid()
@@ -555,6 +555,9 @@ class Acquisition:
         if ds_manufact == config_info['Equipment.Manufacturer.SC']['Name']:
             params['Sequence']['SC - Global power [W]'] = str(self.sequence.global_power)
         elif ds_manufact == config_info['Equipment.Manufacturer.IGT']['Name']:
+            params['Sequence']['Phases [degrees]'] = str(self.equipment["ds"]
+                                                         .sent_seqs[0]
+                                                         ['phases'])
             params['Sequence']['IGT - Maximum pressure in free water [MPa]'] = (
                 str(self.sequence.press)
                 )

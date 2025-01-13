@@ -140,21 +140,21 @@ def main():
                     ac_align.process_acoustical_alignment(input_param.sequences[0],
                                                           input_param.coord_zero, middle_points,
                                                           output_name, input_param.temp_dir_output)
-
-                # Move logging data
-                move_output_data(logger, log_path, input_param.temp_dir_output)
-
-                # All sequences are finished, so move data and remove second folder
-                move_output_data(logger, input_param.temp_dir_output, input_param.dir_output)
-
-                print('Pipeline finished.', end='\n')
-
+                    
             finally:
                 acquisition.close_all()
         else:
             sys.exit('No input parameters found.')
     finally:
         close_logger()
+        
+    # Move logging data
+    move_output_data(logger, log_path, input_param.temp_dir_output)
+
+    # All sequences are finished, so move data and remove second folder
+    move_output_data(logger, input_param.temp_dir_output, input_param.dir_output)
+
+    print('Pipeline finished.', end='\n')
 
 
 def move_to_archive(folder_path):
@@ -212,7 +212,7 @@ def move_output_data(logger, from_dir, to_dir):
     try:
         copy_tree(from_dir, to_dir)
 
-        logger.info(f'Output files have been moved to {to_dir}', end='\n')
+        logger.info(f'Output files have been moved to {to_dir}')
         print(f'Output files have been moved to {to_dir}', end='\n')
     except Exception as e:
         logger.error(f'Moving output files failed: {e}. Output files can be found in {from_dir}.')

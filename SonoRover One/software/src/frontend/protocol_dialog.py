@@ -131,7 +131,7 @@ class ProtocolDialog(ctk.CTkToplevel):
         # Display this window on top of all windows
         self.lift()
         self.attributes('-topmost', True)
-        self.after(1000, lambda: self.attributes('-topmost', False))  # stay for 5s
+        self.after(5000, lambda: self.attributes('-topmost', False))  # stay for 5s
 
     def _create_us_equip_entries(self):
         # Dropdown for selecting US Driving System
@@ -639,13 +639,13 @@ class ProtocolDialog(ctk.CTkToplevel):
         Opens a file dialog to select a filename and updates the corresponding entry field.
         """
 
-        self.attributes("-topmost", 1)
+        self.attributes("-topmost", False)
 
         filename = tk.filedialog.askopenfilename(
             initialdir=self.input_param.path_protocol_excel_file,
             filetypes=[('Excel files', '*.xlsx')])
 
-        self.attributes("-topmost", 0)
+        self.attributes("-topmost", True)
 
         self.path_prot.delete(0, tk.END)
         self.path_prot.insert(0, filename)
