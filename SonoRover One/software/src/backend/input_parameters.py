@@ -103,7 +103,7 @@ class InputParameters:
 
         # Get available driving systems and use the first one as default
         self.ds_list = ds.get_ds_list()
-        self.driving_sys = self.ds_list[0]
+        self.driving_sys = self.ds_list[0].clone()
         self.is_ds_com_port = 'COM' in self.driving_sys.connect_info
         self.ds_names = ds.get_ds_names()
 
