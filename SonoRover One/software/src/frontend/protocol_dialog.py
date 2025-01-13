@@ -276,18 +276,18 @@ class ProtocolDialog(ctk.CTkToplevel):
                                              is_event=True, event_handling=self._event_handling,
                                              width=500)
 
-        self.init_line_len = self._create_entry("Initial line length [mm]",
+        self.init_line_len = self._create_entry("Line length [mm]",
                                                 self.ac_align_seq.ac_align['init_line_len'],
                                                 is_event=True, event_handling=self._event_handling,
                                                 width=500)
 
-        self.init_line_step = self._create_entry("Initial line stepsize [mm]",
+        self.init_line_step = self._create_entry("Line stepsize [mm]",
                                                  self.ac_align_seq.ac_align['init_line_step'],
                                                  is_event=True,
                                                  event_handling=self._event_handling,
                                                  width=500)
 
-        self.init_threshold = self._create_entry("Initial threshold [mm]",
+        self.init_threshold = self._create_entry("Threshold [mm]",
                                                  self.ac_align_seq.ac_align['init_threshold'],
                                                  is_event=True, event_handling=self._event_handling,
                                                  width=500)
@@ -541,7 +541,7 @@ class ProtocolDialog(ctk.CTkToplevel):
                 break
 
         # Change relative zero coordinates to default due to new equipment
-        for i in range(2):
+        for i in range(3):
             self.coord_entries[i].delete(0, tk.END)
             self.coord_entries[i].insert(0, self.input_param.coord_zero[i])
 
@@ -570,7 +570,7 @@ class ProtocolDialog(ctk.CTkToplevel):
                 break
 
         # Change relative zero coordinates to default due to new equipment
-        for i in range(2):
+        for i in range(3):
             self.coord_entries[i].delete(0, tk.END)
             self.coord_entries[i].insert(0, self.input_param.coord_zero[i])
 
@@ -639,9 +639,13 @@ class ProtocolDialog(ctk.CTkToplevel):
         Opens a file dialog to select a filename and updates the corresponding entry field.
         """
 
+        self.attributes("-topmost", False)
+
         filename = tk.filedialog.askopenfilename(
             initialdir=self.input_param.path_protocol_excel_file,
             filetypes=[('Excel files', '*.xlsx')])
+
+        self.attributes("-topmost", True)
 
         self.path_prot.delete(0, tk.END)
         self.path_prot.insert(0, filename)

@@ -131,7 +131,7 @@ class InputDialog():
 
         except AttributeError:
             logger.error(logging.exception('AttributeError'))
-            self._cancel_action()
+            self._cancel_action(True)
 
     def _resize_window(self):
         """
@@ -256,12 +256,12 @@ class InputDialog():
         self.acd_button.grid(row=self.row_nr, column=0, sticky='w', ipadx=53, padx=10, pady=10)
 
         # Ok button
-        self.ok_button = ctk.CTkButton(master=self.win, text="Ok", command=self._ok_action)
-        self.ok_button.grid(row=self.row_nr, column=1, sticky='w', ipadx=53, padx=10, pady=10)
-        self.ok_button.configure(state=tk.DISABLED)
+        self.run_button = ctk.CTkButton(master=self.win, text="Run", command=self._run_action)
+        self.run_button.grid(row=self.row_nr, column=1, sticky='w', ipadx=53, padx=10, pady=10)
+        self.run_button.configure(state=tk.DISABLED)
 
         # Cancel button
-        button = ctk.CTkButton(master=self.win, text="Cancel", command=self._cancel_action)
+        button = ctk.CTkButton(master=self.win, text="Cancel", command=lambda: self._cancel_action(True))
         button.grid(row=self.row_nr, column=1, sticky='e', ipadx=53, padx=10, pady=10)
 
     def _add_row(self):
@@ -375,12 +375,12 @@ class InputDialog():
         error_message = self._validate_inputs()
 
         if error_message == '':
-            self.ok_button.configure(state=tk.NORMAL)
+            self.run_button.configure(state=tk.NORMAL)
             self.error_label.configure(
                     text=error_message,
                     text_color=def_color)
         else:
-            self.ok_button.configure(state=tk.DISABLED)
+            self.run_button.configure(state=tk.DISABLED)
             self.error_label.configure(
                     text=error_message,
                     text_color="red")
@@ -497,7 +497,7 @@ class InputDialog():
         else:
             self.acd_subdialog.deiconify()  # Show the subdialog if it was hidden
 
-    def _ok_action(self):
+    def _run_action(self):
         """
         Action function triggered when Ok button is clicked. Saves valid input parameters.
         """

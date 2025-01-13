@@ -66,6 +66,9 @@ config['Characterization']['Disconnection message'] = ('Ensure the following: \n
 config['Characterization']['Continue acquisition message'] = ('Continue acquisition with the ' +
                                                               'following sequence: ')
 
+config['Characterization']['Maximum distance wrt exit plane'] = str(140)  # [mm]
+config['Characterization']['Stepsize for distance wrt exit plane'] = str(0.5)  # [mm]
+
 ACD_ADJUST = ['0 - no adjustment', '+1 - axial measurement moving from transducer',
               '-1 - axial measurement moving towards transducer']
 config['Characterization']['ACD adjustment'] = '\n'.join(ACD_ADJUST)

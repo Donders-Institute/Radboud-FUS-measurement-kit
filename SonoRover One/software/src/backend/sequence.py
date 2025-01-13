@@ -41,6 +41,8 @@ import numpy
 
 import pandas as pd
 
+import re
+
 # Own packages
 from fus_driving_systems import sequence
 from config.logging_config import logger
@@ -119,8 +121,8 @@ class CharacSequence(sequence.Sequence):
         info += f"  - Initial line length [mm]: {self.ac_align['init_line_len']} \n"
         info += f"  - Initial line stepsize [mm]: {self.ac_align['init_line_step']} \n"
         info += f"  - Initial threshold [mm]: {self.ac_align['init_threshold']} \n"
-        info += f"  - Reduction factor: {self.ac_align['reduction_factor']} \n"
-        info += f"  - Maximum reduction iterations: {self.ac_align['max_red_iter']} \n"
+        # info += f"  - Reduction factor: {self.ac_align['reduction_factor']} \n"
+        # info += f"  - Maximum reduction iterations: {self.ac_align['max_red_iter']} \n"
         info += f"  - Create graphs?: {self.ac_align['create_graphs']} \n"
         info += f"  - Y axis limit [mV]: {self.ac_align['y_lim']} \n"
         info += f"  - Create axis file?: {self.ac_align['create_axis_file']} \n"
@@ -245,10 +247,22 @@ class CharacSequence(sequence.Sequence):
         self.seq_number = int(seq_row[excel_ind["seq_num"]])
         self.tag = str(seq_row[excel_ind["tag"]])
 
-        if str(seq_row[excel_ind["dephasing"]]) == 'nan':
+        dephasing_values = str(seq_row[excel_ind["dephasing"]])
+        if dephasing_values == 'nan':
             self.dephasing_degree = None
         else:
-            self.dephasing_degree = float(seq_row[excel_ind["dephasing"]])
+            # Remove the brackets and normalize the separators (replace commas with spaces)
+            normalized_str = re.sub(r"[,\[\]\s]+", " ", dephasing_values).strip()
+
+            # Convert the string to a list of floats
+            try:
+                self.dephasing_degree = [float(num) for num in normalized_str.split()]
+            except:
+                self.dephasing_degree = None
+                logger.warning('WARNING (De)phase array cannot be converted to a ' + 
+                               'float array. Disable dephasing.')
+                print('WARNING (De)phase array cannot be converted to a ' + 
+                               'float array. Disable dephasing.')
 
         focus_definition = str(seq_row[excel_ind["focus_def"]])
 
@@ -350,8 +364,8 @@ def _define_excel_indices(data):
     excel_indices = {
         "seq_num": data.columns.get_loc('Sequence number'),
         "tag": data.columns.get_loc('Tag'),
-        "dephasing": data.columns.get_loc('Dephasing degree (None = no dephasing) ' +
-                                          'CURRENTLY ONLY APPLICABLE FOR IGT DS'),
+        "dephasing": data.columns.get_loc('(De)phase array [degree] (None = no (de)phasing) ONLY ' +
+                                          'FOR IGT DS'),
         "pulse_dur": data.columns.get_loc('Pulse duration [us]'),
         "pulse_rep_int": data.columns.get_loc('Pulse Repetition Interval [ms]'),
 

@@ -1730,7 +1730,6 @@ class Scope5242A(Scope5000):
         # self.model.resolution = None  # set in OpenUnit
         self._clearSettings()
 
-
 class Scope5442A(Scope5000):
     """
     Model 5442A (A/B: max 20V, EXT/GEN: max 5V), builtin generator.
