@@ -73,12 +73,12 @@ class AcousticalAlignment(acq.Acquisition):
 
         self._check_file(outfile)
 
+        self.equipment["ds"].send_sequence(self.sequence)
+        logger.info('All driving system parameters are set')
+        
         # Save parameters and prepare for alignment
         self._save_params_ini()
         logger.info('Used parameters have been saved in a file.')
-
-        self.equipment["ds"].send_sequence(self.sequence)
-        logger.info('All driving system parameters are set')
 
         # Prepare and define coordinates for alignment
         distance_from_foc = self.sequence.ac_align["distance_from_foc"]
