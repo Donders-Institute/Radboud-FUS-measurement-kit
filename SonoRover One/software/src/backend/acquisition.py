@@ -114,7 +114,7 @@ class Acquisition:
 
             # Connect with PicoScope
             print('Initialize PicoScope connection...', end='\n')
-            self.equipment["scope"] = pico.getScope(self.input_param.picoscope.pico_py_ident)
+            self.equipment["scope"] = pico.getScope(input_param.picoscope.pico_py_ident)
             self._init_scope(input_param.sampl_freq_multi, input_param.acquisition_time)
 
             # Initialize ACD processing parameters
@@ -310,7 +310,7 @@ class Acquisition:
         print('Send sequence to driving system...', end='\n')
         self.equipment["ds"].send_sequence(self.sequence)
         logger.info('All driving system parameters are set')
-        
+
         print('Save parameters in ini...', end='\n')
         self._save_params_ini()
         logger.info('Used parameters have been saved in a file.')
@@ -519,21 +519,21 @@ class Acquisition:
             str(self.input_param.driving_sys.is_active)
             )
 
-        params['Equipment']['Transducer.serial_number'] = self.input_param.tran.serial
-        params['Equipment']['Transducer.name'] = self.input_param.tran.name
-        params['Equipment']['Transducer.manufact'] = self.input_param.tran.manufact
-        params['Equipment']['Transducer.elements'] = str(self.input_param.tran.elements)
-        params['Equipment']['Transducer.fund_freq'] = str(self.input_param.tran.fund_freq)
-        params['Equipment']['Transducer.natural_foc'] = str(self.input_param.tran.natural_foc)
-        params['Equipment']['Transducer.min_foc'] = str(self.input_param.tran.min_foc)
-        params['Equipment']['Transducer.max_foc'] = str(self.input_param.tran.max_foc)
+        params['Equipment']['Transducer.serial_number'] = self.input_param.transducer.serial
+        params['Equipment']['Transducer.name'] = self.input_param.transducer.name
+        params['Equipment']['Transducer.manufact'] = self.input_param.transducer.manufact
+        params['Equipment']['Transducer.elements'] = str(self.input_param.transducer.elements)
+        params['Equipment']['Transducer.fund_freq'] = str(self.input_param.transducer.fund_freq)
+        params['Equipment']['Transducer.natural_foc'] = str(self.input_param.transducer.natural_foc)
+        params['Equipment']['Transducer.min_foc'] = str(self.input_param.transducer.min_foc)
+        params['Equipment']['Transducer.max_foc'] = str(self.input_param.transducer.max_foc)
 
         # Only log steer_info when IGT driving system is used
         ds_manufact = str(self.input_param.driving_sys.manufact)
         if ds_manufact == config_info['Equipment.Manufacturer.IGT']['Name']:
-            params['Equipment']['Transducer.steer_info'] = self.input_param.tran.steer_info
+            params['Equipment']['Transducer.steer_info'] = self.input_param.transducer.steer_info
 
-        params['Equipment']['Transducer.is_active'] = str(self.input_param.tran.is_active)
+        params['Equipment']['Transducer.is_active'] = str(self.input_param.transducer.is_active)
 
         params['Equipment']['COM port of positioning system'] = self.input_param.pos_com_port
 
@@ -897,6 +897,8 @@ class Acquisition:
 
         logger.debug(f'signal_a size: {self.signal_a.size}, ' +
                      f'dtype: {self.signal_a.dtype}')
+
+        return self.signal_a
 
     def _save_data(self, vol_orien, relat_xyz, plane_orien, dest_xyz):
         """

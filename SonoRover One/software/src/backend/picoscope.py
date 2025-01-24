@@ -34,6 +34,7 @@ https://github.com/Donders-Institute/Radboud-FUS-measurement-kit
 import sys
 
 # Miscellaneous packages
+import copy
 
 # Own packages
 from config.config import config_info as config
@@ -88,6 +89,22 @@ class PicoScope:
         info += f"PicoScope pico.py identification: {self.pico_py_ident} \n "
 
         return info
+
+    def clone(self):
+        """
+        Creates and returns a new instance of the PicoScope class with the same attribute
+        values.
+
+        The new instance is a deep copy of the current instance, ensuring that changes to the cloned
+        object do not affect the original object.
+
+        Returns:
+            CharacSequence: A new instance of the PicoScope class with copied attribute values.
+        """
+
+        new_instance = PicoScope()
+        new_instance.__dict__ = copy.deepcopy(self.__dict__)  # Copy all attributes
+        return new_instance
 
 
 def get_pico_serials():
@@ -145,3 +162,20 @@ def get_pico_list():
         sys.exit('No PicoScopes found in configuration file.')
 
     return pico_list
+
+
+def get_serial_from_name(name):
+    """
+    Returns the serial number matching the given name.
+
+    Args:
+        name (str): The name of the device.
+
+    Returns:
+        str: The serial number, or None if no match is found.
+    """
+
+    for pico in get_pico_list():
+        if pico.name == name:
+
+            return pico.serial

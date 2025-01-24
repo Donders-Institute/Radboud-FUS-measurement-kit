@@ -34,6 +34,7 @@ https://github.com/Donders-Institute/Radboud-FUS-measurement-kit
 import sys
 
 # Miscellaneous packages
+import copy
 
 # Own packages
 from config.config import config_info as config
@@ -88,6 +89,22 @@ class Hydrophone:
         info += f"Hydrophone Sensitivity (V/Pa) datasheet: {self.sens_v_pa} \n "
 
         return info
+
+    def clone(self):
+        """
+        Creates and returns a new instance of the Hydrophone class with the same attribute
+        values.
+
+        The new instance is a deep copy of the current instance, ensuring that changes to the cloned
+        object do not affect the original object.
+
+        Returns:
+            CharacSequence: A new instance of the Hydrophone class with copied attribute values.
+        """
+
+        new_instance = Hydrophone()
+        new_instance.__dict__ = copy.deepcopy(self.__dict__)  # Copy all attributes
+        return new_instance
 
 
 def get_hydro_serials():
@@ -145,3 +162,20 @@ def get_hydro_list():
         sys.exit('No hydrophones found in configuration file.')
 
     return hydro_list
+
+
+def get_serial_from_name(name):
+    """
+    Returns the serial number matching the given name.
+
+    Args:
+        name (str): The name of the device.
+
+    Returns:
+        str: The serial number, or None if no match is found.
+    """
+
+    for hydro in get_hydro_list():
+        if hydro.name == name:
+
+            return hydro.serial

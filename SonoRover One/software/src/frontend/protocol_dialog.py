@@ -44,6 +44,9 @@ from config.config import config_info as config
 
 from backend import sequence
 
+from fus_driving_systems import driving_system as ds
+from fus_driving_systems import transducer as tran
+
 
 class ProtocolDialog(ctk.CTkToplevel):
     """
@@ -70,7 +73,7 @@ class ProtocolDialog(ctk.CTkToplevel):
 
         self._equip_combos = config['Equipment']['Combinations'].split('\n')
         self._ds_tran_combo = '~'.join([self.input_param.driving_sys.serial,
-                                        self.input_param.tran.serial])
+                                        self.input_param.transducer.serial])
 
         self.focus_wrt_exit_plane_array = []
         self.focus_wrt_mid_bowl_array = []
@@ -83,7 +86,6 @@ class ProtocolDialog(ctk.CTkToplevel):
             self.ac_align_seq = self.input_param.sequences[0]
 
             # Use all sequences to extract the focus array
-
             for seq in self.input_param.sequences:
                 self.focus_wrt_exit_plane_array.append(seq.focus_wrt_exit_plane)
                 self.focus_wrt_mid_bowl_array.append(seq.focus_wrt_mid_bowl)
@@ -135,7 +137,7 @@ class ProtocolDialog(ctk.CTkToplevel):
 
     def _create_us_equip_entries(self):
         # Dropdown for selecting US Driving System
-        self.ds_combo = self._create_combo("US Driving System", self.input_param.ds_names,
+        self.ds_combo = self._create_combo("US Driving System", ds.get_ds_names(),
                                            self.input_param.driving_sys.name,
                                            self._ds_combo_action)
 
@@ -149,18 +151,18 @@ class ProtocolDialog(ctk.CTkToplevel):
         self.com_us.grid()
 
         # Save location for the entry, but hide it when other equipment is chosen
-        if not self.input_param.is_ds_com_port:
+        if 'COM' not in self.input_param.driving_sys.connect_info:
             self.com_us_label.grid_remove()
             self.com_us.grid_remove()
 
         # Dropdown for selecting transducer
-        self.trans_combo = self._create_combo("Transducer", self.input_param.tran_names,
-                                              self.input_param.tran.name,
+        self.trans_combo = self._create_combo("Transducer", tran.get_tran_names(),
+                                              self.input_param.transducer.name,
                                               self._trans_combo_action)
 
         # Update conversion coefficients according to chosen equipment
         self._ds_tran_combo = '~'.join([self.input_param.driving_sys.serial,
-                                        self.input_param.tran.serial])
+                                        self.input_param.transducer.serial])
 
         if self._ds_tran_combo in self._equip_combos:
             # TODO: fix private func
@@ -253,11 +255,8 @@ class ProtocolDialog(ctk.CTkToplevel):
         self.power_entry.bind('<1>', self._event_handling)
         self.power_entry.grid(row=self.row_nr, column=1, padx=10, pady=5, sticky="e")
 
-        cur_ds_system = self.ds_combo.get()
-        for ds in self.input_param.ds_list:
-            if ds.name == cur_ds_system:
-                self._update_power_options(ds, def_power_value, self.ac_align_seq.chosen_power)
-                break
+        self.input_param.driving_sys = ds.get_serial_from_name(self.ds_combo.get())
+        self._update_power_options(self.input_param.driving_sys, def_power_value, self.ac_align_seq.chosen_power)
 
         focus_settings = config['General']['Focus options'].split('\n')
         def_focus_setting = focus_settings[0]
@@ -506,39 +505,31 @@ class ProtocolDialog(ctk.CTkToplevel):
         Updates related fields and performs event handling.
         """
 
-        cur_ds = self.ds_combo.get()
+        serial_ds = ds.get_serial_from_name(self.ds_combo.get())
+        self.input_param.driving_sys = serial_ds
+        self.ac_align_seq.driving_sys = serial_ds
+        if 'COM' in self.input_param.driving_sys.connect_info:
+            self.com_us.delete(0, tk.END)
+            com_us_num = self.input_param.driving_sys.connect_info.removeprefix('COM')
+            self.com_us.insert(0, com_us_num)
 
-        for ds in self.input_param.ds_list:
-            if ds.name == cur_ds:
-                self.input_param.driving_sys = ds
-                self.ac_align_seq.driving_sys = ds.serial
-                if 'COM' in ds.connect_info:
-                    self.input_param.is_ds_com_port = True
+            self.com_us_label.grid()
+            self.com_us.grid()
 
-                    self.com_us.delete(0, tk.END)
-                    com_us_num = ds.connect_info.removeprefix('COM')
-                    self.com_us.insert(0, com_us_num)
+            self._resize_window()
 
-                    self.com_us_label.grid()
-                    self.com_us.grid()
+        else:
+            if hasattr(self, 'com_us'):
+                self.com_us_label.grid_remove()
+                self.com_us.grid_remove()
 
-                    self._resize_window()
+        # Update equipment combo name
+        self._ds_tran_combo = '~'.join([self.input_param.driving_sys.serial,
+                                        self.input_param.transducer.serial])
 
-                else:
-                    self.input_param.is_ds_com_port = False
-
-                    if hasattr(self, 'com_us'):
-                        self.com_us_label.grid_remove()
-                        self.com_us.grid_remove()
-
-                # Update equipment combo name
-                self._ds_tran_combo = '~'.join([ds.serial,
-                                                self.input_param.tran.serial])
-
-                # Update power options if acoustical alignment is chosen
-                if self.prot_combo.get() == config['Characterization']['Protocol.ac_align']:
-                    self._update_power_options(ds)
-                break
+        # Update power options if acoustical alignment is chosen
+        if self.prot_combo.get() == config['Characterization']['Protocol.ac_align']:
+            self._update_power_options(self.input_param.driving_sys)
 
         # Change relative zero coordinates to default due to new equipment
         for i in range(3):
@@ -553,21 +544,18 @@ class ProtocolDialog(ctk.CTkToplevel):
         Updates related fields and performs event handling.
         """
 
-        new_tran_name = self.trans_combo.get()
+        new_tran_serial = tran.get_serial_from_name(self.trans_combo.get())
+        self.input_param.transducer = new_tran_serial
+        self.ac_align_seq.transducer = new_tran_serial
 
-        for tran in self.input_param.tran_list:
-            if tran.name == new_tran_name:
-                self.input_param.tran = tran
-                self.ac_align_seq.transducer = tran.serial
-                self.oper_freq_entr.delete(0, tk.END)
-                self.oper_freq_entr.insert(0, int(tran.fund_freq))
+        self.oper_freq_entr.delete(0, tk.END)
+        self.oper_freq_entr.insert(0, int(self.input_param.transducer.fund_freq))
 
-                # Update equipment combo name
-                self._ds_tran_combo = '~'.join([self.input_param.driving_sys.serial,
-                                                tran.serial])
+        # Update equipment combo name
+        self._ds_tran_combo = '~'.join([self.input_param.driving_sys.serial,
+                                        self.input_param.transducer.serial])
 
-                self._event_handling(event)
-                break
+        self._event_handling(event)
 
         # Change relative zero coordinates to default due to new equipment
         for i in range(3):
@@ -754,7 +742,7 @@ class ProtocolDialog(ctk.CTkToplevel):
 
         }
 
-        if self.input_param.is_ds_com_port:
+        if 'COM' in self.input_param.driving_sys.connect_info:
             fields_to_validate.update({'COM port number of driving system':
                                        (self.com_us, True, True, True, False, False, False, False,
                                         False)})
@@ -987,12 +975,12 @@ class ProtocolDialog(ctk.CTkToplevel):
             if self._ds_tran_combo in self._equip_combos and self.ac_align_seq.DF2SF_a != 0:
                 focus_wrt_exit_plane = (focus - self.ac_align_seq.DF2SF_b) / self.ac_align_seq.DF2SF_a
             else:
-                focus_wrt_exit_plane = focus - self.input_param.tran.exit_plane_dist
+                focus_wrt_exit_plane = focus - self.input_param.transducer.exit_plane_dist
 
         # Check if focus is within range if compensation equations are not applicable
         if self._ds_tran_combo not in self._equip_combos:
-            low_lim = self.input_param.tran.min_foc
-            up_lim = self.input_param.tran.max_foc
+            low_lim = self.input_param.transducer.min_foc
+            up_lim = self.input_param.transducer.max_foc
 
         else:
             low_lim = self.ac_align_seq.F2EQF1_low_lim
@@ -1012,32 +1000,26 @@ class ProtocolDialog(ctk.CTkToplevel):
 
         if self:
             # Save selected driving system object
-            ds_name = self.ds_combo.get()
-            for ds in self.input_param.ds_list:
-                if ds.name == ds_name:
-                    self.input_param.driving_sys = ds
-                    break
+            ds_serial = ds.get_serial_from_name(self.ds_combo.get())
+            self.input_param.driving_sys = ds_serial
 
             # Save selected transducer object
-            td_name = self.trans_combo.get()
-            for tran in self.input_param.tran_list:
-                if tran.name == td_name:
-                    self.input_param.tran = tran
-                    break
+            td_serial = tran.get_serial_from_name(self.trans_combo.get())
+            self.input_param.transducer = td_serial
 
             # Save numeric and boolean parameters
             self.input_param.oper_freq = int(self.oper_freq_entr.get())
 
             # Save COM port of US driving system if applicable
-            if self.input_param.is_ds_com_port:
+            if 'COM' in self.input_param.driving_sys.connect_info:
                 self.input_param.driving_sys.connect_info = f'COM{self.com_us.get()}'
 
             # Global characterization parameters
             self.ac_align_seq.driving_sys = self.input_param.driving_sys.serial
-            self.ac_align_seq.transducer = self.input_param.tran.serial
+            self.ac_align_seq.transducer = self.input_param.transducer.serial
             self.ac_align_seq.oper_freq = self.input_param.oper_freq  # [kHz]
 
-            folder_struct = f'Output of T [{self.input_param.tran.name}] - DS [{self.input_param.driving_sys.name}]'
+            folder_struct = f'Output of T [{self.input_param.transducer.name}] - DS [{self.input_param.driving_sys.name}]'
 
             chosen_prot = self.prot_combo.get()
             if chosen_prot == config['Characterization']['Protocol.excel']:
