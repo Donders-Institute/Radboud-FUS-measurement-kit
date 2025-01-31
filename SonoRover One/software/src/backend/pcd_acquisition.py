@@ -31,44 +31,34 @@ https://github.com/Donders-Institute/Radboud-FUS-measurement-kit
 """
 
 # Basic packages
+import os
 
 # Miscellaneous packages
+from datetime import datetime
 import matplotlib.pyplot as plt
 import numpy as np
 
 # Own packages
-from fus_driving_systems.igt import igt_ds as fds_igt
-from fus_driving_systems.sonic_concepts import sonic_concepts_ds as fds_sc
-
-from config.config import config_info
-from backend.input_parameters import InputParameters
-
 from fus_driving_systems import driving_system as ds
 from fus_driving_systems import transducer as td
-from backend import pico
 import backend.picoscope as ps
 from backend import sequence
 import backend.acquisition as acq
 
 
-class PCDAcquisition(acq.Acquisition):
-
-    def __init__(self, input_param, init_equip=True):
-        super().__init__(input_param, init_equip=False)
-
-
-def perform_pcd_acquisition(picoscope_name, transducer, driving_system, sampl_freq_multi=50,
+def perform_pcd_acquisition(picoscope_serial, transducer_serial, driving_system_serial,
+                            output_dir='C:\\Temp\\PCD_acquisition_output', sampl_freq_multi=50,
                             acquisition_time=500, pulse_dur=0.05, amplitude=20,
                             focus_wrt_exit_plane=50):
     """
 
     Parameters
     ----------
-    picoscope : TYPE
+    picoscope_serial : TYPE
         DESCRIPTION.
-    transducer : TYPE
+    transducer_serial : TYPE
         DESCRIPTION.
-    ds : TYPE
+    driving_system_serial : TYPE
         DESCRIPTION.
     sampl_freq_multi : TYPE, optional
         DESCRIPTION. The default is 50 [-].
@@ -87,51 +77,101 @@ def perform_pcd_acquisition(picoscope_name, transducer, driving_system, sampl_fr
 
     """
 
-    input_param = InputParameters()
-
     # Set equipment
-    input_param.picoscope = picoscope_name
-    input_param.transducer = transducer
-    input_param.driving_sys = driving_system
+    pico_object = ps.PicoScope()
+    pico_object.set_pico_info(picoscope_serial)
 
-    # Set sampling frequency multiplication
-    input_param.sampl_freq_multi = sampl_freq_multi
-    input_param.acquisition_time = acquisition_time
+    tran_object = td.Transducer()
+    tran_object.set_transducer_info(transducer_serial)
 
-    # TODO: when setting pulse duration set other timing parameters to pulse duration
+    ds_object = ds.DrivingSystem()
+    ds_object.set_ds_info(driving_system_serial)
+
     seq = sequence.CharacSequence()
     seq.pulse_dur = pulse_dur
-    seq.pulse_rep_int = pulse_dur
-    seq.pulse_train_dur = pulse_dur
-    seq.pulse_train_rep_int = pulse_dur
-    seq.pulse_train_rep_dur = pulse_dur/1000  # convert ms to s
 
     seq.focus_wrt_exit_plane = focus_wrt_exit_plane
     seq.ampl = amplitude
 
-    pcd_acq = acq.Acquisition(input_param, False)
-    pcd_acq.sequence = seq
+    is_exist = os.path.exists(output_dir)
+    if not is_exist:
+        # Create a new directory because it does not exist
+        os.makedirs(output_dir)
+
+    pcd_acq = acq.Acquisition(None, False)
 
     # Connect with PicoScope
     print('Initialize PicoScope connection...', end='\n')
-    pcd_acq.equipment["scope"] = pico.getScope(input_param.picoscope.pico_py_ident)
-    pcd_acq._init_scope(sampl_freq_multi, acquisition_time)
+    pcd_acq.init_scope(sampl_freq_multi, acquisition_time, pico_object.pico_py_ident,
+                       tran_object.oper_freq)
 
     # Connect with driving system
     print('Initialize driving system connection...', end='\n')
-    pcd_acq._init_ds()
+    ds_manufact = ds_object.manufact
+    ds_connect_info = ds_object.connect_info
+    pcd_acq.init_ds(ds_manufact, ds_connect_info, is_ac_align=False,
+                    protocol_name='PCD_acquisition')
 
-    # Send sequence to driving system
-    print('Send sequence to driving system...', end='\n')
-    pcd_acq.equipment["ds"].send_sequence(seq)
+    n_elem = len(tran_object.elements)
+    for i_elem in range(n_elem + 1):
+        amplitudes = [0] * n_elem
+        # Send sequence to driving system
+        print('Send sequence to driving system...', end='\n')
+        pcd_acq.equipment["ds"].send_sequence(seq)
 
-    # TODO: enable shooting an element a time - for loop and end with shooting all elements
+        volt_data = pcd_acq.acquire_data(attempt=0, sequence=seq)
+        time_us = np.linspace(0, acquisition_time, pcd_acq.sample_count)
 
-    volt_data = pcd_acq.acquire_data()
-    time_us = np.linspace(0, acquisition_time, pcd_acq.sample_count)
+        date_time = datetime.now()
+        timestamp = date_time.strftime('%Y-%m-%d_%H-%M-%S')
 
-    plt.plot(time_us, volt_data)
-    plt.xlabel('Time [us]')
-    plt.ylabel('Measured voltage [mV]')
-    plt.title('Measured ultrasound signal')
-    plt.show()
+        elem_name = f'elem_{i_elem}'
+        if i_elem == 0:
+            elem_name = 'all_elem'
+
+        filename = (f'PCD_acquisition_{timestamp}_{elem_name}_of_{tran_object.serial}_' +
+                    f'{ds_object.serial}.png')
+        output_path = os.path.join(output_dir, filename)
+
+        plt.plot(time_us, volt_data)
+        plt.xlabel('Time [us]')
+        plt.ylabel('Measured voltage [mV]')
+        plt.title(f'Measured ultrasound signal for {tran_object.name} - {ds_object.name} with ' +
+                  f'{pico_object.name} \n sampl_freq_multi: {sampl_freq_multi:.0f}, ' +
+                  f'acquisition_time: {acquisition_time:.1f} [us], pulse_dur: {pulse_dur:.3f} ' +
+                  f'[ms], amplitude: {amplitude:.0f} [%], focus wrt exit plane: ' +
+                  f'{focus_wrt_exit_plane:.1f} [mm]')
+
+        plt.savefig(output_path)
+        plt.show()
+
+        if i_elem < n_elem:
+            amplitudes[i_elem] = amplitude
+            seq.ampl = amplitudes
+
+
+if __name__ == '__main__':
+
+    # location to store measurement data
+    output_dir = "C:\\Temp\\PCD_acquisition_output"
+
+    # to check available picoscopes: print(ps.get_pico_serials())
+    # PicoScope 5442A - embedded in IGT driving system (128 ch.)
+    # PicoScope 524? - embedded in IGT driving system (32 ch.)
+    picoscope_serial = '5442A'
+
+    # to check available transducers: print(transducer.get_tran_serials())
+    transducer_serial = 'IS_PCD15278_01001'
+
+    # to check available driving systems: print(driving_system.get_ds_serials())
+    driving_system_serial = 'IGT-32-ch_comb_1x10-ch'
+
+    sampl_freq_multi = 50  # Picoscope sampling frequency multiplication factor, at least 2.
+    acquisition_time = 500  # [us], PCD acquisition time.
+    pulse_dur = 0.5  # [ms], Pulse duration of the sequence.
+    amplitude = 20  # [%], Power of the driving system.
+    focus_wrt_exit_plane = 50  # [mm], Focal depth of the sequence w.r.t. exit plane respresenting the FWHM middle
+
+    perform_pcd_acquisition(picoscope_serial, transducer_serial, driving_system_serial, output_dir,
+                            sampl_freq_multi, acquisition_time, pulse_dur, amplitude,
+                            focus_wrt_exit_plane)

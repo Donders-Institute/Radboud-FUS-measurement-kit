@@ -44,6 +44,7 @@ https://github.com/Donders-Institute/Radboud-FUS-measurement-kit
 # Basic packages
 import os
 import time
+import sys
 
 # Miscellaneous packages
 import cmath
@@ -73,7 +74,7 @@ class Acquisition:
     Class to acquire acoustic signal on a pre-defined grid.
     """
 
-    def __init__(self, input_param, init_equip=True):
+    def __init__(self, input_param=None, init_equip=True):
         """
         Initialize Acquisition class with global acquisition parameters.
 
@@ -107,15 +108,14 @@ class Acquisition:
             "motors": None
             }
 
-        if init_equip:
+        if init_equip and input_param is not None:
             # Connect with driving system
             print('Initialize driving system connection...', end='\n')
-            self._init_ds()
+            self.init_ds()
 
             # Connect with PicoScope
             print('Initialize PicoScope connection...', end='\n')
-            self.equipment["scope"] = pico.getScope(input_param.picoscope.pico_py_ident)
-            self._init_scope(input_param.sampl_freq_multi, input_param.acquisition_time)
+            self.init_scope()
 
             # Initialize ACD processing parameters
             self.proces_param = self._init_processing(endus=input_param.acquisition_time)
@@ -144,7 +144,7 @@ class Acquisition:
             "outputCoord": None
             }
 
-    def _init_ds(self):
+    def init_ds(self, ds_manufact=None, ds_connect_info=None, is_ac_align=None, protocol_name=''):
         """
         Initialize the driving system based on the manufacturer.
 
@@ -152,7 +152,22 @@ class Acquisition:
         input parameters.
         """
 
-        ds_manufact = str(self.input_param.driving_sys.manufact)
+        # If parameter is not given, try to extract from input parameters
+        if ds_manufact is None and hasattr(self.input_param, 'driving_sys'):
+            ds_manufact = str(self.input_param.driving_sys.manufact)
+        else:
+            sys.exit('No driving system manufacturer given for initialization of driving system.')
+
+        if ds_connect_info is None and hasattr(self.input_param, 'driving_sys'):
+            ds_connect_info = self.input_param.driving_sys.connect_info
+        else:
+            sys.exit('No driving system connection information given for initialization of ' +
+                     'driving system.')
+
+        if is_ac_align is None and hasattr(self.input_param, 'is_ac_align'):
+            is_ac_align = self.input_param.is_ac_align
+        else:
+            is_ac_align = False
 
         add_message = ''
         # Driving system of Sonic Concepts
@@ -162,7 +177,7 @@ class Acquisition:
 
             check_dialogs.check_disconnection_dialog(add_message)
 
-            self.equipment["ds"].connect(self.input_param.driving_sys.connect_info)
+            self.equipment["ds"].connect(ds_connect_info)
 
         # Driving system of IGT
         elif ds_manufact == config_info['Equipment.Manufacturer.IGT']['Name']:
@@ -172,19 +187,30 @@ class Acquisition:
 
             check_dialogs.check_disconnection_dialog(add_message)
 
-            if self.input_param.is_ac_align is False:
-                # Extract protocol excel filename without extension
-                self.input_param.protocol = os.path.splitext(
-                    os.path.basename(self.input_param.path_protocol_excel_file))[0]
+            if not protocol_name:
+                if hasattr(self.input_param, 'protocol'):
+                    # Extract protocol excel filename without extension for log filename purposes
+                    if not is_ac_align and hasattr(self.input_param, 'path_protocol_excel_file'):
+                        self.input_param.protocol = os.path.splitext(os.path.basename(
+                            self.input_param.path_protocol_excel_file))[0]
 
-            self.equipment["ds"].connect(self.input_param.driving_sys.connect_info,
+                    protocol_name = self.input_param.protocol
+
+                # When no protocol_name is available, use default
+                else:
+                    self.equipment["ds"].connect(ds_connect_info,
+                                                 config_info['Characterization']['Temporary logging path'])
+                    return
+
+            self.equipment["ds"].connect(ds_connect_info,
                                          config_info['Characterization']['Temporary logging path'],
-                                         self.input_param.protocol)
+                                         protocol_name)
         else:
             logger.error(f"Unknown driving system manufacturer: {ds_manufact}")
 
 ####################################################################
-    def _init_scope(self, sampl_freq_multi, acquisition_dur_us):
+    def init_scope(self, sampl_freq_multi=None, acquisition_dur_us=None, pico_py_ident=None,
+                   oper_freq=None):
         """
         Initialize and connect with the Picoscope.
 
@@ -196,6 +222,31 @@ class Acquisition:
             trigger settings.
         """
 
+        if pico_py_ident is None and hasattr(self.input_param, 'picoscope.pico_py_ident'):
+            pico_py_ident = self.input_param.picoscope.pico_py_ident
+        else:
+            sys.exit('No PicoScope serial given for initialization of the PicoScope.')
+
+        if sampl_freq_multi is None:
+            # TODO: replace for config default
+            sampl_freq_multi = 50
+            if hasattr(self.input_param, 'sampl_freq_multi'):
+                sampl_freq_multi = self.input_param.sampl_freq_multi
+
+        if acquisition_dur_us is None:
+            # TODO: replace for config default
+            acquisition_dur_us = 500
+            if hasattr(self.input_param, 'acquisition_time'):
+                acquisition_dur_us = self.input_param.acquisition_time
+
+        if oper_freq is None:
+            if hasattr(self.input_param, 'oper_freq'):
+                oper_freq = self.input_param.oper_freq
+            else:
+                sys.exit('No operating frequency given for initialization of the PicoScope.')
+
+        self.equipment["scope"] = pico.getScope(pico_py_ident)
+
         self.equipment["scope"].openUnit(pico.Resolution.DR_14BIT)
 
         # #        self.equipment["scope"].closeChannels()
@@ -205,7 +256,7 @@ class Acquisition:
                                             pico.Coupling.DC, pico.Probe.x1)
 
         # Calculate and set sampling frequency
-        self.sampling_freq = sampl_freq_multi*self.input_param.oper_freq*1e3  # convert kHz to Hz
+        self.sampling_freq = sampl_freq_multi*oper_freq*1e3  # convert kHz to Hz
         self.timebase = self.equipment["scope"].timeBase(self.sampling_freq)
         self.pico_sampling_freq = self.equipment["scope"].samplingRate(self.timebase)
         self.sampling_period = 1.0/self.pico_sampling_freq
@@ -870,19 +921,25 @@ class Acquisition:
 
         return dest_xyz
 
-    def _acquire_data(self, attempt=0):
+    def _acquire_data(self, attempt=0, sequence=None):
         """
         Acquire data at the current motor position. It will start the acquisition on the PicoScope
         (wait for trigger), execute the pulse sequence (which will trigger the PicoScope), wait
         until the data has been acquired and read the data from the PicoScope into signal_a.
         """
 
+        if sequence is None:
+            if hasattr(self, 'sequence'):
+                sequence = self.sequence
+            else:
+                sys.exit('No sequence known to be executed.')
+
         # Start picoscope acquisition on trigger
         self.equipment["scope"].startAcquisitionTB(self.sample_count, self.timebase)
         time.sleep(0.025)
 
         # Execute pulse sequence
-        self.equipment["ds"].execute_sequence(self.sequence)
+        self.equipment["ds"].execute_sequence(sequence)
 
         # Wait for acquisition to complete
         ok = self.equipment["scope"].waitAcquisition()
