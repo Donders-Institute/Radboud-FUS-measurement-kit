@@ -257,12 +257,12 @@ class CharacSequence(sequence.Sequence):
             # Convert the string to a list of floats
             try:
                 self.dephasing_degree = [float(num) for num in normalized_str.split()]
-            except:
+            except ValueError:
                 self.dephasing_degree = None
-                logger.warning('WARNING (De)phase array cannot be converted to a ' + 
+                logger.warning('WARNING (De)phase array cannot be converted to a ' +
                                'float array. Disable dephasing.')
-                print('WARNING (De)phase array cannot be converted to a ' + 
-                               'float array. Disable dephasing.')
+                print('WARNING (De)phase array cannot be converted to a ' +
+                      'float array. Disable dephasing.')
 
         focus_definition = str(seq_row[excel_ind["focus_def"]])
 
@@ -286,10 +286,22 @@ class CharacSequence(sequence.Sequence):
                 self.press = abs(float(seq_row[excel_ind["power_value"]]))
 
             case 'IGT - Voltage [V] (fill in \'Corresponding value\')':
-                self.volt = abs(float(seq_row[excel_ind["power_value"]]))
+                voltages = str(seq_row[excel_ind["power_value"]])
+                volt_str = re.sub(r"[,\[\]\s]+", " ", voltages).strip()
+
+                try:
+                    self.volt = [float(num) for num in volt_str.split()]
+                except ValueError:
+                    sys.exit('Voltage array cannot be converted to a float array.')
 
             case 'IGT - Amplitude [%] (fill in \'Corresponding value\')':
-                self.ampl = abs(float(seq_row[excel_ind["power_value"]]))  # IGT: amplitude [%]
+                amplitudes = str(seq_row[excel_ind["power_value"]])
+                ampl_str = re.sub(r"[,\[\]\s]+", " ", amplitudes).strip()
+
+                try:
+                    self.ampl = [float(num) for num in ampl_str.split()]
+                except ValueError:
+                    sys.exit('Amplitude array cannot be converted to a float array.')
 
         # Timing parameters
         # ## pulse ## #
