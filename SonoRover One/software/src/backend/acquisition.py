@@ -144,7 +144,8 @@ class Acquisition:
             "outputCoord": None
             }
 
-    def init_ds(self, ds_manufact=None, ds_connect_info=None, is_ac_align=None, protocol_name=''):
+    def init_ds(self, ds_manufact=None, ds_connect_info=None, is_ac_align=None, protocol_name='',
+                check_message=True):
         """
         Initialize the driving system based on the manufacturer.
 
@@ -153,21 +154,24 @@ class Acquisition:
         """
 
         # If parameter is not given, try to extract from input parameters
-        if ds_manufact is None and hasattr(self.input_param, 'driving_sys'):
-            ds_manufact = str(self.input_param.driving_sys.manufact)
-        else:
-            sys.exit('No driving system manufacturer given for initialization of driving system.')
+        if ds_manufact is None:
+            if hasattr(self.input_param, 'driving_sys'):
+                ds_manufact = str(self.input_param.driving_sys.manufact)
+            else:
+                sys.exit('No driving system manufacturer given for initialization of driving system.')
 
-        if ds_connect_info is None and hasattr(self.input_param, 'driving_sys'):
-            ds_connect_info = self.input_param.driving_sys.connect_info
-        else:
-            sys.exit('No driving system connection information given for initialization of ' +
-                     'driving system.')
+        if ds_connect_info is None:
+            if hasattr(self.input_param, 'driving_sys'):
+                ds_connect_info = self.input_param.driving_sys.connect_info
+            else:
+                sys.exit('No driving system connection information given for initialization of ' +
+                         'driving system.')
 
-        if is_ac_align is None and hasattr(self.input_param, 'is_ac_align'):
-            is_ac_align = self.input_param.is_ac_align
-        else:
-            is_ac_align = False
+        if is_ac_align is None:
+            if hasattr(self.input_param, 'is_ac_align'):
+                is_ac_align = self.input_param.is_ac_align
+            else:
+                is_ac_align = False
 
         add_message = ''
         # Driving system of Sonic Concepts
@@ -175,7 +179,8 @@ class Acquisition:
             add_message = config_info['Equipment.Manufacturer.SC']['Additional charac. discon. message']
             self.equipment["ds"] = fds_sc.SonicConcepts()
 
-            check_dialogs.check_disconnection_dialog(add_message)
+            if check_message:
+                check_dialogs.check_disconnection_dialog(add_message)
 
             self.equipment["ds"].connect(ds_connect_info)
 
@@ -185,7 +190,8 @@ class Acquisition:
             log_path = config_info['Characterization']['Temporary logging path']
             self.equipment["ds"] = fds_igt.IGT(log_path)
 
-            check_dialogs.check_disconnection_dialog(add_message)
+            if check_message:
+                check_dialogs.check_disconnection_dialog(add_message)
 
             if not protocol_name:
                 if hasattr(self.input_param, 'protocol'):
@@ -222,10 +228,11 @@ class Acquisition:
             trigger settings.
         """
 
-        if pico_py_ident is None and hasattr(self.input_param, 'picoscope.pico_py_ident'):
-            pico_py_ident = self.input_param.picoscope.pico_py_ident
-        else:
-            sys.exit('No PicoScope serial given for initialization of the PicoScope.')
+        if pico_py_ident is None:
+            if hasattr(self.input_param, 'picoscope.pico_py_ident'):
+                pico_py_ident = self.input_param.picoscope.pico_py_ident
+            else:
+                sys.exit('No PicoScope serial given for initialization of the PicoScope.')
 
         if sampl_freq_multi is None:
             # TODO: replace for config default
@@ -832,7 +839,7 @@ class Acquisition:
                     dest_xyz = self._calculate_new_coord_and_save(counter, i, j, k)
 
                     self.equipment["motors"].move(list(dest_xyz), relative=False)
-                    self._acquire_data()
+                    self.acquire_data()
 
                     with open(self.output["outputRAW"], 'ab') as outraw:
                         self.signal_a.tofile(outraw)
@@ -921,7 +928,7 @@ class Acquisition:
 
         return dest_xyz
 
-    def _acquire_data(self, attempt=0, sequence=None):
+    def acquire_data(self, attempt=0, sequence=None):
         """
         Acquire data at the current motor position. It will start the acquisition on the PicoScope
         (wait for trigger), execute the pulse sequence (which will trigger the PicoScope), wait
@@ -947,7 +954,7 @@ class Acquisition:
         if not ok and attempt < 5:
             # Redo acquisition if waiting period is over and no data is acquired
             attempt += 1
-            self._acquire_data(attempt)
+            self.acquire_data(attempt)
 
         # Transfer data from picoscope
         self.signal_a = self.equipment["scope"].readVolts()[0]
