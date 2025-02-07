@@ -445,15 +445,15 @@ def save_acoustical_axis_to_excel(main_sequence, acoustical_axis, coord_zero, ou
 
         measurement_nr = i + 1  # Measurement number
         # Store row data for each t value
-        rows.append([measurement_nr, cluster_nr, measurement_nr, point[0],
-                     point[1], point[2], 1, measurement_nr, 1,
+        rows.append([measurement_nr, cluster_nr, measurement_nr, 
                      point[0] - coord_zero[0],
                      point[1] - coord_zero[1],
-                     point[2] - coord_zero[2]
+                     point[2] - coord_zero[2], 1, measurement_nr, 1,
+                     point[0], point[1], point[2], 
                      ])
 
     # Define Excel filename
-    excel_filename = output_name + '_acoustical_axis.xlsx'
+    excel_filename = output_name + '_acoustical_axis.csv'
 
     # Save the data using the _save_acoustical_axis_data method
     save_acoustical_axis_data(rows, excel_filename)
@@ -477,7 +477,7 @@ def save_acoustical_axis_data(rows, filename):
                                      'Absolute Y-coordinate [mm]',
                                      'Absolute Z-coordinate [mm]'])
 
-    df.to_excel(filename, index=False)
+    df.to_csv(filename, index=False)
 
     logger.info(f"Acoustical axis coordinates saved to: {filename}")
 
@@ -543,8 +543,8 @@ def calculate_acoustical_axis(middle_points, z_exit_plane, temp_dir_output):
 
         # Store the origin and direction of the acoustical axis
         acoustical_axis = {
-            'origin': np.round(transducer_z_point, 2),
-            'direction': np.round(direction_vector, 2),
+            'origin': transducer_z_point,
+            'direction': direction_vector,
             'azimuth of direction': round(azimuth_dir, 2),
             'elevation of direction': round(elev_dir, 2),
             'average': np.round(average_point, 2),
