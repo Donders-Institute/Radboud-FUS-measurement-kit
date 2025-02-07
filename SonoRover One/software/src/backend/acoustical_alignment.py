@@ -543,8 +543,8 @@ def calculate_acoustical_axis(middle_points, z_exit_plane, temp_dir_output):
 
         # Store the origin and direction of the acoustical axis
         acoustical_axis = {
-            'origin': np.round(transducer_z_point, 2),
-            'direction': np.round(direction_vector, 2),
+            'origin': transducer_z_point,
+            'direction': direction_vector,
             'azimuth of direction': round(azimuth_dir, 2),
             'elevation of direction': round(elev_dir, 2),
             'average': np.round(average_point, 2),
