@@ -50,6 +50,9 @@ from backend.input_parameters import InputParameters
 import frontend.acd_param_dialog as apd
 import frontend.protocol_dialog as pd
 
+import backend.hydrophone as hp
+import backend.picoscope as ps
+
 
 class InputDialog():
     """
@@ -174,7 +177,7 @@ class InputDialog():
         self.com_pos = self._create_entry("COM port of positioning system", com_pos_num,
                                           is_event=True, event_handling=self._event_handling)
         # Dropdown for selecting hydrophone
-        self.hydro_combo = self._create_combo("Hydrophone", self.input_param.hydro_names,
+        self.hydro_combo = self._create_combo("Hydrophone", hp.get_hydro_names(),
                                               self.input_param.hydrophone.name,
                                               self._event_handling)
 
@@ -184,7 +187,7 @@ class InputDialog():
                                            is_event=True, event_handling=self._event_handling)
 
         # Dropdown for selecting picoscope
-        self.pico_combo = self._create_combo("PicoScope", self.input_param.pico_names,
+        self.pico_combo = self._create_combo("PicoScope", ps.get_pico_names(),
                                              self.input_param.picoscope.name,
                                              self._event_handling)
 
@@ -507,18 +510,12 @@ class InputDialog():
             self.input_param.pos_com_port = f'COM{self.com_pos.get()}'
 
             # Save selected hydrophone object
-            hydro_name = self.hydro_combo.get()
-            for hydro in self.input_param.hydro_list:
-                if hydro.name == hydro_name:
-                    self.input_param.hydrophone = hydro
+            self.input_param.hydrophone = hp.get_serial_from_name(self.hydro_combo.get())
 
             self.input_param.acquisition_time = float(self.acq_time.get())
 
             # Save selected PicoScope object
-            pico_name = self.pico_combo.get()
-            for pico in self.input_param.pico_list:
-                if pico.name == pico_name:
-                    self.input_param.picoscope = pico
+            self.input_param.picoscope = ps.get_serial_from_name(self.pico_combo.get())
 
             self.input_param.sampl_freq_multi = float(self.sampl_freq.get())
 
