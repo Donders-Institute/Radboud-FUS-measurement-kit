@@ -145,7 +145,7 @@ class Acquisition:
             }
 
     def init_ds(self, ds_manufact=None, ds_connect_info=None, is_ac_align=None, protocol_name='',
-                check_message=True):
+                check_message=True, log_path=None):
         """
         Initialize the driving system based on the manufacturer.
 
@@ -173,6 +173,9 @@ class Acquisition:
             else:
                 is_ac_align = False
 
+        if log_path is None:
+            log_path = config_info['Characterization']['Temporary logging path']
+
         add_message = ''
         # Driving system of Sonic Concepts
         if ds_manufact == config_info['Equipment.Manufacturer.SC']['Name']:
@@ -187,7 +190,7 @@ class Acquisition:
         # Driving system of IGT
         elif ds_manufact == config_info['Equipment.Manufacturer.IGT']['Name']:
             add_message = config_info['Equipment.Manufacturer.IGT']['Additional charac. discon. message']
-            log_path = config_info['Characterization']['Temporary logging path']
+
             self.equipment["ds"] = fds_igt.IGT(log_path)
 
             if check_message:
@@ -205,11 +208,11 @@ class Acquisition:
                 # When no protocol_name is available, use default
                 else:
                     self.equipment["ds"].connect(ds_connect_info,
-                                                 config_info['Characterization']['Temporary logging path'])
+                                                 log_path)
                     return
 
             self.equipment["ds"].connect(ds_connect_info,
-                                         config_info['Characterization']['Temporary logging path'],
+                                         log_path,
                                          protocol_name)
         else:
             logger.error(f"Unknown driving system manufacturer: {ds_manufact}")

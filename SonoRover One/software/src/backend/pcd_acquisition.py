@@ -119,7 +119,7 @@ def perform_pcd_acquisition(picoscope_serial, transducer_serial, driving_system_
         ds_manufact = seq.driving_sys.manufact
         ds_connect_info = seq.driving_sys.connect_info
         pcd_acq.init_ds(ds_manufact, ds_connect_info, is_ac_align=False,
-                        protocol_name='PCD_acquisition', check_message=False)
+                        protocol_name='PCD_acquisition', check_message=False, log_path=output_dir)
 
         # Acquire and process data
         _acquire_and_save_data(pcd_acq, seq, pico_object, output_dir, acquisition_time, amplitude)
