@@ -168,8 +168,8 @@ def _acquire_and_save_data(pcd_acq, seq, pico_object, output_dir, acquisition_ti
     Handles the acquisition, processing, and saving of data.
     """
 
-    baseline_path = config_info[seq.transducer.transducer_serial]['Baseline path']
-    baseline_filenames = config_info[seq.transducer.transducer_serial]['Baseline files'].split('\n')
+    baseline_path = config_info[seq.transducer.serial]['Baseline path']
+    baseline_filenames = config_info[seq.transducer.serial]['Baseline files'].split('\n')
     n_elem = seq.transducer.elements
     for i_elem in range(n_elem + 1):
         raw_baseline_filename = baseline_filenames[i_elem]
