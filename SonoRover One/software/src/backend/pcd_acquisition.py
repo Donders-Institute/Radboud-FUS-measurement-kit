@@ -200,9 +200,10 @@ def _acquire_and_save_data(pcd_acq, seq, pico_object, output_dir, acquisition_ti
         with open(raw_path, 'ab') as outraw:
             volt_data.tofile(outraw)
 
+        ampl_title = [f'{x:.1f}' for x in seq.ampl]
         fig_title = (f'{elem_title} - {seq.transducer.name} \n {seq.driving_sys.name} -' +
                      f' {pico_object.pico_py_ident}, ' +
-                     f'pulse: {seq.pulse_dur:.3f} [ms], ampl.: {seq.ampl:.0f} [%]')
+                     f'pulse: {seq.pulse_dur:.3f} [ms], ampl.: {ampl_title} [%]')
 
         _plot_comparison_fig(time_us, raw_baseline_path, volt_data, fig_title, output_path)
 
