@@ -39,6 +39,7 @@ from importlib import resources as impresources
 
 # Own packages
 import config
+from backend.utils import get_charac_config_file
 
 
 # Initialize ConfigParser
@@ -74,5 +75,5 @@ def read_additional_config(file_path):
 
 
 # Automatically read the main configuration file when the module is imported
-inp_file = (impresources.files(config) / 'characterization_config.ini')
+inp_file = (impresources.files(config) / get_charac_config_file())
 read_config(inp_file)

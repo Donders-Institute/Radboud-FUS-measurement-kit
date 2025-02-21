@@ -32,12 +32,16 @@ https://github.com/Donders-Institute/Radboud-FUS-measurement-kit
 
 import serial
 import serial.tools.list_ports as list_ports
+import sys
 import time
 import re
 
 # Own packages
 # Access the logger
 from config.logging_config import logger
+from config.config import config_info as config
+from backend.utils import get_config_value
+
 
 MotorErrorCode = {
 0 : 'Connection Error',
@@ -96,10 +100,10 @@ class MotorsXYZ:
         error = False
         ok =False
         all_port_tuples = list_ports.comports()
-        print(all_port_tuples)
+        logger.debug(all_port_tuples)
         for port,desc, hwid in all_port_tuples:
             dev,vid,pid = self._parse_hwid(hwid)
-            logger.info(f"port={port}\ndesc={desc}\ndev:{dev}, vid={vid},pid={pid}")
+            logger.debug(f"port={port}\ndesc={desc}\ndev:{dev}, vid={vid},pid={pid}")
             if dev=='USB' and vid=='2341' and (pid=='0043' or pid=='0042'): # ARDUINO
                 return port
         return None
@@ -122,13 +126,15 @@ class MotorsXYZ:
                     self._com = ser
                     self.com_port = port
                     self.connected =True
-                    logger.info('connected: {}, port: {}'.format(self.connected,port))
+                    logger.debug('connected: {}, port: {}'.format(self.connected,port))
             else:
                 ser.close()
         else:
-            logger.error('error, no port detected')
-        logger.info(f'ok: {ok} - error: {error} - tooLong: {tooLong} - Motor' +
-                    f' connected: {self.connected}')
+            message = 'error, no port detected'
+            logger.critical(message)
+            sys.exit(message)
+        logger.debug(f'ok: {ok} - error: {error} - tooLong: {tooLong} - Motor' +
+                     f' connected: {self.connected}')
 
 
     def _send_cmd(self,cmd):
@@ -190,10 +196,10 @@ class MotorsXYZ:
                 self.initialized = True
                 self.ready = True
                 self._send_cmd('$G')
-                logger.info(f'state: {self._read_ans()}')
+                logger.debug(f'state: {self._read_ans()}')
 
     def home(self,axis=['X','Y', 'Z'], together=True):
-        logger.info('homing: $H')
+        logger.debug('homing: $H')
         if self.connected:
             self._busy = True
             cmd_home="$H"
@@ -220,7 +226,7 @@ class MotorsXYZ:
         self.zero()
 
     def zero(self):
-            logger.info('zeroing: G10 P0 L20 X0 Y0 Z0')
+            logger.debug('zeroing: G10 P0 L20 X0 Y0 Z0')
             self._send_cmd('G10 P0 L20 X0 Y0 Z0')
             self._wait_for_ok()
 
@@ -239,11 +245,15 @@ class MotorsXYZ:
             except:
                 logger.debug('split_str: ' + ' '.join(split_str))
                 logger.debug('Reading position failed. Try again.')
-                
-                if attempt < 5:
+
+                max_attempts = int(get_config_value(logger, config, 'Characterization',
+                                                    'pos_sys.reacquire_attempts', 5))
+                if attempt < max_attempts:
                     self.readPosition(attempt = attempt + 1)
                 else:
-                    logger.error('Reading position failed multiple times. Quitting.')
+                    message = 'Reading position failed multiple times. Quitting.'
+                    logger.critical(message)
+                    sys.exit(message)
                 
             self._wait_for_ok()
             msg = "Read current_position: {} ".format(self._current_position)

@@ -40,12 +40,11 @@ import tkinter as tk
 import configparser
 import customtkinter as ctk
 
-import logging
-
 # Own packages
 from config.config import config_info as config
 from config.logging_config import logger
 
+from backend.utils import get_config_value
 from backend.input_parameters import InputParameters
 import frontend.acd_param_dialog as apd
 import frontend.protocol_dialog as pd
@@ -96,18 +95,22 @@ class InputDialog():
         self.input_param = InputParameters()
 
         # Check if cached data exists and load if valid
-        config_path = config['Characterization']['Path of input parameters cache']
+        config_path = get_config_value(logger, config, 'Characterization',
+                                       'Path of input parameters cache',
+                                       'config//characterization_input_cache.ini')
         if os.path.exists(config_path):
             cached_input = configparser.ConfigParser(interpolation=None)
             cached_input.read(config_path)
 
             # Check if cached data exists and load if valid
             now = datetime.now()
-            if cached_input['Input parameters']['Date'] == str(now.strftime("%Y/%m/%d")):
+            date_format = get_config_value(logger, config, 'Characterization', 'Cache date format',
+                                           "%Y/%m/%d")
+            if cached_input['Input parameters']['Date'] == str(now.strftime(date_format)):
                 try:
                     self.input_param.convert_ini_to_object(cached_input)
                 except KeyError:
-                    print('Cached data cannot be read. Use default parameters')
+                    logger.warning('Cached data cannot be read. Use default parameters')
 
     def _init_body(self):
         """
@@ -133,7 +136,8 @@ class InputDialog():
             self.win.mainloop()
 
         except AttributeError:
-            logger.error(logging.exception('AttributeError'))
+            message = 'AttributeError in protocol dialog'
+            logger.critical(message)
             self._cancel_action(True)
 
     def _resize_window(self):
@@ -149,7 +153,9 @@ class InputDialog():
         # Display this window on top of all windows
         self.win.lift()
         self.win.attributes('-topmost', True)
-        self.win.after(5000, lambda: self.win.attributes('-topmost', False))  # stay for 5s
+        stay_topmost_in_ms = int(get_config_value(logger, config, 'Characterizaton',
+                                                  'input.stay_topmost_in_ms', 5000))
+        self.win.after(stay_topmost_in_ms, lambda: self.win.attributes('-topmost', False))  # stay for n sec
 
     def _create_entries(self):
         """
@@ -158,7 +164,9 @@ class InputDialog():
 
         # Path and filename of protocol excel file
         if self.input_param.is_ac_align is True:
-            self.input_param.protocol = 'Acoustical alignment'
+            self.input_param.protocol = get_config_value(logger, config, 'Characterization',
+                                                         'Protocol.ac_align',
+                                                         'Acoustical alignment')
         else:
             filename_ext = os.path.basename(self.input_param.path_protocol_excel_file)
             self.input_param.protocol = os.path.splitext(filename_ext)[0]
@@ -264,7 +272,8 @@ class InputDialog():
         self.run_button.configure(state=tk.DISABLED)
 
         # Cancel button
-        button = ctk.CTkButton(master=self.win, text="Cancel", command=lambda: self._cancel_action(True))
+        button = ctk.CTkButton(master=self.win, text="Cancel",
+                               command=lambda: self._cancel_action(True))
         button.grid(row=self.row_nr, column=1, sticky='e', ipadx=53, padx=10, pady=10)
 
     def _add_row(self):
@@ -550,5 +559,6 @@ class InputDialog():
             self.win = None
 
         if cancel_sys:
-            sys.exit('Pipeline is cancelled by user.')
-
+            message = 'Pipeline is cancelled by user.'
+            logger.critical(message)
+            sys.exit(message)

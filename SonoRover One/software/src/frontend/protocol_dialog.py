@@ -32,16 +32,17 @@ https://github.com/Donders-Institute/Radboud-FUS-measurement-kit
 
 # Basic packages
 import os
+import sys
 import tkinter as tk
 
 # Miscellaneous packages
 import customtkinter as ctk
 
-import logging
-
 # Own packages
 from config.config import config_info as config
+from config.logging_config import logger
 
+from backend.utils import get_config_value
 from backend import sequence
 
 from fus_driving_systems import driving_system as ds
@@ -71,9 +72,11 @@ class ProtocolDialog(ctk.CTkToplevel):
         self.input_param = input_param
         self.coord_entries = coord_entries
 
-        self._equip_combos = config['Equipment']['Combinations'].split('\n')
-        self._ds_tran_combo = '~'.join([self.input_param.driving_sys.serial,
-                                        self.input_param.transducer.serial])
+        self._equip_combos = get_config_value(logger, config, 'Equipment', 'Combinations',
+                                              '').split('\n')
+        combo_sign = get_config_value(logger, config, 'Equipment', 'Combination sign', '~')
+        self._ds_tran_combo = combo_sign.join([self.input_param.driving_sys.serial,
+                                               self.input_param.transducer.serial])
 
         self.focus_wrt_exit_plane_array = []
         self.focus_wrt_mid_bowl_array = []
@@ -90,7 +93,8 @@ class ProtocolDialog(ctk.CTkToplevel):
                 self.focus_wrt_exit_plane_array.append(seq.focus_wrt_exit_plane)
                 self.focus_wrt_mid_bowl_array.append(seq.focus_wrt_mid_bowl)
 
-        self.n_ac_align_rows = 14
+        self.n_ac_align_rows = int(get_config_value(logger, config, 'Characterizaton',
+                                                    'protocol_dialog.n_ac_align_rows', 14))
 
         self._build_dialog()
 
@@ -117,8 +121,10 @@ class ProtocolDialog(ctk.CTkToplevel):
             self._resize_window()
 
         except AttributeError:
-            print(logging.exception('AttributeError'))
+            message = 'AttributeError in protocol dialog'
+            logger.critical(message)
             self._cancel_action()
+            sys.exit(message)
 
     def _resize_window(self):
         """
@@ -133,7 +139,9 @@ class ProtocolDialog(ctk.CTkToplevel):
         # Display this window on top of all windows
         self.lift()
         self.attributes('-topmost', True)
-        self.after(5000, lambda: self.attributes('-topmost', False))  # stay for 5s
+        stay_topmost_in_ms = int(get_config_value(logger, config, 'Characterizaton',
+                                                  'protocol_dialog.stay_topmost_in_ms', 5000))
+        self.after(stay_topmost_in_ms, lambda: self.attributes('-topmost', False))  # stay for 5s
 
     def _create_us_equip_entries(self):
         # Dropdown for selecting US Driving System
@@ -161,8 +169,9 @@ class ProtocolDialog(ctk.CTkToplevel):
                                               self._trans_combo_action)
 
         # Update conversion coefficients according to chosen equipment
-        self._ds_tran_combo = '~'.join([self.input_param.driving_sys.serial,
-                                        self.input_param.transducer.serial])
+        combo_sign = get_config_value(logger, config, 'Equipment', 'Combination sign', '~')
+        self._ds_tran_combo = combo_sign.join([self.input_param.driving_sys.serial,
+                                               self.input_param.transducer.serial])
 
         if self._ds_tran_combo in self._equip_combos:
             # TODO: fix private func
@@ -175,11 +184,15 @@ class ProtocolDialog(ctk.CTkToplevel):
                                                  is_event=True, event_handling=self._event_handling)
 
         # Choose protocol extraction method
-        protocols = config['Characterization']['Protocols'].split('\n')
+        protocols = get_config_value(logger, config, 'Characterization', 'Protocols',
+                                     'Select protocol excel file...\nAcoustical alignment'
+                                     ).split('\n')
         if self.input_param.is_ac_align:
-            chosen_prot = config['Characterization']['Protocol.ac_align']
+            chosen_prot = get_config_value(logger, config, 'Characterization', 'Protocol.ac_align',
+                                           'Acoustical alignment')
         else:
-            chosen_prot = config['Characterization']['Protocol.excel']
+            chosen_prot = get_config_value(logger, config, 'Characterization', 'Protocol.excel',
+                                           'Select protocol excel file...')
 
         self.prot_combo = self._create_combo("Protocol", protocols, chosen_prot,
                                              self._prot_combo_action)
@@ -231,17 +244,22 @@ class ProtocolDialog(ctk.CTkToplevel):
                                                 is_event=True, event_handling=self._event_handling,
                                                 width=500)
 
-        power_options = config['General']['Power options'].split('\n')
+        gb_pow = get_config_value(logger, config, 'Power', 'Option.glob_pow', 'Global power [mW]')
+        press_pow = get_config_value(logger, config, 'Power', 'Option.press',
+                                     'Max. pressure in free water [MPa]')
+        volt_pow = get_config_value(logger, config, 'Power', 'Option.volt', 'Voltage [V]')
+        ampl_pow = get_config_value(logger, config, 'Power', 'Option.ampl', 'Amplitude [%]')
 
+        power_options = get_config_value(logger, config, 'Power', 'Options', '').split('\n')
         def_power = self.ac_align_seq.chosen_power
         if def_power is not None:
-            if self.ac_align_seq.chosen_power == config['General']['Power option.glob_pow']:
+            if self.ac_align_seq.chosen_power == gb_pow:
                 def_power_value = self.ac_align_seq.global_power*1000  # [W] to [mW]
-            elif self.ac_align_seq.chosen_power == config['General']['Power option.press']:
+            elif self.ac_align_seq.chosen_power == press_pow:
                 def_power_value = self.ac_align_seq.press
-            elif self.ac_align_seq.chosen_power == config['General']['Power option.volt']:
+            elif self.ac_align_seq.chosen_power == volt_pow:
                 def_power_value = self.ac_align_seq.volt
-            elif self.ac_align_seq.chosen_power == config['General']['Power option.ampl']:
+            elif self.ac_align_seq.chosen_power == ampl_pow:
                 def_power_value = self.ac_align_seq.ampl
         else:
             def_power = power_options[0]
@@ -256,9 +274,12 @@ class ProtocolDialog(ctk.CTkToplevel):
         self.power_entry.grid(row=self.row_nr, column=1, padx=10, pady=5, sticky="e")
 
         self.input_param.driving_sys = ds.get_serial_from_name(self.ds_combo.get())
-        self._update_power_options(self.input_param.driving_sys, def_power_value, self.ac_align_seq.chosen_power)
+        self._update_power_options(self.input_param.driving_sys, def_power_value,
+                                   self.ac_align_seq.chosen_power)
 
-        focus_settings = config['General']['Focus options'].split('\n')
+        focus_settings = get_config_value(logger, config, 'Focus', 'Options',
+                                          'Focus wrt exit plane [mm]\nFocus wrt mid bowl [mm]'
+                                          ).split('\n')
         def_focus_setting = focus_settings[0]
         self.focus_combo = self._create_combo("Focus", focus_settings, def_focus_setting,
                                               self._event_handling, width=240)
@@ -347,24 +368,10 @@ class ProtocolDialog(ctk.CTkToplevel):
 
     def _update_power_options(self, cur_ds, def_power_value=0, def_power=None):
 
-        ds_manufact = str(cur_ds.manufact)
-        if ds_manufact == config['Equipment.Manufacturer.SC']['Name']:
-            power_options = config['Equipment.Manufacturer.SC']['Power options'].split('\n')
-
-        elif ds_manufact == config['Equipment.Manufacturer.IGT']['Name']:
-
-            if self._ds_tran_combo in self._equip_combos:
-                power_options = config['Equipment.Manufacturer.IGT']['Power options'].split('\n')
-            else:
-                power_options = [config['General']['Power option.ampl']]
-
-        else:
-            power_options = config['General']['Power options'] .split('\n')
-
         if def_power is None:
-            def_power = power_options[0]
+            def_power = cur_ds.power_options[0]
 
-        self.power_combo.configure(values=power_options)
+        self.power_combo.configure(values=cur_ds.power_options)
         self.power_combo.set(def_power)
 
         self.power_entry.delete(0, tk.END)
@@ -372,10 +379,15 @@ class ProtocolDialog(ctk.CTkToplevel):
 
     def _update_focus_entry(self, focus_option):
 
+        exit_foc = get_config_value(logger, config, 'Focus', 'Option.exit',
+                                    'Focus wrt exit plane [mm]')
+        bowl_foc = get_config_value(logger, config, 'Focus', 'Option.bowl',
+                                    'Focus wrt mid bowl [mm]')
+
         shown_focus = 0
-        if focus_option == config['General']['Focus option.exit']:
+        if focus_option == exit_foc:
             shown_focus = self.focus_wrt_exit_plane_array
-        elif focus_option == config['General']['Focus option.bowl']:
+        elif focus_option == bowl_foc:
             shown_focus = self.focus_wrt_mid_bowl_array
 
         self.focus_combo.set(focus_option)
@@ -524,11 +536,14 @@ class ProtocolDialog(ctk.CTkToplevel):
                 self.com_us.grid_remove()
 
         # Update equipment combo name
-        self._ds_tran_combo = '~'.join([self.input_param.driving_sys.serial,
-                                        self.input_param.transducer.serial])
+        combo_sign = get_config_value(logger, config, 'Equipment', 'Combination sign', '~')
+        self._ds_tran_combo = combo_sign.join([self.input_param.driving_sys.serial,
+                                               self.input_param.transducer.serial])
 
         # Update power options if acoustical alignment is chosen
-        if self.prot_combo.get() == config['Characterization']['Protocol.ac_align']:
+        ac_align_prot = get_config_value(logger, config, 'Characterization', 'Protocol.ac_align',
+                                         'Acoustical alignment')
+        if self.prot_combo.get() == ac_align_prot:
             self._update_power_options(self.input_param.driving_sys)
 
         # Change relative zero coordinates to default due to new equipment
@@ -552,8 +567,9 @@ class ProtocolDialog(ctk.CTkToplevel):
         self.oper_freq_entr.insert(0, int(self.input_param.transducer.fund_freq))
 
         # Update equipment combo name
-        self._ds_tran_combo = '~'.join([self.input_param.driving_sys.serial,
-                                        self.input_param.transducer.serial])
+        combo_sign = get_config_value(logger, config, 'Equipment', 'Combination sign', '~')
+        self._ds_tran_combo = combo_sign.join([self.input_param.driving_sys.serial,
+                                               self.input_param.transducer.serial])
 
         self._event_handling(event)
 
@@ -590,13 +606,18 @@ class ProtocolDialog(ctk.CTkToplevel):
         self.row_nr = self.insert_row - 1
 
         cur_prot = self.prot_combo.get()
-        if cur_prot == config['Characterization']['Protocol.excel']:
+        excel_prot = get_config_value(logger, config, 'Characterization', 'Protocol.excel',
+                                      'Select protocol excel file...')
+        ac_align_prot = get_config_value(logger, config, 'Characterization', 'Protocol.ac_align',
+                                         'Acoustical alignment')
+        if cur_prot == excel_prot:
             self.input_param.is_ac_align = False
 
             # Shift widgets below this point down by updating their grid positions
             for widget in self.grid_slaves():
                 if widget.grid_info()['row'] >= self.insert_row:
-                    widget.grid(row=widget.grid_info()['row'] + 1, column=widget.grid_info()['column'])
+                    widget.grid(row=widget.grid_info()['row'] + 1,
+                                column=widget.grid_info()['column'])
 
             # Path and filename of protocol excel file
             self.path_prot = self._create_entry("Path and filename of protocol excel file",
@@ -608,13 +629,14 @@ class ProtocolDialog(ctk.CTkToplevel):
             button = ctk.CTkButton(master=self, text="Browse", command=self._get_filename)
             button.grid(row=self.row_nr, column=1, padx=10, sticky="e")
 
-        elif cur_prot == config['Characterization']['Protocol.ac_align']:
+        elif cur_prot == ac_align_prot:
             self.input_param.is_ac_align = True
 
             # Shift widgets below this point down by updating their grid positions
             for widget in self.grid_slaves():
                 if widget.grid_info()['row'] >= self.insert_row:
-                    widget.grid(row=widget.grid_info()['row'] + self.n_ac_align_rows, column=widget.grid_info()['column'])
+                    widget.grid(row=widget.grid_info()['row'] + self.n_ac_align_rows,
+                                column=widget.grid_info()['column'])
 
             self._create_ac_align_entries()
 
@@ -968,9 +990,13 @@ class ProtocolDialog(ctk.CTkToplevel):
         focus = float(value)
 
         chosen_focus = self.focus_combo.get()
-        if chosen_focus == config['General']['Focus option.exit']:
+        exit_foc = get_config_value(logger, config, 'Focus', 'Option.exit',
+                                    'Focus wrt exit plane [mm]')
+        bowl_foc = get_config_value(logger, config, 'Focus', 'Option.bowl',
+                                    'Focus wrt mid bowl [mm]')
+        if chosen_focus == exit_foc:
             focus_wrt_exit_plane = focus
-        elif chosen_focus == config['General']['Focus option.bowl']:
+        elif chosen_focus == bowl_foc:
             # Convert wrt mid bowl to wrt exit plane
             if self._ds_tran_combo in self._equip_combos and self.ac_align_seq.DF2SF_a != 0:
                 focus_wrt_exit_plane = (focus - self.ac_align_seq.DF2SF_b) / self.ac_align_seq.DF2SF_a
@@ -1019,10 +1045,16 @@ class ProtocolDialog(ctk.CTkToplevel):
             self.ac_align_seq.transducer = self.input_param.transducer.serial
             self.ac_align_seq.oper_freq = self.input_param.oper_freq  # [kHz]
 
-            folder_struct = f'Output of T [{self.input_param.transducer.name}] - DS [{self.input_param.driving_sys.name}]'
+            folder_struct = (f'Output of T [{self.input_param.transducer.name}] - ' +
+                             f'DS [{self.input_param.driving_sys.name}]')
 
             chosen_prot = self.prot_combo.get()
-            if chosen_prot == config['Characterization']['Protocol.excel']:
+
+            excel_prot = get_config_value(logger, config, 'Characterization', 'Protocol.excel',
+                                          'Select protocol excel file...')
+            ac_align_prot = get_config_value(logger, config, 'Characterization',
+                                             'Protocol.ac_align', 'Acoustical alignment')
+            if chosen_prot == excel_prot:
                 self.input_param.is_ac_align = False
 
                 # Save protocol file path and main directory
@@ -1039,7 +1071,7 @@ class ProtocolDialog(ctk.CTkToplevel):
                 self.ac_align_seq.is_ac_align = False
                 self.input_param.sequences = []
 
-            elif chosen_prot == config['Characterization']['Protocol.ac_align']:
+            elif chosen_prot == ac_align_prot:
                 self.input_param.protocol = chosen_prot
                 self.input_param.is_ac_align = True
                 self.ac_align_seq.is_ac_align = True
@@ -1094,27 +1126,40 @@ class ProtocolDialog(ctk.CTkToplevel):
                 for focus in focus_array:
                     basic_seq = self.ac_align_seq.clone()
 
-                    if chosen_focus == config['General']['Focus option.exit']:
+                    exit_foc = get_config_value(logger, config, 'Focus', 'Option.exit',
+                                                'Focus wrt exit plane [mm]')
+                    bowl_foc = get_config_value(logger, config, 'Focus', 'Option.bowl',
+                                                'Focus wrt mid bowl [mm]')
+                    if chosen_focus == exit_foc:
                         basic_seq.focus_wrt_exit_plane = focus
-                    elif chosen_focus == config['General']['Focus option.bowl']:
+                    elif chosen_focus == bowl_foc:
                         basic_seq.focus_wrt_mid_bowl = focus
 
-                    if chosen_power == config['General']['Power option.glob_pow']:
+                    gb_pow = get_config_value(logger, config, 'Power', 'Option.glob_pow',
+                                              'Global power [mW]')
+                    press_pow = get_config_value(logger, config, 'Power', 'Option.press',
+                                                 'Max. pressure in free water [MPa]')
+                    volt_pow = get_config_value(logger, config, 'Power', 'Option.volt',
+                                                'Voltage [V]')
+                    ampl_pow = get_config_value(logger, config, 'Power', 'Option.ampl',
+                                                'Amplitude [%]')
+                    if chosen_power == gb_pow:
                         basic_seq.global_power = power_value/1000  # SC: gp [W]
-                    elif chosen_power == config['General']['Power option.press']:
+                    elif chosen_power == press_pow:
                         basic_seq.press = power_value
-                    elif chosen_power == config['General']['Power option.volt']:
+                    elif chosen_power == volt_pow:
                         basic_seq.volt = power_value
-                    elif chosen_power == config['General']['Power option.ampl']:
+                    elif chosen_power == ampl_pow:
                         basic_seq.ampl = power_value
 
                     sequences.append(basic_seq)
 
                 self.input_param.sequences = sequences
 
-            self.input_param.temp_dir_output = os.path.join(
-                config['Characterization']['Temporary output path'], folder_struct,
-                f'P [{self.input_param.protocol}]')
+            temp_output_path = get_config_value(logger, config, 'Characterization',
+                                                'Temporary output path', 'C:\\Temp')
+            self.input_param.temp_dir_output = os.path.join(temp_output_path, folder_struct,
+                                                            f'P [{self.input_param.protocol}]')
 
             self.main_prot_entry.delete(0, tk.END)
             self.main_prot_entry.insert(0, self.input_param.protocol)

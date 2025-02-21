@@ -61,6 +61,7 @@ from frontend import check_dialogs
 
 from fus_driving_systems.igt import igt_ds as fds_igt
 from fus_driving_systems.sonic_concepts import sonic_concepts_ds as fds_sc
+from fus_driving_systems.utils import get_config_value
 
 from config.config import config_info
 from config.logging_config import logger
@@ -118,7 +119,9 @@ class Acquisition:
             self.init_scope()
 
             # Initialize ACD processing parameters
-            self.proces_param = self._init_processing(endus=input_param.acquisition_time)
+            self.proces_param = self._init_processing(self.input_param.acd_param['begus'],
+                                                      self.input_param.acd_param['endus'],
+                                                      self.input_param.acd_param['adjust'])
 
             # Connect with positioning system
             print('Initialize positioning system connection...', end='\n')
@@ -158,14 +161,19 @@ class Acquisition:
             if hasattr(self.input_param, 'driving_sys'):
                 ds_manufact = str(self.input_param.driving_sys.manufact)
             else:
-                sys.exit('No driving system manufacturer given for initialization of driving system.')
+                message = ('No driving system manufacturer given for initialization of ' +
+                           'driving system.')
+                logger.critical(message)
+                sys.exit(message)
 
         if ds_connect_info is None:
             if hasattr(self.input_param, 'driving_sys'):
                 ds_connect_info = self.input_param.driving_sys.connect_info
             else:
-                sys.exit('No driving system connection information given for initialization of ' +
-                         'driving system.')
+                message = ('No driving system connection information given for initialization of' +
+                           ' driving system.')
+                logger.critical(message)
+                sys.exit(message)
 
         if is_ac_align is None:
             if hasattr(self.input_param, 'is_ac_align'):
@@ -174,12 +182,20 @@ class Acquisition:
                 is_ac_align = False
 
         if log_path is None:
-            log_path = config_info['Characterization']['Temporary logging path']
+            log_path = get_config_value(logger, config_info, 'Characterization',
+                                        'Temporary logging path',
+                                        'C:\\Temp\\General output folder\\logs')
 
         add_message = ''
         # Driving system of Sonic Concepts
-        if ds_manufact == config_info['Equipment.Manufacturer.SC']['Name']:
-            add_message = config_info['Equipment.Manufacturer.SC']['Additional charac. discon. message']
+        sc_name = get_config_value(logger, config_info, 'Equipment.Manufacturer.SC', 'Name',
+                                   'Sonic Concepts')
+        igt_name = get_config_value(logger, config_info, 'Equipment.Manufacturer.IGT', 'Name',
+                                    'IGT')
+        if ds_manufact == sc_name:
+
+            add_message = get_config_value(logger, config_info, 'Equipment.Manufacturer.SC',
+                                           'Additional charac. discon. message', '')
             self.equipment["ds"] = fds_sc.SonicConcepts()
 
             if check_message:
@@ -188,8 +204,9 @@ class Acquisition:
             self.equipment["ds"].connect(ds_connect_info)
 
         # Driving system of IGT
-        elif ds_manufact == config_info['Equipment.Manufacturer.IGT']['Name']:
-            add_message = config_info['Equipment.Manufacturer.IGT']['Additional charac. discon. message']
+        elif ds_manufact == igt_name:
+            add_message = get_config_value(logger, config_info, 'Equipment.Manufacturer.IGT',
+                                           'Additional charac. discon. message', '')
 
             self.equipment["ds"] = fds_igt.IGT(log_path)
 
@@ -215,7 +232,9 @@ class Acquisition:
                                          log_path,
                                          protocol_name)
         else:
-            logger.error(f"Unknown driving system manufacturer: {ds_manufact}")
+            message = f"Driving system manufacturer {ds_manufact} has not been implemented yet."
+            logger.critical(message)
+            sys.exit(message)
 
 ####################################################################
     def init_scope(self, sampl_freq_multi=None, acquisition_dur_us=None, pico_py_ident=None,
@@ -235,17 +254,19 @@ class Acquisition:
             if hasattr(self.input_param, 'picoscope.pico_py_ident'):
                 pico_py_ident = self.input_param.picoscope.pico_py_ident
             else:
-                sys.exit('No PicoScope serial given for initialization of the PicoScope.')
+                message = 'No PicoScope serial given for initialization of the PicoScope.'
+                logger.critical(message)
+                sys.exit(message)
 
         if sampl_freq_multi is None:
-            # TODO: replace for config default
-            sampl_freq_multi = 50
+            sampl_freq_multi = int(get_config_value(logger, config_info, 'Characterization',
+                                                    'default.sampl_freq_multi', 50))
             if hasattr(self.input_param, 'sampl_freq_multi'):
                 sampl_freq_multi = self.input_param.sampl_freq_multi
 
         if acquisition_dur_us is None:
-            # TODO: replace for config default
-            acquisition_dur_us = 500
+            acquisition_dur_us = float(get_config_value(logger, config_info, 'Characterization',
+                                                        'default.acq_time_us', 500))
             if hasattr(self.input_param, 'acquisition_time'):
                 acquisition_dur_us = self.input_param.acquisition_time
 
@@ -253,17 +274,39 @@ class Acquisition:
             if hasattr(self.input_param, 'oper_freq'):
                 oper_freq = self.input_param.oper_freq
             else:
-                sys.exit('No operating frequency given for initialization of the PicoScope.')
+                message = ('No operating frequency of the transducer given for initialization of ' +
+                           'the PicoScope.')
+                logger.critical(message)
+                sys.exit(message)
 
         self.equipment["scope"] = pico.getScope(pico_py_ident)
 
-        self.equipment["scope"].openUnit(pico.Resolution.DR_14BIT)
+        # Retrieve configuration values
+        pico_resolution_str = get_config_value(logger, config_info, 'Characterization',
+                                               'picoscope.resolution', 'DR_14BIT')
+        pico_channel_str = get_config_value(logger, config_info, 'Characterization',
+                                            'picoscope.channel', 'A')
+        pico_range_str = get_config_value(logger, config_info, 'Characterization',
+                                          'picoscope.range', '500mV')
+        pico_coupling_str = get_config_value(logger, config_info, 'Characterization',
+                                             'picoscope.coupling', 'DC')
+        pico_probe_str = get_config_value(logger, config_info, 'Characterization',
+                                          'picoscope.probe_multi', 'x1')
+
+        # Convert string values to the corresponding Picoscope enums
+        pico_resolution = getattr(pico.Resolution, pico_resolution_str, pico.Resolution.DR_14BIT)
+        pico_channel = getattr(pico.Channel, pico_channel_str, pico.Channel.A)
+        pico_range = getattr(pico.Range, pico_range_str, pico.Range.RANGE_500MV)
+        pico_coupling = getattr(pico.Coupling, pico_coupling_str.upper(), pico.Coupling.DC)
+        pico_probe = getattr(pico.Probe, pico_probe_str.lower(), pico.Probe.x1)
+
+        self.equipment["scope"].openUnit(pico_resolution)
 
         # #        self.equipment["scope"].closeChannels()
         # In an exploration phase using the picoscope with the same generator settings
         # Determine the max voltage to set the range (pico.Range.RANGE_10V)
-        self.equipment["scope"].openChannel(pico.Channel.A, pico.Range.RANGE_500mV,
-                                            pico.Coupling.DC, pico.Probe.x1)
+        self.equipment["scope"].openChannel(pico_channel, pico_range,
+                                            pico_coupling, pico_probe)
 
         # Calculate and set sampling frequency
         self.sampling_freq = sampl_freq_multi*oper_freq*1e3  # convert kHz to Hz
@@ -279,8 +322,9 @@ class Acquisition:
         logger.debug(f'duration_us: {acquisition_dur_us}, sample count: {self.sample_count}')
 
         # Set trigger threshold on EXT channel to 0.5V
-        threshold = 0.5
-        self.equipment["scope"].initEXTTrigger(pico.Probe.x1, threshold,
+        threshold = float(get_config_value(logger, config_info, 'Characterization',
+                                           'picoscope.trigger_threshold_v', '0.5'))
+        self.equipment["scope"].initEXTTrigger(pico_probe, threshold,
                                                direction=pico.Trigger.Direction.RISING,
                                                ignoredSamples=0, timeout=0)
         time.sleep(4)
@@ -355,8 +399,10 @@ class Acquisition:
         self.sequence = sequence
 
         # Check existance of directory
+        output_name_suffix = get_config_value(logger, config_info, 'Characterization',
+                                              'output_name_suffix', 'output_data')
         outfile = os.path.join(self.input_param.temp_dir_output, 'sequence_' +
-                               str(sequence.seq_number) + '_output_data.ini')
+                               str(sequence.seq_number) + f'_{output_name_suffix}.ini')
         self._check_file(outfile)
 
         print('Initialize grid...', end='\n')
@@ -397,11 +443,13 @@ class Acquisition:
         head, tail = os.path.split(self.output["outputINI"])
         if not os.path.isdir(head):  # if incorrect directory or no directory is given use CWD
             os.makedirs(head, exist_ok=True)
-            logger.info(f'Directory does not exist, so it is created: {head}')
+            logger.debug(f'Directory does not exist, so it is created: {head}')
 
         fileok = not os.path.isfile(self.output["outputINI"])
         i = 0
-        imax = int(config_info['General']['Maximum number of output filename'])
+
+        imax = int(get_config_value(logger, config_info, 'General',
+                                    'Maximum number of output filename', 1000))
         filename = os.path.join(head, tail)
 
         while not fileok and i <= imax:
@@ -434,15 +482,10 @@ class Acquisition:
         self.output["outputCoord"] = os.path.splitext(filename)[0]+'.csv'
 
         # Add header
+        header = get_config_value(logger, config_info, 'Characterization', 'coord_excel_columns',
+                                  '').split('\n')
         with open(self.output["outputCoord"], 'a', newline='') as outcoord:
-            csv.writer(outcoord, delimiter=',').writerow(['Measurement number', 'Cluster number',
-                                                          'Indices number', 'X-coordinate [mm]',
-                                                          'Y-coordinate [mm]', 'Z-coordinate [mm]',
-                                                          'Row number', 'Column number',
-                                                          'Slice number',
-                                                          'Absolute X-coordinate [mm]',
-                                                          'Absolute Y-coordinate [mm]',
-                                                          'Absolute Z-coordinate [mm]'])
+            csv.writer(outcoord, delimiter=',').writerow(header)
 
         self.output["outputJSON"] = os.path.splitext(filename)[0]+'.json'
         self.output["outputRAW"] = os.path.splitext(filename)[0]+'.raw'
@@ -471,7 +514,10 @@ class Acquisition:
         self.sequence.vect_sl = np.array(self.sequence.vect_sl)
 
         # Time in us for the US to propagate ever vect_row used for ACD processing
-        self.proces_param["row_pixel_us"] = np.linalg.norm(self.sequence.vect_row)/1.5
+        speed_of_sound_mm_p_us = float(get_config_value(logger, config_info, 'General',
+                                                        'Speed of sound water [m/s]', 1500))/1000
+        self.proces_param["row_pixel_us"] = np.linalg.norm(self.sequence.vect_row
+                                                           )/speed_of_sound_mm_p_us
 
     def _init_grid_excel(self):
         """
@@ -484,7 +530,7 @@ class Acquisition:
         # Import excel file containing coordinates
         excel_path = os.path.join(self.sequence.path_coord_excel)
         if os.path.exists(excel_path):
-            logger.info('Extract coordinates from ' + excel_path)
+            logger.debug('Extract coordinates from ' + excel_path)
             ext = os.path.splitext(excel_path)[1]
             if ext == '.xlsx':
                 self.grid_param["coord_excel_data"] = pd.read_excel(excel_path, engine='openpyxl')
@@ -493,13 +539,27 @@ class Acquisition:
             elif ext == '.csv':
                 self.grid_param["coord_excel_data"] = pd.read_csv(excel_path)
             else:
-                logger.error(f'Extension {ext} of {excel_path} unknown.')
+                logger.warning(f'Extension {ext} of {excel_path} unknown.')
+                try:
+                    self.grid_param["coord_excel_data"] = pd.read_excel(excel_path)
+                except Exception:
+                    message = ('Excel path cannot be read using pandas.read_excel(). Please ' +
+                               'convert the coordinate file to one of the following extensions: ' +
+                               '.xlsx, .xls or .csv.')
+                    logger.critical(message)
+                    sys.exit(message)
 
             # Determine amount of rows, columns and slices
-            self.grid_param["nrow"] = self.grid_param["coord_excel_data"].loc[:, "Row number"].max()
-            self.grid_param["ncol"] = (self.grid_param["coord_excel_data"].loc[:, "Column number"]
+            row_col = get_config_value(logger, config_info, 'Characterization',
+                                       'coord_excel_columns.row', 'Row number')
+            col_col = get_config_value(logger, config_info, 'Characterization',
+                                       'coord_excel_columns.col', 'Column number')
+            sl_col = get_config_value(logger, config_info, 'Characterization',
+                                      'coord_excel_columns.sl', 'Slice number')
+            self.grid_param["nrow"] = self.grid_param["coord_excel_data"].loc[:, row_col].max()
+            self.grid_param["ncol"] = (self.grid_param["coord_excel_data"].loc[:, col_col]
                                        .max())
-            self.grid_param["nsl"] = (self.grid_param["coord_excel_data"].loc[:, "Slice number"]
+            self.grid_param["nsl"] = (self.grid_param["coord_excel_data"].loc[:, sl_col]
                                       .max())
 
             self.sequence.nslices_nrow_ncol = np.array((self.grid_param["nsl"],
@@ -507,8 +567,10 @@ class Acquisition:
                                                         self.grid_param["ncol"]))
 
         else:
-            logger.error("Pipeline is cancelled. The following direction cannot be found: "
-                         + excel_path)
+            message = ('Pipeline is cancelled. The following direction cannot be found: ' +
+                       f'{excel_path}')
+            logger.critical(message)
+            sys.exit(message)
 
     # REMEMBER! THIS WILL AFFECT THE POSTPROCESSING PIPELINE!
     def _save_params_ini(self):
@@ -526,7 +588,8 @@ class Acquisition:
         self._save_acq_param(params)
         self._save_acd_proces_param(params)
 
-        config_fold = config_info['General']['Configuration file folder']
+        config_fold = get_config_value(logger, config_info, 'General', 'Configuration file folder',
+                                       'config')
         with open(os.path.join(config_fold, self.output["outputINI"]), 'w') as configfile:
             params.write(configfile)
         logger.info(f'Parameters saved to {self.output["outputINI"]}')
@@ -537,13 +600,15 @@ class Acquisition:
         """
 
         params['Versions'] = {}
-        params['Versions']['Sonorover One software'] = (
-            config_info['Versions']['sonorover one software']
-            )
+        params['Versions']['Sonorover One software'] = get_config_value(logger, config_info,
+                                                                        'Versions',
+                                                                        'sonorover one software',
+                                                                        'Unknown')
 
         # Get current date and time for logging
         date_time = datetime.now()
-        timestamp = date_time.strftime('%Y-%m-%d_%H-%M-%S')
+        timestamp = date_time.strftime(get_config_value(logger, config_info, 'Logging',
+                                                        'Timestamp format', '%Y-%m-%d_%H-%M-%S'))
         params['General'] = {}
         params['General']['Timestamp'] = str(timestamp)
         params['General']['Path and filename of protocol excel file'] = (
@@ -591,7 +656,9 @@ class Acquisition:
 
         # Only log steer_info when IGT driving system is used
         ds_manufact = str(self.input_param.driving_sys.manufact)
-        if ds_manufact == config_info['Equipment.Manufacturer.IGT']['Name']:
+        igt_name = get_config_value(logger, config_info, 'Equipment.Manufacturer.IGT', 'Name',
+                                    'IGT')
+        if ds_manufact == igt_name:
             params['Equipment']['Transducer.steer_info'] = self.input_param.transducer.steer_info
 
         params['Equipment']['Transducer.is_active'] = str(self.input_param.transducer.is_active)
@@ -613,17 +680,39 @@ class Acquisition:
         params['Sequence']['Focus wrt bowl middle [mm]'] = str(self.sequence.focus_wrt_mid_bowl)
 
         ds_manufact = str(self.input_param.driving_sys.manufact)
-        if ds_manufact == config_info['Equipment.Manufacturer.SC']['Name']:
-            params['Sequence']['SC - Global power [W]'] = str(self.sequence.global_power)
-        elif ds_manufact == config_info['Equipment.Manufacturer.IGT']['Name']:
+
+        igt_name = get_config_value(logger, config_info, 'Equipment.Manufacturer.IGT', 'Name',
+                                    'IGT')
+
+        gp_power = get_config_value(logger, config_info, 'Power', 'Option.glob_power',
+                                    'Global power [mW]')
+        press_power = get_config_value(logger, config_info, 'Power', 'Option.press',
+                                       'Max. pressure in free water [MPa]')
+        volt_power = get_config_value(logger, config_info, 'Power', 'Option.volt',
+                                      'Voltage [V]')
+        ampl_power = get_config_value(logger, config_info, 'Power', 'Option.ampl',
+                                      'Amplitude [%]')
+
+        if ds_manufact == igt_name:
             params['Sequence']['Phases [degrees]'] = str(self.equipment["ds"]
                                                          .sent_seqs[0]
                                                          ['phases'])
-            params['Sequence']['IGT - Maximum pressure in free water [MPa]'] = (
-                str(self.sequence.press)
-                )
-            params['Sequence']['IGT - Voltage [V]'] = str(self.sequence.volt)
-            params['Sequence']['IGT - Amplitude [%]'] = str(self.sequence.ampl)
+
+            params['Sequence']['Maximum pressure in free water [MPa]'] = (str(self.sequence.press))
+            params['Sequence']['Voltage [V]'] = str(self.sequence.volt)
+            params['Sequence']['Amplitude [%]'] = str(self.sequence.ampl)
+        elif self.input_param.driving_sys.chosen_power == gp_power:
+            params['Sequence']['Global power [W]'] = str(self.sequence.global_power)
+        elif self.input_param.driving_sys.chosen_power == press_power:
+            params['Sequence']['Maximum pressure in free water [MPa]'] = (str(self.sequence.press))
+        elif self.input_param.driving_sys.chosen_power == ampl_power:
+            params['Sequence']['Amplitude [%]'] = str(self.sequence.ampl)
+        elif self.input_param.driving_sys.chosen_power == volt_power:
+            params['Sequence']['Voltage [V]'] = str(self.sequence.volt)
+        else:
+            params['Sequence']['Unknown power unit'] = str(self.sequence.power_value)
+
+        if self.input_param.driving_sys.require_conv_eq:
 
             params['Sequence']["Voltage [V] vs. amplitude [%] equation (A = a*V + b)"] = (
                 f"A = {self.sequence.V2A_a}*V + {self.sequence.V2A_b} \n ")
@@ -656,9 +745,6 @@ class Acquisition:
             params['Sequence']["Normalized pressure [-] based on chosen focal depth wrt exit " +
                                f"plane of {self.sequence._focus_wrt_exit_plane} [mm]"] = (
                                f"{self.sequence._eq_factor} \n ")
-
-        else:
-            params['Sequence']['Unknown power unit'] = str(self.sequence.power_value)
 
         params['Sequence']['Pulse duration [ms]'] = str(self.sequence.pulse_dur)
         params['Sequence']['Pulse repetition interval [ms]'] = str(self.sequence.pulse_rep_int)
@@ -772,7 +858,9 @@ class Acquisition:
         # Extract corresponding sensitivity value
         datasheet_path = self.input_param.hydrophone.sens_v_pa
         sens_data = pd.read_excel(datasheet_path)
-        freq_header = config_info['Characterization.Equipment']['Hydrophone datasheet freq. header']
+
+        freq_header = get_config_value(logger, config_info, 'Characterization.Equipment',
+                                       'Hydrophone datasheet freq. header', 'Freq(MHz)')
         freq_mhz = round(self.input_param.oper_freq/1000, 2)
         match_row = sens_data.loc[sens_data[freq_header] == freq_mhz]
 
@@ -915,7 +1003,7 @@ class Acquisition:
             col_nr = k
             sl_nr = i
 
-        logger.info(f'Moving to position: {dest_xyz[0]:.3f}, {dest_xyz[1]:.3f}, {dest_xyz[2]:.3f}')
+        logger.debug(f'Moving to position: {dest_xyz[0]:.3f}, {dest_xyz[1]:.3f}, {dest_xyz[2]:.3f}')
 
         n = i*self.grid_param["nrow"]*self.grid_param["ncol"]+j*self.grid_param["ncol"]+k
         total_n = self.grid_param["nrow"]*self.grid_param["ncol"]*self.grid_param["nsl"]
@@ -942,7 +1030,9 @@ class Acquisition:
             if hasattr(self, 'sequence'):
                 sequence = self.sequence
             else:
-                sys.exit('No sequence known to be executed.')
+                message = 'No sequence known to be executed.'
+                logger.critical(message)
+                sys.exit(message)
 
         # Start picoscope acquisition on trigger
         self.equipment["scope"].startAcquisitionTB(self.sample_count, self.timebase)
@@ -954,7 +1044,9 @@ class Acquisition:
         # Wait for acquisition to complete
         ok = self.equipment["scope"].waitAcquisition()
 
-        if not ok and attempt < 5:
+        require_attempts = int(get_config_value(logger, config_info, 'Characterization',
+                                                'picoscope.reacquire_attempts', 5))
+        if not ok and attempt < require_attempts:
             # Redo acquisition if waiting period is over and no data is acquired
             attempt += 1
             self.acquire_data(attempt)

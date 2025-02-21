@@ -32,15 +32,17 @@ https://github.com/Donders-Institute/Radboud-FUS-measurement-kit
 
 # Basic packages
 import os
+import sys
 import tkinter as tk
 
 # Miscellaneous packages
 import customtkinter as ctk
 
-import logging
-
 # Own packages
 from config.config import config_info as config
+from config.logging_config import logger
+
+from backend.utils import get_config_value
 
 
 class ACDParamDialog(ctk.CTkToplevel):
@@ -87,8 +89,10 @@ class ACDParamDialog(ctk.CTkToplevel):
             self._resize_window()
 
         except AttributeError:
-            print(logging.exception('AttributeError'))
+            message = 'AttributeError in protocol dialog'
+            logger.critical(message)
             self._cancel_action()
+            sys.exit(message)
 
     def _resize_window(self):
         """
@@ -103,7 +107,9 @@ class ACDParamDialog(ctk.CTkToplevel):
         # Display this window on top of all windows
         self.lift()
         self.attributes('-topmost', True)
-        self.after(5000, lambda: self.attributes('-topmost', False))  # stay for 5s
+        stay_topmost_in_ms = int(get_config_value(logger, config, 'Characterizaton',
+                                                  'acd_dialog.stay_topmost_in_ms', 5000))
+        self.after(stay_topmost_in_ms, lambda: self.attributes('-topmost', False))  # stay for 5s
 
     def _create_entries(self):
         """
@@ -121,10 +127,10 @@ class ACDParamDialog(ctk.CTkToplevel):
                                         is_event=True, event_handling=self._event_handling,
                                         width=200)
 
-        self.adjust = self._create_combo("Moving processing window along?",
-                                         config['Characterization']['ACD adjustment'].split('\n'),
-                                         self.acd_param["adjust"],
-                                         self._event_handling)
+        acd_adjust_options = get_config_value(logger, config, 'Characterization', 'ACD adjustment',
+                                              '').split('\n')
+        self.adjust = self._create_combo("Moving processing window along?", acd_adjust_options,
+                                         self.acd_param["adjust"], self._event_handling)
 
         # Error message label
         self._add_row()

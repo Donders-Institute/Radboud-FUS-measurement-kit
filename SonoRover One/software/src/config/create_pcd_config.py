@@ -37,6 +37,18 @@ CONFIG_FILE = 'pcd_config.ini'
 
 pcd_config = configparser.ConfigParser(interpolation=None)
 
+pcd_config['Default'] = {}
+pcd_config['Default']['output_dir'] = 'C:\\Temp\\PCD_acquisition_output'
+pcd_config['Default']['sampl_freq_multi'] = str(50)
+pcd_config['Default']['acquisition_time_us'] = str(500)
+pcd_config['Default']['pulse_dur_ms'] = str(0.2)
+pcd_config['Default']['per_elem_ampl'] = str(5)
+pcd_config['Default']['all_elems_ampl'] = str(1)
+
+pcd_config['Limit'] = {}
+pcd_config['Limit']['all_elems_ampl'] = str(5)
+pcd_config['Limit']['per_elem_ampl'] = str(10)
+
 pcd_config['IS_PCD15287_01001'] = {}
 pcd_config['IS_PCD15287_01001']['Baseline path'] = "C:\\Temp\\Measurements performed by researchers\\PCD measurements\\Baseline measurements\\Imasonic_15287_1001_R75"
 pcd_config['IS_PCD15287_01001']['Baseline files'] = '\n'.join(

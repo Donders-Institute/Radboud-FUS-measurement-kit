@@ -41,10 +41,12 @@ import fus_driving_systems as fds
 
 import backend.acquisition as acq
 from config.logging_config import logger
+from config.config import config_info as config
 from backend.scan_iter import Scan_Iter
 
 from backend.motor_GRBL import MotorsXYZ
 from backend import pico
+from backend.utils import get_config_value
 
 
 class TestAcquisition(acq.Acquisition):
@@ -125,26 +127,33 @@ class TestAcquisition(acq.Acquisition):
         self.init_scan(scan=scan)
         t0 = time.time()
 
+        x_coord_col = get_config_value(logger, config, 'Characterization',
+                                       'coord_excel_columns.x_coord', 'X-coordinate [mm]')
+        y_coord_col = get_config_value(logger, config, 'Characterization',
+                                       'coord_excel_columns.y_coord', 'Y-coordinate [mm]')
+        z_coord_col = get_config_value(logger, config, 'Characterization',
+                                       'coord_excel_columns.z_coord', 'Z-coordinate [mm]')
+
         counter = 0
         for s, r, c in self.grid:
             if self.sequence.use_coord_excel:
-                destXYZ = [self.grid_param["coord_excel_data"].loc[counter, "X-coordinate [mm]"]
+                destXYZ = [self.grid_param["coord_excel_data"].loc[counter, x_coord_col]
                            + coord_zero[0],
-                           self.grid_param["coord_excel_data"].loc[counter, "Y-coordinate [mm]"]
+                           self.grid_param["coord_excel_data"].loc[counter, y_coord_col]
                            + coord_zero[1],
-                           self.grid_param["coord_excel_data"].loc[counter, "Z-coordinate [mm]"]
+                           self.grid_param["coord_excel_data"].loc[counter, z_coord_col]
                            + coord_zero[2]]
             else:
                 destXYZ = self.starting_pos + s*self.vectSl + r*self.vectCol + c*self.vectRow
 
-            logger.info(f'src: [{s}, {r}, {c}], destXYZ: {destXYZ[0]:.3f}, {destXYZ[1]:.3f}, {destXYZ[2]:.3f}')
+            logger.debug(f'src: [{s}, {r}, {c}], destXYZ: {destXYZ[0]:.3f}, {destXYZ[1]:.3f}, {destXYZ[2]:.3f}')
             self.equipment["motors"].move(list(destXYZ), relative=False)
             counter = counter + 1
 
         # time.sleep(delay_s)
         t1 = time.time()
         delta_t = t1-t0
-        print(f'duration: {delta_t}')
+        logger.info(f'duration: {delta_t}')
         return delta_t
 
     def pulse_only(self, performAllProtocols, repetitions=1, delay_s=1.0, log_dir='', is_sham = False):
@@ -168,23 +177,45 @@ class TestAcquisition(acq.Acquisition):
         """
         self.cplx_data = np.zeros((2, self.grid_param["nsl"], self.grid_param["nrow"], self.grid_param["ncol"]), dtype='float32')
 
+        # Retrieve column names
+        meas_num_col = get_config_value(logger, config, 'Characterization',
+                                        'coord_excel_columns.meas_num', 'Measurement number')
+        clus_num_col = get_config_value(logger, config, 'Characterization',
+                                        'coord_excel_columns.clus_num', 'Cluster number')
+        ind_num_col = get_config_value(logger, config, 'Characterization',
+                                       'coord_excel_columns.ind_num', 'Indices number')
+
+        x_coord_col = get_config_value(logger, config, 'Characterization',
+                                       'coord_excel_columns.x_coord', 'X-coordinate [mm]')
+        y_coord_col = get_config_value(logger, config, 'Characterization',
+                                       'coord_excel_columns.y_coord', 'Y-coordinate [mm]')
+        z_coord_col = get_config_value(logger, config, 'Characterization',
+                                       'coord_excel_columns.z_coord', 'Z-coordinate [mm]')
+
+        row_col = get_config_value(logger, config, 'Characterization', 'coord_excel_columns.row',
+                                   'Row number')
+        col_col = get_config_value(logger, config, 'Characterization', 'coord_excel_columns.col',
+                                   'Column number')
+        sl_col = get_config_value(logger, config, 'Characterization', 'coord_excel_columns.sl',
+                                  'Slice number')
+
         counter = 0
         for i in range(self.grid_param["nsl"]):
             for j in range(self.grid_param["nrow"]):
                 for k in range(self.grid_param["ncol"]):
 
                     if self.protocol.use_coord_excel:
-                        measur_nr = self.grid_param["coord_excel_data"].loc[counter, "Measurement number"]
-                        cluster_nr = self.grid_param["coord_excel_data"].loc[counter, "Cluster number"]
-                        indices_nr = self.grid_param["coord_excel_data"].loc[counter, "Indices number"]
-                        relatXYZ = [self.grid_param["coord_excel_data"].loc[counter, "X-coordinate [mm]"],
-                                    self.grid_param["coord_excel_data"].loc[counter, "Y-coordinate [mm]"],
-                                    self.grid_param["coord_excel_data"].loc[counter, "Z-coordinate [mm]"]]
+                        measur_nr = self.grid_param["coord_excel_data"].loc[counter, meas_num_col]
+                        cluster_nr = self.grid_param["coord_excel_data"].loc[counter, clus_num_col]
+                        indices_nr = self.grid_param["coord_excel_data"].loc[counter, ind_num_col]
+                        relatXYZ = [self.grid_param["coord_excel_data"].loc[counter, x_coord_col],
+                                    self.grid_param["coord_excel_data"].loc[counter, y_coord_col],
+                                    self.grid_param["coord_excel_data"].loc[counter, z_coord_col]]
                         destXYZ = [relatXYZ[0] + coord_zero[0], relatXYZ[1] + coord_zero[1],
                                    relatXYZ[2] + coord_zero[2]]
-                        row_nr = self.grid_param["coord_excel_data"].loc[counter, "Row number"]
-                        col_nr = self.grid_param["coord_excel_data"].loc[counter, "Column number"]
-                        sl_nr = self.grid_param["coord_excel_data"].loc[counter, "Slice number"]
+                        row_nr = self.grid_param["coord_excel_data"].loc[counter, row_col]
+                        col_nr = self.grid_param["coord_excel_data"].loc[counter, col_col]
+                        sl_nr = self.grid_param["coord_excel_data"].loc[counter, sl_col]
 
                     else:
                         measur_nr = counter + 1
@@ -231,8 +262,8 @@ class TestAcquisition(acq.Acquisition):
         logger.info('Grid is initialized')
 
         duration = self.scan_only(self.input_param.coord_zero, delay_s=0.0, scan=scan)
-        print(f'duration: {duration}: ns: {self.grid_param["nsl"]},  nr: ' +
-              f'{self.grid_param["nrow"]}, nc: {self.grid_param["ncol"]},')
+        logger.info(f'duration: {duration}: ns: {self.grid_param["nsl"]},  nr: ' +
+                    f'{self.grid_param["nrow"]}, nc: {self.grid_param["ncol"]},')
 
     def check_scan_ds_combo(self, sequence, scan='Dir'):
         """
@@ -257,16 +288,27 @@ class TestAcquisition(acq.Acquisition):
         self.init_scan(scan=scan)
         t0 = time.time()
 
+        # Retrieve column names
+        x_coord_col = get_config_value(logger, config, 'Characterization',
+                                       'coord_excel_columns.x_coord', 'X-coordinate [mm]')
+        y_coord_col = get_config_value(logger, config, 'Characterization',
+                                       'coord_excel_columns.y_coord', 'Y-coordinate [mm]')
+        z_coord_col = get_config_value(logger, config, 'Characterization',
+                                       'coord_excel_columns.z_coord', 'Z-coordinate [mm]')
+
         counter = 0
         for s, r, c in self.grid:
             if self.sequence.use_coord_excel:
-                destXYZ = [self.grid_param["coord_excel_data"].loc[counter, "X-coordinate [mm]"] + self.input_param.coord_zero[0],
-                           self.grid_param["coord_excel_data"].loc[counter, "Y-coordinate [mm]"] + self.input_param.coord_zero[1],
-                           self.grid_param["coord_excel_data"].loc[counter, "Z-coordinate [mm]"] + self.input_param.coord_zero[2]]
+                destXYZ = [self.grid_param["coord_excel_data"].loc[counter, x_coord_col] +
+                           self.input_param.coord_zero[0],
+                           self.grid_param["coord_excel_data"].loc[counter, y_coord_col] +
+                           self.input_param.coord_zero[1],
+                           self.grid_param["coord_excel_data"].loc[counter, z_coord_col] +
+                           self.input_param.coord_zero[2]]
             else:
                 destXYZ = self.starting_pos + s*self.vectSl + r*self.vectCol + c*self.vectRow
 
-            logger.info(f'src: [{s}, {r}, {c}], destXYZ: {destXYZ[0]:.3f}, {destXYZ[1]:.3f}, {destXYZ[2]:.3f}')
+            logger.debug(f'src: [{s}, {r}, {c}], destXYZ: {destXYZ[0]:.3f}, {destXYZ[1]:.3f}, {destXYZ[2]:.3f}')
             self.equipment["motors"].move(list(destXYZ), relative=False)
 
             # Execute pulse sequence
@@ -277,7 +319,7 @@ class TestAcquisition(acq.Acquisition):
         # time.sleep(delay_s)
         t1 = time.time()
         delta_t = t1-t0
-        print(f'duration: {delta_t}')
+        logger.info(f'duration: {delta_t}')
 
 
 ###########################################################################################

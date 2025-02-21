@@ -38,6 +38,8 @@ import copy
 
 # Own packages
 from config.config import config_info as config
+from backend.utils import get_config_value
+from config.logging_config import logger
 
 
 class PicoScope:
@@ -69,11 +71,14 @@ class PicoScope:
 
         try:
             self.serial = serial
-            self.name = config['Characterization.Equipment.' + serial]['Name']
-            self.pico_py_ident = (config['Characterization.Equipment.' + serial]
-                                  ['Pico.py identification'])
+            section = 'Characterization.Equipment.' + serial
+            self.name = get_config_value(logger, config, section, 'Name', 'Unknown PicoScope name')
+            self.pico_py_ident = get_config_value(logger, config, section, 'Pico.py identification',
+                                                  '', True)
         except KeyError:
-            sys.exit(f'No PicoScope with serial number {serial} found in configuration file.')
+            message = f'No PicoScope with serial number {serial} found in configuration file.'
+            logger.critical(message)
+            sys.exit(message)
 
     def __str__(self):
         """
@@ -115,7 +120,13 @@ def get_pico_serials():
         List[str]: Serial numbers for available PicoScopes.
     """
 
-    pico_serial = config['Characterization.Equipment']['PicoScopes'].split(', ')
+    pico_serial = get_config_value(logger, config, 'Characterization.Equipment', 'PicoScopes',
+                                   '').split('\n')
+
+    if len(pico_serial) < 1:
+        message = 'No PicoScopes found in configuration file.'
+        logger.critical(message)
+        sys.exit(message)
 
     return pico_serial
 
@@ -131,11 +142,20 @@ def get_pico_names():
     names = []
     for serial in get_pico_serials():
         try:
-            pico_name = config['Characterization.Equipment.' + serial]['Name']
+            section = 'Characterization.Equipment.' + serial
+            pico_name = get_config_value(logger, config, section, 'Name', 'Unknown PicoScope name')
         except KeyError:
-            sys.exit(f'No PicoScope with serial number {serial} found in' +
-                     ' configuration file.')
+            message = (f'No PicoScope with serial number {serial} found in' +
+                       ' configuration file.')
+            logger.critical(message)
+            sys.exit(message)
+
         names.append(pico_name)
+
+    if len(names) < 1:
+        message = 'No PicoScopes found in configuration file.'
+        logger.critical(message)
+        sys.exit(message)
 
     return names
 
@@ -154,12 +174,17 @@ def get_pico_list():
             pico = PicoScope()
             pico.set_pico_info(serial)
         except KeyError:
-            sys.exit(f'No PicoScope with serial number {serial} found in' +
-                     ' configuration file.')
+            message = (f'No PicoScope with serial number {serial} found in' +
+                       ' configuration file.')
+            logger.critical(message)
+            sys.exit(message)
+
         pico_list.append(pico)
 
     if len(pico_list) < 1:
-        sys.exit('No PicoScopes found in configuration file.')
+        message = 'No PicoScopes found in configuration file.'
+        logger.critical(message)
+        sys.exit(message)
 
     return pico_list
 
