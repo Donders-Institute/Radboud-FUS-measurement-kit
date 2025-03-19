@@ -93,8 +93,10 @@ def initialize_logger(log_dir, filename):
     file_handler.setLevel(file_log_level)
     console_handler.setLevel(console_log_level)
 
-    logger.setLevel(console_log_level)
+    logger.setLevel(min(file_log_level, console_log_level))
+
     logger.addHandler(console_handler)
+    logger.addHandler(file_handler)
 
     return logger
 
