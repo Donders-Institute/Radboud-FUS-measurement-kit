@@ -185,9 +185,9 @@ config['Characterization']['default.pos_com_port'] = 'COM3'
 config['Characterization']['default.temp'] = ''
 config['Characterization']['default.dis_oxy'] = ''
 
-config['Characterization']['default.x_coord_zero'] = str(-62.2)
-config['Characterization']['default.y_coord_zero'] = str(-60.6)
-config['Characterization']['default.z_coord_zero'] = str(-155.528)
+config['Characterization']['default.x_coord_zero'] = str(-63)
+config['Characterization']['default.y_coord_zero'] = str(-62.5)
+config['Characterization']['default.z_coord_zero'] = str(-154)
 
 config['Characterization']['default.perform_all_seqs'] = str(True)
 
