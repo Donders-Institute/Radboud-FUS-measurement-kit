@@ -21,13 +21,15 @@
 # 📗 Table of Contents
 
 - [📖 About the Project](#about-project)
-  - [Key Features](#key-features)
+  - [🚀 Key Features](#key-features)
   - [👥 Authors](#authors)
   - [✒️ How to cite](#how-to-cite)
 - [💻 Getting Started](#getting-started)
-  - [Setup](#setup)
-  - [Install](#install)
-  - [Usage](#usage)
+  - [🔧 Installation](#install)
+  - [📋 Usage](#usage)
+- [🧰 Configuration](#config)
+  - [⚙ Main Configuration File](#main-config)
+  - [📻 How to add your own equipment](#add-equip)
 - [🔭 Future Features](#future-features)
 - [🤝 Contributing](#contributing)
 - [📝 License](#license)
@@ -44,7 +46,7 @@ This project is facilitated by the Radboud Focused Ultrasound Initiative. For mo
 
 <!-- Features -->
 
-## Key Features <a name="key-features"></a>
+## 🚀 Key Features <a name="key-features"></a>
 
 - **Affordable**
 - **High quality**
@@ -81,7 +83,7 @@ Margely Cornelissen, Stein Fekkes (Radboud University, Nijmegen, The Netherlands
 
 # 💻 Getting Started <a name="getting-started"></a>
 
-## Setup <a name="setup"></a>
+## 🔧 Installation <a name="install"></a>
 
 ### Hardware
 
@@ -92,7 +94,6 @@ The hardware files are stored as native solidworks files and as step format. The
 #### Important Note
 
 **This package is developed specifically for Windows operating systems.** While it might work in other environments with some modifications, full support is provided only for Windows.
-
 
 Clone this repository to your desired folder:
 
@@ -108,10 +109,6 @@ Clone this repository to your desired folder:
 	2. Click on 'Add' and select 'Clone repository...'.
 	3. Choose 'URL' and paste the following repository URL: [https://github.com/Donders-Institute/Radboud-FUS-measurement-kit.git](https://github.com/Donders-Institute/Radboud-FUS-measurement-kit.git)
 	4. Choose your desired folder and clone the repository.
-
-## Install <a name="install"></a>
-
-### Software
 
 **Seamless Integration and Compatibility**: The current SonoRover One software utilizes a standardized [focused ultrasound driving system software package](https://github.com/Donders-Institute/Radboud-FUS-driving-system-software). This approach allows you to easily incorporate equipment with different communication protocols into the Radboud FUS driving system software, making it available in the SonoRover One system. By following an abstract communication structure, the software can seamlessly operate with equipment from various manufacturers, ensuring consistent, centralized updates and eliminating the need for direct management of communication protocols in both standalone and experimental settings.
 
@@ -149,7 +146,7 @@ If you encounter issues with the batch file not being recognized or errors durin
 - The repository has been cloned correctly and contains the necessary files.
 
 
-## Usage <a name="usage"></a>
+## 📋 Usage <a name="usage"></a>
 
 ### Software
 
@@ -236,6 +233,279 @@ After all parameters are set, click 'ok' to start the characterization. Log file
 ![image](https://github.com/Donders-Institute/Radboud-FUS-measurement-kit/assets/134381864/dcc80f2d-cc04-42ec-afbc-a19f55aed547)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+<!-- CONFIGURATION -->
+
+# 🧰 Configuration <a name="config"></a>
+
+The SonoRover One software uses a comprehensive configuration system to control its behavior. This section explains how to modify configuration settings and add new equipment to the system.
+
+## ⚙️ Main Configuration File <a name="main-config"></a>
+
+The main configuration file is located at `Radboud-FUS-measurement-kit/SonoRover_One/software/src/config/characterization_config.ini`. You can either modify this file directly or use the provided `create_config.py` script to regenerate it with your changes.
+
+### General Settings
+
+```ini
+[General]
+maximum number of output filename = 1000
+```
+
+- **maximum number of output filename**: Sets the maximum number of sequentially numbered output files (1000 by default). When multiple files share the same base name, the system appends numbers (1, 2, 3...) until this limit is reached.
+
+### Logging Configuration
+
+```ini
+[Logging]
+logger name = SonoRover_One
+timestamp format = %Y-%m-%d_%H-%M-%S
+log level console = WARNING
+log level file = INFO
+initial part of log filename = log_
+```
+
+- **logger name**: Identifier for the logger instance
+- **timestamp format**: Format used for timestamps in logs 
+- **log level console**: Minimum severity level displayed in console (WARNING, ERROR, CRITICAL)
+- **log level file**: Minimum severity level saved to log files (INFO, DEBUG, WARNING, ERROR, CRITICAL)
+- **initial part of log filename**: Prefix for all generated log files
+
+### Path and Directory Settings
+
+```ini
+[Characterization]
+path of input parameters cache = config//characterization_input_cache.ini
+cache date format = %Y/%m/%d
+temporary output path = C:\Temp\General output folder
+temporary logging path = C:\Temp\General output folder\logs
+default protocol directory = //ru.nl//WrkGrp//FUS_Hub//Hydrophone measurements//Measurements
+default output directory = //ru.nl//WrkGrp//FUS_Hub//Hydrophone measurements//Measurements//2024//General output folder
+```
+
+- **path of input parameters cache**: Location where user input parameters are cached
+- **cache date format**: Date format used in the cache file
+- **temporary output path**: Directory for temporary measurement output
+- **temporary logging path**: Directory for temporary log files
+- **default protocol directory**: Default location for measurement protocols displayed in GUI
+- **default output directory**: Default location for saving measurement results displayed in GUI
+
+### GUI Configuration
+
+```ini
+protocol_dialog.n_ac_align_rows = 14
+protocol_dialog.stay_topmost_in_ms = 5000
+input_dialog.stay_topmost_in_ms = 5000
+acd_dialog.stay_topmost_in_ms = 5000
+```
+
+- **protocol_dialog.n_ac_align_rows**: Number of rows in acoustical alignment section
+- **protocol_dialog.stay_topmost_in_ms**: Duration for keeping protocol dialog on top (5000ms)
+- **input_dialog.stay_topmost_in_ms**: Duration for keeping input dialog on top (5000ms)
+- **acd_dialog.stay_topmost_in_ms**: Duration for keeping ACD dialog on top (5000ms)
+
+### Output Configuration
+
+```ini
+output_name_suffix = output_data
+ac_align.output_name_suffix = output_data
+ac_align.axis_suffix = acoustical_axis
+ac_align.additional_x_lim = 15
+```
+
+- **output_name_suffix**: Suffix for output data files
+- **ac_align.output_name_suffix**: Suffix for acoustical alignment output files
+- **ac_align.axis_suffix**: Suffix for acoustical axis files
+- **ac_align.additional_x_lim**: Additional space added to X-axis limit of acoustical alignment plot (15mm)
+
+### Acquisition Equipment Configuration
+
+```ini
+picoscope.reacquire_attempts = 5
+picoscope.resolution = DR_14BIT
+picoscope.channel = A
+picoscope.range = RANGE_500mV
+picoscope.coupling = DC
+picoscope.probe_multi = x1
+picoscope.trigger_threshold_v = 0.5
+pos_sys.reacquire_attempts = 5
+```
+
+- **picoscope.reacquire_attempts**: Number of retry attempts for acquisition (5)
+- **picoscope.resolution**: Hardware resolution during acquisition (DR_14BIT)
+- **picoscope.channel**: Input channel for hydrophone connection (A)
+- **picoscope.range**: Voltage range setting (RANGE_500mV)
+- **picoscope.coupling**: Input coupling mode (DC)
+- **picoscope.probe_multi**: Probe attenuation multiplier (x1)
+- **picoscope.trigger_threshold_v**: Trigger threshold voltage (0.5V)
+- **pos_sys.reacquire_attempts**: Number of attempts to reconnect to positioning system (5)
+
+### Excel Column Definitions
+
+The configuration file defines column names used in coordinate and protocol Excel files. If you modify the headers in your Excel templates, you'll need to update these settings to match.
+
+```ini
+coord_excel_columns.meas_num = Measurement number
+coord_excel_columns.clus_num = Cluster number
+coord_excel_columns.ind_num = Indices number
+# ... more column definitions
+```
+
+```ini
+prot_excel_columns.seq_num = Sequence number
+prot_excel_columns.tag = Tag
+prot_excel_columns.dephasing = (De)phase array [degree] (None = no (de)phasing) ONLY FOR IGT DS
+# ... more column definitions
+```
+
+### Default Values
+The configuration file contains default values for the GUI inputs. These values are loaded when the software starts and are used as initial values in the interface.
+
+```ini
+default.acq_time_us = 500
+default.sampl_freq_multi = 50
+default.pos_com_port = COM3
+default.temp = 
+default.dis_oxy = 
+default.x_coord_zero = -62.2
+default.y_coord_zero = -60.6
+default.z_coord_zero = -155.528
+default.perform_all_seqs = True
+# ... more default settings
+```
+
+You can modify these values to match your typical usage patterns. Equipment-specific defaults (like default driving system) are determined by the Radboud-FUS-driving-system-software configuration.
+
+### Messages
+The configuration file also defines various messages displayed to users during the measurement process:
+
+```ini
+disconnection message = Ensure the following: 
+     - PicoScope software is not connected to the PicoScope in use. 
+     - Universal Gcode Sender is not connected to the positioning system.
+continue acquisition message = Continue acquisition with the following sequence: 
+```
+
+These messages can be customized to provide clearer instructions to users of your system.
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+## 📻 Adding Your Own Equipment <a name="add-equip"></a>
+
+### FUS Equipment
+
+To add your own FUS equipment, refer to the [Radboud-FUS-driving-system-software README](https://github.com/Donders-Institute/Radboud-FUS-driving-system-software), as the SonoRover One software uses this as a plugin for controlling FUS equipment. 
+
+### Hydrophone
+
+The current software version supports the following hydrophones:
+- HGL 0200 SN2845
+- HGL 0200 SN3030
+- HNR 0500 SN2439
+
+To add a new hydrophone:
+
+#### Step 1: Add to Equipment Section
+Add your hydrophone to the configuration file under the `[Characterization.Equipment]` section:
+
+```ini
+[Characterization.Equipment]
+hydrophones = HGL 0200 SN2845
+    HGL 0200 SN3030
+    HNR 0500 SN2439
+    YOUR-MODEL-NAME  # Add your hydrophone model here
+```
+
+#### Step 2: Add Specific Equipment Settings
+Create a new section for your hydrophone model:
+
+```ini
+[Characterization.Equipment.YOUR-MODEL-NAME]
+name = Hydrophone YOUR-MODEL-NAME
+sensitivity (v/pa) datasheet = config//hydrophones//YOUR-MODEL-NAME Calibration datasheet.xlsx
+```
+
+The hydrophone identifier must match one of the identifiers defined in the  `[Characterization.Equipment]` section under *hydrophones*. The `name` parameter is displayed in the GUI.
+
+#### Step 3: Create a Sensitivity Datasheet
+Create a new datasheet in the `Radboud-FUS-measurement-kit\SonoRover One\software\src\config\hydrophones` folder, using one of the existing files as a template. This file contains the frequency-sensitivity mapping for your hydrophone.
+
+If sensitivity values are not known, set all values to zero, but note that measurement output values will be incorrect. 
+
+### PicoScope
+
+Currently, only PicoScope oscilloscopes are supported. The software supports these models:
+- 5442D
+- 5442A
+- 5244D 
+
+To add a new PicoScope model:
+
+#### Step 1: Extend pico.py
+Extend the `Radboud-FUS-measurement-kit/SonoRover_One/software/src/backend/pico.py` script with a class for your PicoScope model:
+
+```python
+class ScopeYOUR_MODEL_ID(Scope5000):
+    """
+    Model YOUR-MODEL-ID description
+    """
+    def __init__(self):
+        Scope5000.__init__(self)
+        self.model = ModelSpecification("YOUR-MODEL-ID", "PS5000a.dll", "ps5000a")
+        self.model.handle = None
+        self.model.channelCount = 2
+        self.model.maxGeneratorFrequency = 20e6  # 20 MHz and min = 0
+        self.model.maxTimeBase = (2 ** 32) - 1
+        self.model.maxLowSamplingRate = 125e6
+        self.model.maxHighSamplingRate = 1e9
+        self.model.EXTRange = Range.RANGE_5V
+        self.model.EXTmaxADC = 32767  # PS5000A_EXT_MAX_VALUE
+        # self.model.resolution = None  # set in OpenUnit
+        self._clearSettings()
+```
+
+Then modify the `getScope` function to include your model:
+
+```python
+def getScope(modelName):
+    """
+    Returns an instance of the Scope object for the requested model.
+    """
+    if modelName.startswith("5242"):
+        return Scope5242A()
+    elif modelName.startswith("5442"):
+        return Scope5442A()
+    elif modelName.startswith("5244"):
+        return Scope5244D()
+    elif modelName.startswith("YOUR-MODEL-ID"):  # Add your model check
+        return ScopeYOUR_MODEL_ID()
+    raise PicoError("Unsupported model (%s)." % modelName)
+```
+
+#### Step 2: Add to Equipment Section
+Add your PicoScope to the configuration file under the `[Characterization.Equipment]` section:
+
+```ini
+[Characterization.Equipment]
+picoscopes = 5442D
+    5242D
+    5442A
+    5244D
+    YOUR-MODEL-NAME  # Add your PicoScope model here
+```
+
+#### Step 3: Add Specific Equipment Settings
+Create a new section for your PicoScope model:
+
+```ini
+[Characterization.Equipment.YOUR-MODEL-NAME]
+name = PicoScope YOUR-MODEL-NAME
+pico.py identification = YOUR-MODEL-ID
+```
+
+The `pico.py identification` parameter must match the identifier used in the `getScope` function in pico.py. The `name` parameter is displayed in the GUI.
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
 
 <!-- FUTURE FEATURES -->
 
