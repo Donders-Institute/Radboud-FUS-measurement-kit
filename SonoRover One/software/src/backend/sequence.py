@@ -92,25 +92,48 @@ class CharacSequence(sequence.Sequence):
 
         # boolean if acoustical alignment is performed, if so, no grid input required.
         self.is_ac_align = False
+        dist_from_foc_str = get_config_value(logger, config, 
+                                             "Characterization", 
+                                             "default.distance_from_foc",
+                                             '-10\n10').split('\n')
+        dist_from_foc_float = [float(i) for i in dist_from_foc_str]
+
         self.ac_align = {
-            "distance_from_foc": get_config_value(logger, config, "ac_align", "distance_from_foc",
-                                                  '-10\n10').split('\n'),
-            'init_line_len': float(get_config_value(logger, config, "ac_align", "init_line_len",
+            "distance_from_foc": dist_from_foc_float,
+            'init_line_len': float(get_config_value(logger, config, 
+                                                    "Characterization", 
+                                                    "default.init_line_len",
                                                     40)),
-            'init_line_step': float(get_config_value(logger, config, "ac_align", "init_line_step",
+            'init_line_step': float(get_config_value(logger, config, 
+                                                     "Characterization",
+                                                     "default.init_line_step",
                                                      0.5)),
-            'init_threshold': float(get_config_value(logger, config, "ac_align", "init_threshold",
+            'init_threshold': float(get_config_value(logger, config, 
+                                                     "Characterization",
+                                                     "default.init_threshold",
                                                      0.01)),
-            'reduction_factor': float(get_config_value(logger, config, "ac_align",
-                                                       "reduction_factor", 0.5)),
-            'max_red_iter': int(get_config_value(logger, config, "ac_align", "max_red_iter", 5)),
-            'create_graphs': get_config_value(logger, config, "ac_align", "create_graphs", 'True')
+            'reduction_factor': float(get_config_value(
+                logger, config,"Characterization", "default.reduction_factor",
+                0.5)),
+            'max_red_iter': int(get_config_value(logger, config, 
+                                                 "Characterization",
+                                                 "default.max_red_iter", 5)),
+            'create_graphs': get_config_value(logger, config, 
+                                              "Characterization", 
+                                              "default.create_graphs", 'True')
             == 'True',
-            'y_lim': float(get_config_value(logger, config, "ac_align", "y_lim", 200)),
-            'create_axis_file': get_config_value(logger, config, "ac_align", "create_axis_file",
+            'y_lim': float(get_config_value(logger, config, "Characterization",
+                                            "default.y_lim", 200)),
+            'create_axis_file': get_config_value(logger, config, 
+                                                 "Characterization", 
+                                                 "default.create_axis_file",
                                                  'True') == 'True',
-            'axis_length': float(get_config_value(logger, config, "ac_align", "axis_length", 140)),
-            'axis_stepsize': float(get_config_value(logger, config, "ac_align", "axis_stepsize",
+            'axis_length': float(get_config_value(logger, config, 
+                                                  "Characterization",
+                                                  "default.axis_length", 140)),
+            'axis_stepsize': float(get_config_value(logger, config, 
+                                                    "Characterization", 
+                                                    "default.axis_stepsize",
                                                     0.5))
             }
 
@@ -294,12 +317,11 @@ class CharacSequence(sequence.Sequence):
                                       'Focus wrt exit plane [mm]')
         focus_bowl = get_config_value(logger, config, 'Focus', 'Option.bowl',
                                       'Focus wrt mid bowl [mm]')
-        match focus_definition:
-            case focus_exit:
-                self.focus_wrt_exit_plane = abs(float(seq_row[excel_ind["focus_value"]]))  # [mm]
+        if focus_definition == focus_exit:
+            self.focus_wrt_exit_plane = abs(float(seq_row[excel_ind["focus_value"]]))  # [mm]
 
-            case focus_bowl:
-                self.focus_wrt_mid_bowl = abs(float(seq_row[excel_ind["focus_value"]]))  # [mm]
+        elif focus_definition == focus_bowl:
+            self.focus_wrt_mid_bowl = abs(float(seq_row[excel_ind["focus_value"]]))  # [mm]
 
         # Extract general excel information from config
         glob_pow_input = get_config_value(logger, config, "Characterization", "prot_excel.glob_pow",
@@ -312,38 +334,37 @@ class CharacSequence(sequence.Sequence):
                                       "IGT - Amplitude [%] (fill in 'Corresponding value')"),
 
         power_param = str(seq_row[excel_ind["power"]])
-        match power_param:
+        if power_param == glob_pow_input:
             # Order is important, because the code will check if other value is
             # set: first set new parameter and then set power value of other
             # driving system to None
 
-            case glob_pow_input:
-                self.global_power = abs(float(seq_row[excel_ind["power_value"]]))/1000  # SC: gp [W]
+            self.global_power = abs(float(seq_row[excel_ind["power_value"]]))/1000  # SC: gp [W]
 
-            case press_input:
-                self.press = abs(float(seq_row[excel_ind["power_value"]]))
+        elif power_param == press_input:
+            self.press = abs(float(seq_row[excel_ind["power_value"]]))
 
-            case volt_input:
-                voltages = str(seq_row[excel_ind["power_value"]])
-                volt_str = re.sub(r"[,\[\]\s]+", " ", voltages).strip()
+        elif power_param ==  volt_input:
+            voltages = str(seq_row[excel_ind["power_value"]])
+            volt_str = re.sub(r"[,\[\]\s]+", " ", voltages).strip()
 
-                try:
-                    self.volt = [float(num) for num in volt_str.split()]
-                except ValueError:
-                    message = 'Voltage array cannot be converted to a float array.'
-                    logger.critical(message)
-                    sys.exit(message)
+            try:
+                self.volt = [float(num) for num in volt_str.split()]
+            except ValueError:
+                message = 'Voltage array cannot be converted to a float array.'
+                logger.critical(message)
+                sys.exit(message)
 
-            case ampl_input:
-                amplitudes = str(seq_row[excel_ind["power_value"]])
-                ampl_str = re.sub(r"[,\[\]\s]+", " ", amplitudes).strip()
+        elif power_param ==  ampl_input:
+            amplitudes = str(seq_row[excel_ind["power_value"]])
+            ampl_str = re.sub(r"[,\[\]\s]+", " ", amplitudes).strip()
 
-                try:
-                    self.ampl = [float(num) for num in ampl_str.split()]
-                except ValueError:
-                    message = 'Amplitude array cannot be converted to a float array.'
-                    logger.critical(message)
-                    sys.exit(message)
+            try:
+                self.ampl = [float(num) for num in ampl_str.split()]
+            except ValueError:
+                message = 'Amplitude array cannot be converted to a float array.'
+                logger.critical(message)
+                sys.exit(message)
 
         # Timing parameters
         # ## pulse ## #
@@ -373,41 +394,40 @@ class CharacSequence(sequence.Sequence):
 
         # Grid
         excel_or_param = str(seq_row[excel_ind["excel_or_param"]])
-        match excel_or_param:
-            case coord_excel_input:
-                self.use_coord_excel = True
-                self.path_coord_excel = str(seq_row[excel_ind["coord_excel"]])
+        if excel_or_param == coord_excel_input:
+            self.use_coord_excel = True
+            self.path_coord_excel = str(seq_row[excel_ind["coord_excel"]])
 
-            case grid_param_input:
-                self.use_coord_excel = False
-                self.path_coord_excel = None
+        elif excel_or_param == grid_param_input:
+            self.use_coord_excel = False
+            self.path_coord_excel = None
 
-                max_x_plus = abs(float(seq_row[excel_ind["max_x_plus"]]))
-                max_x_min = abs(float(seq_row[excel_ind["max_x_min"]]))
-                max_y_plus = abs(float(seq_row[excel_ind["max_y_plus"]]))
-                max_y_min = abs(float(seq_row[excel_ind["max_y_min"]]))
-                max_z_plus = abs(float(seq_row[excel_ind["max_z_plus"]]))
-                max_z_min = abs(float(seq_row[excel_ind["max_z_min"]]))
+            max_x_plus = abs(float(seq_row[excel_ind["max_x_plus"]]))
+            max_x_min = abs(float(seq_row[excel_ind["max_x_min"]]))
+            max_y_plus = abs(float(seq_row[excel_ind["max_y_plus"]]))
+            max_y_min = abs(float(seq_row[excel_ind["max_y_min"]]))
+            max_z_plus = abs(float(seq_row[excel_ind["max_z_plus"]]))
+            max_z_min = abs(float(seq_row[excel_ind["max_z_min"]]))
 
-                dimensions = [max_x_plus, max_x_min, max_y_plus, max_y_min, max_z_plus, max_z_min]
+            dimensions = [max_x_plus, max_x_min, max_y_plus, max_y_min, max_z_plus, max_z_min]
 
-                dir_slices = str(seq_row[excel_ind["dir_slices"]])
-                dir_rows = str(seq_row[excel_ind["dir_rows"]])
-                dir_columns = str(seq_row[excel_ind["dir_columns"]])
+            dir_slices = str(seq_row[excel_ind["dir_slices"]])
+            dir_rows = str(seq_row[excel_ind["dir_rows"]])
+            dir_columns = str(seq_row[excel_ind["dir_columns"]])
 
-                directions = [dir_slices, dir_rows, dir_columns]
+            directions = [dir_slices, dir_rows, dir_columns]
 
-                step_size_x = abs(float(seq_row[excel_ind["step_size_x"]]))
-                step_size_y = abs(float(seq_row[excel_ind["step_size_y"]]))
-                step_size_z = abs(float(seq_row[excel_ind["step_size_z"]]))
+            step_size_x = abs(float(seq_row[excel_ind["step_size_x"]]))
+            step_size_y = abs(float(seq_row[excel_ind["step_size_y"]]))
+            step_size_z = abs(float(seq_row[excel_ind["step_size_z"]]))
 
-                step_sizes = [step_size_x, step_size_y, step_size_z]
+            step_sizes = [step_size_x, step_size_y, step_size_z]
 
-                self._set_start_coord_vector(input_param.coord_zero, directions, dimensions)
+            self._set_start_coord_vector(input_param.coord_zero, directions, dimensions)
 
-                self._set_all_dir_vectors(directions, step_sizes)
+            self._set_all_dir_vectors(directions, step_sizes)
 
-                self._calculate_n_vector(directions, dimensions, step_sizes)
+            self._calculate_n_vector(directions, dimensions, step_sizes)
 
 
 def _define_excel_indices(data):

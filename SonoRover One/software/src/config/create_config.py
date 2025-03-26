@@ -73,12 +73,14 @@ config['Characterization']['Disconnection message'] = ('Ensure the following: \n
 config['Characterization']['Continue acquisition message'] = ('Continue acquisition with the ' +
                                                               'following sequence: ')
 
-config['Characterization']['Maximum distance wrt exit plane'] = str(140)  # [mm]
-config['Characterization']['Stepsize for distance wrt exit plane'] = str(0.5)  # [mm]
-
-ACD_ADJUST = ['0 - no adjustment', '+1 - axial measurement moving from transducer',
-              '-1 - axial measurement moving towards transducer']
-config['Characterization']['ACD adjustment'] = '\n'.join(ACD_ADJUST)
+ACD_ZERO = '0 - no adjustment'
+ACD_PLUS = '+1 - axial measurement moving from transducer'
+ACD_MIN = '-1 - axial measurement moving towards transducer'
+config['Characterization']['ACD adjustment.zero'] = ACD_ZERO
+config['Characterization']['ACD adjustment.plus'] = ACD_PLUS
+config['Characterization']['ACD adjustment.min'] = ACD_MIN
+config['Characterization']['ACD adjustment'] = '\n'.join([ACD_ZERO, ACD_PLUS, 
+                                                          ACD_MIN])
 
 PROT_EXCEL = 'Select protocol excel file...'
 PROT_AC_ALIGN = 'Acoustical alignment'

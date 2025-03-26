@@ -107,7 +107,7 @@ class ACDParamDialog(ctk.CTkToplevel):
         # Display this window on top of all windows
         self.lift()
         self.attributes('-topmost', True)
-        stay_topmost_in_ms = int(get_config_value(logger, config, 'Characterizaton',
+        stay_topmost_in_ms = int(get_config_value(logger, config, 'Characterization',
                                                   'acd_dialog.stay_topmost_in_ms', 5000))
         self.after(stay_topmost_in_ms, lambda: self.attributes('-topmost', False))  # stay for 5s
 
@@ -342,7 +342,20 @@ class ACDParamDialog(ctk.CTkToplevel):
 
         self.acd_param["begus"] = self.begus.get()
         self.acd_param["endus"] = self.endus.get()
-        self.acd_param["adjust"] = self.adjust.get()
+        adjust_value = self.adjust.get()
+        
+        if adjust_value == get_config_value(logger, config, 'Characterization',
+                                                  'acd adjustment.zero', 
+                                                  '0 - no adjustment'):
+            self.acd_param["adjust"] = 0
+        elif adjust_value == get_config_value(
+                logger, config, 'Characterization','acd adjustment.plus', 
+                '+1 - axial measurement moving from transducer'):
+            self.acd_param["adjust"] = 1
+        elif adjust_value == get_config_value(
+                logger, config, 'Characterization','acd adjustment.min', 
+                '-1 - axial measurement moving towards transducer'):
+            self.acd_param["adjust"] = -1
 
         # Close the dialog
         self._cancel_action()

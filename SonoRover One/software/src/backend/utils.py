@@ -31,6 +31,7 @@ https://github.com/Donders-Institute/Radboud-FUS-measurement-kit
 """
 
 import sys
+import inspect
 from distutils.dir_util import copy_tree
 from pathlib import Path
 import shutil
@@ -53,50 +54,54 @@ def get_config_value(logger, config, section, key, default, isSysExit=False):
     - any: The retrieved value or the default if missing.
     """
 
+    # Function to log the warning message with additional context (caller function details)
+    def log_warning(message):
+        # Get the stack and retrieve information about the caller (the function that called get_config_value)
+        stack = inspect.stack()
+        caller_frame = stack[2]  # The function that called get_config_value is two levels up
+        file_name = caller_frame.filename  # File name of the caller
+        line_number = caller_frame.lineno  # Line number of the caller
+        function_name = caller_frame.function  # Function name of the caller
+
+        # Add file, line, and function information to the message
+        message = (f"{message}, using default: {default} "
+                   f"(called from {file_name}, {function_name} at line {line_number})")
+
+        # Log the warning
+        if logger is None:
+            print(message)
+        else:
+            logger.warning(message)
+
+    # Check if the config is None
     if config is None:
         message = "Config not found"
-
         if isSysExit:
             sys.exit(message)
-
-        message = message + ", using default: {default}"
-        if logger is None:
-            print(message)
-        else:
-            logger.warning(message)
-
+        
+        log_warning(message)
         return default
 
+    # Check if the section exists in the config
     if section not in config:
         message = f"Config section '{section}' not found"
-
         if isSysExit:
             sys.exit(message)
 
-        message = message + ", using default: {default}"
-        if logger is None:
-            print(message)
-        else:
-            logger.warning(message)
-
+        log_warning(message)
         return default
 
+    # Check if the key exists in the section
     if key not in config[section]:
         message = f"Config key '{key}' not found in section '{section}'"
-
         if isSysExit:
             sys.exit(message)
 
-        message = message + ", using default: {default}"
-        if logger is None:
-            print(message)
-        else:
-            logger.warning(message)
-
+        log_warning(message)
         return default
 
+    # Return the config value if found
     return config[section][key]
-
 
 def get_config_folder():
     """

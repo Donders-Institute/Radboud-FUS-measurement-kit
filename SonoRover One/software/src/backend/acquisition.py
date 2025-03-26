@@ -119,9 +119,9 @@ class Acquisition:
             self.init_scope()
 
             # Initialize ACD processing parameters
-            self.proces_param = self._init_processing(self.input_param.acd_param['begus'],
-                                                      self.input_param.acd_param['endus'],
-                                                      self.input_param.acd_param['adjust'])
+            self.proces_param = self._init_processing(self.input_param._acd_param['begus'],
+                                                      self.input_param._acd_param['endus'],
+                                                      self.input_param._acd_param['adjust'])
 
             # Connect with positioning system
             print('Initialize positioning system connection...', end='\n')
@@ -251,7 +251,7 @@ class Acquisition:
         """
 
         if pico_py_ident is None:
-            if hasattr(self.input_param, 'picoscope.pico_py_ident'):
+            if hasattr(self.input_param.picoscope, 'pico_py_ident'):
                 pico_py_ident = self.input_param.picoscope.pico_py_ident
             else:
                 message = 'No PicoScope serial given for initialization of the PicoScope.'
@@ -296,7 +296,7 @@ class Acquisition:
         # Convert string values to the corresponding Picoscope enums
         pico_resolution = getattr(pico.Resolution, pico_resolution_str, pico.Resolution.DR_14BIT)
         pico_channel = getattr(pico.Channel, pico_channel_str, pico.Channel.A)
-        pico_range = getattr(pico.Range, pico_range_str, pico.Range.RANGE_500MV)
+        pico_range = getattr(pico.Range, pico_range_str, pico.Range.RANGE_500mV)
         pico_coupling = getattr(pico.Coupling, pico_coupling_str.upper(), pico.Coupling.DC)
         pico_probe = getattr(pico.Probe, pico_probe_str.lower(), pico.Probe.x1)
 
@@ -684,7 +684,7 @@ class Acquisition:
         igt_name = get_config_value(logger, config_info, 'Equipment.Manufacturer.IGT', 'Name',
                                     'IGT')
 
-        gp_power = get_config_value(logger, config_info, 'Power', 'Option.glob_power',
+        gp_power = get_config_value(logger, config_info, 'Power', 'Option.glob_pow',
                                     'Global power [mW]')
         press_power = get_config_value(logger, config_info, 'Power', 'Option.press',
                                        'Max. pressure in free water [MPa]')

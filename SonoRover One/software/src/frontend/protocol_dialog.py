@@ -86,14 +86,14 @@ class ProtocolDialog(ctk.CTkToplevel):
             self.focus_wrt_mid_bowl_array.append(self.ac_align_seq.focus_wrt_mid_bowl)
         else:
             # Use first sequence to set all parameters
-            self.ac_align_seq = self.input_param.sequences[0]
+            self.ac_align_seq = self.input_param.sequences[0].clone()
 
             # Use all sequences to extract the focus array
             for seq in self.input_param.sequences:
                 self.focus_wrt_exit_plane_array.append(seq.focus_wrt_exit_plane)
                 self.focus_wrt_mid_bowl_array.append(seq.focus_wrt_mid_bowl)
 
-        self.n_ac_align_rows = int(get_config_value(logger, config, 'Characterizaton',
+        self.n_ac_align_rows = int(get_config_value(logger, config, 'Characterization',
                                                     'protocol_dialog.n_ac_align_rows', 14))
 
         self._build_dialog()
@@ -139,7 +139,7 @@ class ProtocolDialog(ctk.CTkToplevel):
         # Display this window on top of all windows
         self.lift()
         self.attributes('-topmost', True)
-        stay_topmost_in_ms = int(get_config_value(logger, config, 'Characterizaton',
+        stay_topmost_in_ms = int(get_config_value(logger, config, 'Characterization',
                                                   'protocol_dialog.stay_topmost_in_ms', 5000))
         self.after(stay_topmost_in_ms, lambda: self.attributes('-topmost', False))  # stay for 5s
 
@@ -1009,8 +1009,8 @@ class ProtocolDialog(ctk.CTkToplevel):
             up_lim = self.input_param.transducer.max_foc
 
         else:
-            low_lim = self.ac_align_seq.F2EQF1_low_lim
-            up_lim = self.ac_align_seq.F2EQF2_up_lim
+            low_lim = self.ac_align_seq.transducer.min_foc
+            up_lim = self.ac_align_seq.transducer.max_foc
 
         if focus_wrt_exit_plane < low_lim or focus_wrt_exit_plane > up_lim:
             widget.configure(text_color="red")

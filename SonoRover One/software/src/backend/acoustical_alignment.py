@@ -474,7 +474,8 @@ def save_acoustical_axis_data(rows, filename):
     filename (str): Name of the Excel file to save the data.
     """
 
-    coord_columns = get_config_value(logger, config, 'Characterization', 'coord_excel_columns', '')
+    coord_columns = get_config_value(logger, config, 'Characterization', 'coord_excel_columns', '').split('\n')
+    
     df = pd.DataFrame(rows, columns=coord_columns)
 
     df.to_csv(filename, index=False)

@@ -142,10 +142,8 @@ class InputParameters:
         self._perform_all_seqs = get_config_value(logger, config, 'Characterization',
                                                   'default.perform_all_seqs', 'True') == 'True'
 
-        adjust_param = get_config_value(logger, config, 'Characterization', 'ACD adjustment',
-                                        '').split('\n')
         self._acd_param = {
-            "adjust": adjust_param[0],
+            "adjust": 0,
             "begus": 0,
             "endus": self._acquisition_time,
             }
@@ -767,7 +765,7 @@ class InputParameters:
 
         cached_input['Input parameters.Protocol']['Alignment.power_option'] = seq.chosen_power
 
-        gp_power = get_config_value(logger, config, 'Power', 'Option.glob_power',
+        gp_power = get_config_value(logger, config, 'Power', 'Option.glob_pow',
                                     'Global power [mW]')
         press_power = get_config_value(logger, config, 'Power', 'Option.press',
                                        'Max. pressure in free water [MPa]')
@@ -857,13 +855,7 @@ class InputParameters:
         Convert driving system parameters from the INI file to object attributes.
         """
         driving_sys = ds.DrivingSystem()
-        driving_sys.serial = cached_input['Input parameters']['Driving system.serial_number']
-        driving_sys.name = cached_input['Input parameters']['Driving system.name']
-        driving_sys.manufact = cached_input['Input parameters']['Driving system.manufact']
-        driving_sys.available_ch = int(cached_input['Input parameters']['Driving system.available_ch'])
-        driving_sys.connect_info = cached_input['Input parameters']['Driving system.connect_info']
-        driving_sys.tran_comp = cached_input['Input parameters']['Driving system.tran_comp'].split(', ')
-        driving_sys.is_active = cached_input['Input parameters']['Driving system.is_active'] == 'True'
+        driving_sys.set_ds_info(cached_input['Input parameters']['Driving system.serial_number'])
 
         return driving_sys
 
@@ -872,16 +864,7 @@ class InputParameters:
         Convert transducer parameters from the INI file to object attributes.
         """
         transducer = tran.Transducer()
-        transducer.serial = cached_input['Input parameters']['Transducer.serial_number']
-        transducer.name = cached_input['Input parameters']['Transducer.name']
-        transducer.manufact = cached_input['Input parameters']['Transducer.manufact']
-        transducer.elements = int(cached_input['Input parameters']['Transducer.elements'])
-        transducer.fund_freq = int(cached_input['Input parameters']['Transducer.fund_freq_khz'])
-        transducer.natural_foc = float(cached_input['Input parameters']['Transducer.natural_foc_mm'])
-        transducer.min_foc = float(cached_input['Input parameters']['Transducer.min_foc_mm'])
-        transducer.max_foc = float(cached_input['Input parameters']['Transducer.max_foc_mm'])
-        transducer.steer_info = cached_input['Input parameters']['Transducer.steer_info']
-        transducer.is_active = cached_input['Input parameters']['Transducer.is_active'] == 'True'
+        transducer.set_transducer_info(cached_input['Input parameters']['Transducer.serial_number'])
 
         oper_freq = int(cached_input['Input parameters']['Operating frequency [kHz]'])
 
@@ -966,8 +949,9 @@ class InputParameters:
 
         # Retrieve and set power parameters based on the power option
         power_option = cached_input['Input parameters.Protocol']['Alignment.power_option']
-        power_value = float(cached_input['Input parameters.Protocol']['Alignment.power_value'])
-
+        power_value_str = cached_input['Input parameters.Protocol']['Alignment.power_value']
+        power_value = [float(value) for value in power_value_str.strip('][').split(',')]
+        
         for focus in focus_array:
             basic_seq = seq.clone()
 
@@ -976,7 +960,7 @@ class InputParameters:
             elif basic_seq.chosen_focus == bowl_foc:
                 basic_seq.focus_wrt_mid_bowl = focus
 
-            gp_power = get_config_value(logger, config, 'Power', 'Option.glob_power',
+            gp_power = get_config_value(logger, config, 'Power', 'Option.glob_pow',
                                         'Global power [mW]')
             press_power = get_config_value(logger, config, 'Power', 'Option.press',
                                            'Max. pressure in free water [MPa]')
@@ -1037,7 +1021,7 @@ class InputParameters:
         acd_param = {
             "begus": float(cached_input['Input parameters.ACD processing']['Beginning time of processing window [us]']),
             "endus": float(cached_input['Input parameters.ACD processing']['End time of processing window [us]']),
-            "adjust": cached_input['Input parameters.ACD processing']['Moving processing window along?']
+            "adjust": int(cached_input['Input parameters.ACD processing']['Moving processing window along?'])
         }
 
         return temp, dis_oxy, coord_zero, perform_all_seqs, acd_param

@@ -153,8 +153,8 @@ class InputDialog():
         # Display this window on top of all windows
         self.win.lift()
         self.win.attributes('-topmost', True)
-        stay_topmost_in_ms = int(get_config_value(logger, config, 'Characterizaton',
-                                                  'input.stay_topmost_in_ms', 5000))
+        stay_topmost_in_ms = int(get_config_value(logger, config, 'Characterization',
+                                                  'input_dialog.stay_topmost_in_ms', 5000))
         self.win.after(stay_topmost_in_ms, lambda: self.win.attributes('-topmost', False))  # stay for n sec
 
     def _create_entries(self):
@@ -505,7 +505,7 @@ class InputDialog():
 
     def _acd_action(self):
         if self.acd_subdialog is None or not self.acd_subdialog.winfo_exists():
-            self.acd_subdialog = apd.ACDParamDialog(self.win, self.input_param.acd_param)
+            self.acd_subdialog = apd.ACDParamDialog(self.win, self.input_param._acd_param)
         else:
             self.acd_subdialog.deiconify()  # Show the subdialog if it was hidden
 
