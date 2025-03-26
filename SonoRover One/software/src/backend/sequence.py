@@ -288,7 +288,7 @@ class CharacSequence(sequence.Sequence):
 
         # Global characterization parameters
         self.driving_sys = input_param.driving_sys.serial
-        self.transducer = input_param.tran.serial
+        self.transducer = input_param.transducer.serial
         self.oper_freq = input_param.oper_freq  # [kHz]
 
         # Sequence specific characterization parameters
@@ -388,7 +388,7 @@ class CharacSequence(sequence.Sequence):
 
         # Extract general excel information from config
         coord_excel_input = get_config_value(logger, config, "Characterization",
-                                             "prot_excel.coord_excel", "Coordinate excel file"),
+                                             "prot_excel.coord_excel", "Coordinate excel file")
         grid_param_input = get_config_value(logger, config, "Characterization",
                                             "prot_excel.grid_param", "Parameters on the right")
 

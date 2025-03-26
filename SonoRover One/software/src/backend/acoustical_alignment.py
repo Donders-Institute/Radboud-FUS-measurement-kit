@@ -520,9 +520,9 @@ def calculate_acoustical_axis(middle_points, z_exit_plane, temp_dir_output):
 
     # Line through the origin in the direction of the direction_vector
     line_length = float(get_config_value(logger, config, 'Characterization',
-                                         'Maximum distance wrt exit plane', 140))
+                                         'default.axis_length ', 140))
     stepsize = float(get_config_value(logger, config, 'Characterization',
-                                      'Stepsize for distance wrt exit plane', 0.5))
+                                      'default.axis_stepsize', 0.5))
     n_points = int(math.ceil(line_length*stepsize))
     t = np.linspace(0, line_length, n_points)
     line = transducer_z_point + t[:, None] * direction_vector

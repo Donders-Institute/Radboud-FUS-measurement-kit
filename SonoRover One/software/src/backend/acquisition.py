@@ -995,7 +995,7 @@ class Acquisition:
 
         n = i*self.grid_param["nrow"]*self.grid_param["ncol"]+j*self.grid_param["ncol"]+k
         total_n = self.grid_param["nrow"]*self.grid_param["ncol"]*self.grid_param["nsl"]
-        logger.info(f'i: {i}, j: {j}, k: {k}, n: {n} of {total_n}')
+        logger.debug(f'i: {i}, j: {j}, k: {k}, n: {n} of {total_n}')
         print(f'Measurement {n+1} of {total_n}.', end="\r")
 
         # Save data in excel
