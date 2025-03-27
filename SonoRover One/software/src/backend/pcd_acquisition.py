@@ -24,10 +24,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 **Attribution Notice**:
-If you use this kit in your research or project, please include the following attribution:
-Margely Cornelissen, Stein Fekkes (Radboud University, Nijmegen, The Netherlands) & Erik Dumont
-(Image Guided Therapy, Pessac, France) (2024), Radboud FUS measurement kit (version 1.0),
-https://github.com/Donders-Institute/Radboud-FUS-measurement-kit
+If you use this kit in your research or project, please refer to the 'How to Cite' section in the
+README.md file of https://github.com/Donders-Institute/Radboud-FUS-measurement-kit.
 """
 
 # Basic packages
@@ -42,6 +40,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 # Own packages
+from backend.utils import get_config_value
+from config.logging_config import logger
+
 from fus_driving_systems import config as fds_config
 from fus_driving_systems import utils as fds_utils
 from backend import utils, sequence, picoscope as ps, acquisition as acq
@@ -50,8 +51,8 @@ from config.config import config_info, read_additional_config
 
 
 def perform_pcd_acquisition(picoscope_serial, transducer_serial, driving_system_serial,
-                            output_dir='C:\\Temp\\PCD_acquisition_output', sampl_freq_multi=50,
-                            acquisition_time=500, pulse_dur=0.2, amplitude=5, all_elem_ampl=1):
+                            output_dir=None, sampl_freq_multi=None, acquisition_time=None,
+                            pulse_dur=None, amplitude=None, all_elem_ampl=None):
     """
     Performs a Passive Cavitation Detection (PCD) measurement.
 
@@ -68,30 +69,58 @@ def perform_pcd_acquisition(picoscope_serial, transducer_serial, driving_system_
     driving_system_serial : str
         Serial number of the driving system.
     output_dir : str, optional
-        Path to save the acquired data. Default is "C:\\Temp\\PCD_acquisition_output".
+        Path to save the acquired data. Default is read from config.
     sampl_freq_multi : int, optional
-        Sampling frequency multiplier for the PicoScope. Default is 50.
+        Sampling frequency multiplier for the PicoScope. Default is read from config.
     acquisition_time : int, optional
-        Time duration of the signal acquisition in microseconds. Default is 500 µs.
+        Time duration of the signal acquisition in microseconds. Default is read from config..
     pulse_dur : float, optional
-        Pulse duration in milliseconds. Default is 0.2 ms.
+        Pulse duration in milliseconds. Default is read from config.
     amplitude : int, optional
-        Excitation amplitude in percentage. Default is 5%.
+        Excitation amplitude in percentage. Default is read from config.
     all_elem_ampl : int, optional
-        Default amplitude for all elements. Default is 1.
+        Default amplitude for all elements. Default is read from config.
 
     Returns
     -------
     None
     """
 
+    # Retrieve values from config only if they are None
+    if output_dir is None:
+        output_dir = get_config_value(logger, config_info, 'Default', 'output_dir',
+                                      'C:\\Temp\\PCD_acquisition_output')
+
+    if sampl_freq_multi is None:
+        sampl_freq_multi = float(get_config_value(logger, config_info, 'Default',
+                                                  'sampl_freq_multi', 50))
+
+    if acquisition_time is None:
+        acquisition_time = float(get_config_value(logger, config_info, 'Default',
+                                                  'acquisition_time_us', 500))
+
+    if pulse_dur is None:
+        pulse_dur = float(get_config_value(logger, config_info, 'Default', 'pulse_dur_ms', 0.2))
+
+    if amplitude is None:
+        amplitude = float(get_config_value(logger, config_info, 'Default', 'per_elem_ampl', 5))
+
+    if all_elem_ampl is None:
+        all_elem_ampl = float(get_config_value(logger, config_info, 'Default', 'all_elems_ampl', 1))
+
     # Check amplitudes
-    if amplitude > 10:
-        sys.exit(f'Amplitude of {amplitude} [%] for firing all elements at once exceeds 10 [%] ' +
-                 'and might damage the PCD element. Stop measurement.')
-    if all_elem_ampl > 5:
-        sys.exit(f'Amplitude of {amplitude} [%] for firing one element at a time exceeds 5 [%] ' +
-                 'and might damage the PCD element. Stop measurement.')
+    per_elem_limit = float(get_config_value(logger, config_info, 'Limit', 'per_elem_ampl', 10))
+    all_elem_limit = float(get_config_value(logger, config_info, 'Limit', 'all_elems_ampl', 5))
+    if amplitude > per_elem_limit:
+        message = (f'Amplitude of {amplitude} [%] for firing all elements at once exceeds ' +
+                   f'{per_elem_limit:.2f} [%] and might damage the PCD element. Stop measurement.')
+        logger.critical(message)
+        sys.exit(message)
+    if all_elem_ampl > all_elem_limit:
+        message = (f'Amplitude of {amplitude} [%] for firing one element at a time exceeds ' +
+                   f'{all_elem_limit:.2f} [%] and might damage the PCD element. Stop measurement.')
+        logger.critical(message)
+        sys.exit(message)
 
     _load_config_files()
 
@@ -108,14 +137,18 @@ def perform_pcd_acquisition(picoscope_serial, transducer_serial, driving_system_
 
     try:
         # Connect with PicoScope
-        print('Initialize PicoScope connection...', end='\n')
+        message = 'Initialize PicoScope connection...'
+        logger.info(message)
+        print(message, end='\n')
         pcd_acq.init_scope(sampl_freq_multi, acquisition_time, pico_object.pico_py_ident,
                            seq.transducer.fund_freq)
 
         time.sleep(5)
 
         # Connect with driving system
-        print('Initialize driving system connection...', end='\n')
+        message = 'Initialize driving system connection...'
+        logger.info(message)
+        print(message, end='\n')
         ds_manufact = seq.driving_sys.manufact
         ds_connect_info = seq.driving_sys.connect_info
         pcd_acq.init_ds(ds_manufact, ds_connect_info, is_ac_align=False,
@@ -168,23 +201,34 @@ def _acquire_and_save_data(pcd_acq, seq, pico_object, output_dir, acquisition_ti
     Handles the acquisition, processing, and saving of data.
     """
 
-    baseline_path = config_info[seq.transducer.serial]['Baseline path']
-    baseline_filenames = config_info[seq.transducer.serial]['Baseline files'].split('\n')
+    baseline_path = get_config_value(logger, config_info, seq.transducer.serial, 'Baseline path',
+                                     '')
+    baseline_filenames = get_config_value(logger, config_info, seq.transducer.serial,
+                                          'Baseline files', '').split('\n')
+
     n_elem = seq.transducer.elements
     for i_elem in range(n_elem + 1):
-        raw_baseline_filename = baseline_filenames[i_elem]
+        if baseline_filenames == '':
+            raw_baseline_filename = ''
+        else:
+            raw_baseline_filename = baseline_filenames[i_elem]
+
         raw_baseline_path = os.path.join(baseline_path, raw_baseline_filename)
 
         amplitudes = [0] * n_elem
         # Send sequence to driving system
-        print('Send sequence to driving system...', end='\n')
+        message = 'Send sequence to driving system...'
+        logger.info(message)
+        print(message, end='\n')
         pcd_acq.equipment["ds"].send_sequence(seq)
 
         volt_data = pcd_acq.acquire_data(attempt=0, sequence=seq)
         time_us = np.linspace(0, acquisition_time, pcd_acq.sample_count)
 
         date_time = datetime.now()
-        timestamp = date_time.strftime('%Y-%m-%d_%H-%M-%S')
+        timestamp_format = get_config_value(logger, config_info, 'Logging', 'Timestamp format',
+                                            '%Y-%m-%d_%H-%M-%S')
+        timestamp = date_time.strftime(timestamp_format)
 
         elem_name = f'elem_{i_elem}'
         elem_title = f'Element {i_elem}'
@@ -220,21 +264,23 @@ def _plot_comparison_fig(time_us, raw_path, volt_data, title, output_path):
     Plots and saves a comparison figure between baseline and acquired voltage data.
     """
 
-    with open(raw_path, 'rb') as inraw:
-        raw_baseline_data = np.fromfile(inraw, dtype=np.float32)
+    if raw_path != '':
+        with open(raw_path, 'rb') as inraw:
+            raw_baseline_data = np.fromfile(inraw, dtype=np.float32)
 
-    # Calculate RMS
-    base_sqr_volt = np.square(raw_baseline_data)
-    base_mean_volt = np.mean(base_sqr_volt)
-    base_rms = np.sqrt(base_mean_volt)
+        # Calculate RMS
+        base_sqr_volt = np.square(raw_baseline_data)
+        base_mean_volt = np.mean(base_sqr_volt)
+        base_rms = np.sqrt(base_mean_volt)
 
     # Calculate RMS
     sqr_volt = np.square(volt_data)
     mean_volt = np.mean(sqr_volt)
     rms = np.sqrt(mean_volt)
 
-    # Compute the absolute max of both y-values
-    y_abs_max = max(abs(raw_baseline_data).max(), abs(volt_data).max())
+    if raw_path != '':
+        # Compute the absolute max of both y-values
+        y_abs_max = max(abs(raw_baseline_data).max(), abs(volt_data).max())
 
     # Define symmetric y-axis limits
     y_min, y_max = -y_abs_max, y_abs_max
@@ -245,13 +291,14 @@ def _plot_comparison_fig(time_us, raw_path, volt_data, title, output_path):
     fig.text(0.5, 0.005, 'Time [us]', ha='center')
     fig.text(0.005, 0.5, 'Measured voltage [V]', va='center', rotation='vertical')
 
-    ax1.plot(time_us, raw_baseline_data, color='g')
-    ax1.axhline(y=base_rms, color='g', linestyle='--', label=f'{base_rms:.2f} V')
-    ax1.text(x=max(time_us) * 0.95, y=base_rms, s=f'RMS {base_rms:.2f} [V]', color='g',
-             verticalalignment='bottom', horizontalalignment='right')
-    ax1.set_title('Baseline')
-    ax1.set_ylim(y_min, y_max)
-    ax1.grid(True)
+    if raw_path != '':
+        ax1.plot(time_us, raw_baseline_data, color='g')
+        ax1.axhline(y=base_rms, color='g', linestyle='--', label=f'{base_rms:.2f} V')
+        ax1.text(x=max(time_us) * 0.95, y=base_rms, s=f'RMS {base_rms:.2f} [V]', color='g',
+                 verticalalignment='bottom', horizontalalignment='right')
+        ax1.set_title('Baseline')
+        ax1.set_ylim(y_min, y_max)
+        ax1.grid(True)
 
     ax2.plot(time_us, volt_data, color='r')
     ax2.axhline(y=rms, color='r', linestyle=':', label=f'{rms:.2f} V')

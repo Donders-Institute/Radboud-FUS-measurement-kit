@@ -24,10 +24,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 **Attribution Notice**:
-If you use this kit in your research or project, please include the following attribution:
-Margely Cornelissen, Stein Fekkes (Radboud University, Nijmegen, The Netherlands) & Erik Dumont
-(Image Guided Therapy, Pessac, France) (2024), Radboud FUS measurement kit (version 1.0),
-https://github.com/Donders-Institute/Radboud-FUS-measurement-kit
+If you use this kit in your research or project, please refer to the 'How to Cite' section in the
+README.md file of https://github.com/Donders-Institute/Radboud-FUS-measurement-kit.
 """
 
 # Basic packages
@@ -45,6 +43,8 @@ import backend.hydrophone as hp
 import backend.picoscope as ps
 from backend import sequence
 
+from backend.utils import get_config_value
+from config.logging_config import logger
 
 from config.config import config_info as config
 
@@ -88,9 +88,13 @@ class InputParameters:
         Initialize input parameters with default values and configurations.
         """
 
-        self._temp_dir_output = config['Characterization']['Temporary output path']
-        self._dir_output = config['Characterization']['Default output directory']
-        self._path_protocol_excel_file = config['Characterization']['Default protocol directory']
+        self._temp_dir_output = get_config_value(logger, config, 'Characterization',
+                                                 'Temporary output path',
+                                                 'C:\\Temp\\General output folder')
+        self._dir_output = get_config_value(logger, config, 'Characterization',
+                                            'Default output directory', 'C:\\Temp')
+        self._path_protocol_excel_file = get_config_value(logger, config, 'Characterization',
+                                                          'Default protocol directory', 'C:\\Temp')
 
         # Get available driving systems and use the first one as default
         self._driving_sys = ds.DrivingSystem()
@@ -102,31 +106,44 @@ class InputParameters:
 
         self._oper_freq = self._transducer.fund_freq  # [kHz]
 
-        self._pos_com_port = 'COM3'
+        self._pos_com_port = get_config_value(logger, config, 'Characterization',
+                                              'default.pos_com_port', 'COM3')
 
         # Get available hydrophones, for logging purposes only
         self._hydrophone = hp.Hydrophone()
         self.hydrophone = hp.get_hydro_serials()[0]
 
-        self._acquisition_time = 500  # microseconds
+        self._acquisition_time = float(get_config_value(logger, config, 'Characterization',
+                                                        'default.acq_time_us', 500))  # microseconds
 
         # Get available PicoScope list
         self._picoscope = ps.PicoScope()
         self.picoscope = ps.get_pico_serials()[0]
 
-        self._sampl_freq_multi = 50
+        self._sampl_freq_multi = int(get_config_value(logger, config, 'Characterization',
+                                                      'default.sampl_freq_multi', 50))
 
-        self._temp = ''  # temperature in celsius
-        self._dis_oxy = ''  # dissolved oxygen in mg/L
+        # temperature in celsius
+        self._temp = get_config_value(logger, config, 'Characterization', 'default.temp', '')
 
-        self._coord_zero = [-62.2, -60.6, -155.528]
-        self._perform_all_seqs = True
+        # dissolved oxygen in mg/L
+        self._dis_oxy = get_config_value(logger, config, 'Characterization', 'default.dis_oxy', '')
 
-        adjust_param = config['Characterization']['ACD adjustment'].split('\n')
+        x_coord_zero = float(get_config_value(logger, config, 'Characterization',
+                                              'default.x_coord_zero', -62.2))
+        y_coord_zero = float(get_config_value(logger, config, 'Characterization',
+                                              'default.y_coord_zero', -60.6))
+        z_coord_zero = float(get_config_value(logger, config, 'Characterization',
+                                              'default.z_coord_zero', -155.528))
+        self._coord_zero = [x_coord_zero, y_coord_zero, z_coord_zero]
+
+        self._perform_all_seqs = get_config_value(logger, config, 'Characterization',
+                                                  'default.perform_all_seqs', 'True') == 'True'
+
         self._acd_param = {
-            "adjust": adjust_param[0],
+            "adjust": 0,
             "begus": 0,
-            "endus": 0,
+            "endus": self._acquisition_time,
             }
 
         self._protocol = ''
@@ -449,7 +466,7 @@ class InputParameters:
             value (float): Dissolved oxygen level in mg/L.
         """
         if value is not None and value < 0:
-            raise ValueError("Dissolved oxygen level must be non-negative.")
+            raise ValueError("Dissolved oxygen level must be positive.")
         self._dis_oxy = value
 
     @property
@@ -634,7 +651,10 @@ class InputParameters:
         """
 
         cached_input = self._create_ini_object()
-        cached_path = config['Characterization']['Path of input parameters cache']
+
+        cached_path = get_config_value(logger, config, 'Characterization',
+                                       'Path of input parameters cache',
+                                       'config//characterization_input_cache.ini')
         with open(cached_path, 'w') as inputfile:
             cached_input.write(inputfile)
 
@@ -647,7 +667,9 @@ class InputParameters:
         now = datetime.now()
 
         cached_input['Input parameters'] = {}
-        cached_input['Input parameters']['Date'] = str(now.strftime("%Y/%m/%d"))
+        date_format = get_config_value(logger, config, 'Characterization', 'Cache date format',
+                                       "%Y/%m/%d")
+        cached_input['Input parameters']['Date'] = str(now.strftime(date_format))
 
         cached_input = self._write_common_parameters(cached_input)
 
@@ -740,13 +762,21 @@ class InputParameters:
         cached_input['Input parameters.Protocol']['Alignment.pulse_rep_int_ms'] = str(seq.pulse_rep_int)
 
         cached_input['Input parameters.Protocol']['Alignment.power_option'] = seq.chosen_power
-        if seq.chosen_power == config['General']['Power option.glob_pow']:
+
+        gp_power = get_config_value(logger, config, 'Power', 'Option.glob_pow',
+                                    'Global power [mW]')
+        press_power = get_config_value(logger, config, 'Power', 'Option.press',
+                                       'Max. pressure in free water [MPa]')
+        volt_power = get_config_value(logger, config, 'Power', 'Option.volt', 'Voltage [V]')
+        ampl_power = get_config_value(logger, config, 'Power', 'Option.ampl', 'Amplitude [%]')
+
+        if seq.chosen_power == gp_power:
             cached_input['Input parameters.Protocol']['Alignment.power_value'] = str(seq.global_power)
-        elif seq.chosen_power == config['General']['Power option.press']:
+        elif seq.chosen_power == press_power:
             cached_input['Input parameters.Protocol']['Alignment.power_value'] = str(seq.press)
-        elif seq.chosen_power == config['General']['Power option.volt']:
+        elif seq.chosen_power == volt_power:
             cached_input['Input parameters.Protocol']['Alignment.power_value'] = str(seq.volt)
-        elif seq.chosen_power == config['General']['Power option.ampl']:
+        elif seq.chosen_power == ampl_power:
             cached_input['Input parameters.Protocol']['Alignment.power_value'] = str(seq.ampl)
 
         cached_input['Input parameters.Protocol']['Alignment.chosen_focus'] = str(seq.chosen_focus)
@@ -793,9 +823,20 @@ class InputParameters:
         cached_input['Input parameters.ACD processing']['End time of processing window [us]'] = (
             str(self._acd_param["endus"])
             )
+
+        adjust_message = get_config_value(logger, config, 'Characterization', 'acd adjustment.zero',
+                                          '0 - no adjustment')
+        if self._acd_param["adjust"] == 1:
+            adjust_message = get_config_value(logger, config, 'Characterization',
+                                              'acd adjustment.plus',
+                                              '+1 - axial measurement moving from transducer')
+        elif self._acd_param["adjust"] == -1:
+            adjust_message = get_config_value(logger, config, 'Characterization',
+                                              'acd adjustment.min',
+                                              '-1 - axial measurement moving towards transducer')
+
         cached_input['Input parameters.ACD processing']['Moving processing window along?'] = (
-            str(self._acd_param["adjust"])
-            )
+            adjust_message)
 
         return cached_input
 
@@ -823,13 +864,7 @@ class InputParameters:
         Convert driving system parameters from the INI file to object attributes.
         """
         driving_sys = ds.DrivingSystem()
-        driving_sys.serial = cached_input['Input parameters']['Driving system.serial_number']
-        driving_sys.name = cached_input['Input parameters']['Driving system.name']
-        driving_sys.manufact = cached_input['Input parameters']['Driving system.manufact']
-        driving_sys.available_ch = int(cached_input['Input parameters']['Driving system.available_ch'])
-        driving_sys.connect_info = cached_input['Input parameters']['Driving system.connect_info']
-        driving_sys.tran_comp = cached_input['Input parameters']['Driving system.tran_comp'].split(', ')
-        driving_sys.is_active = cached_input['Input parameters']['Driving system.is_active'] == 'True'
+        driving_sys.set_ds_info(cached_input['Input parameters']['Driving system.serial_number'])
 
         return driving_sys
 
@@ -838,16 +873,7 @@ class InputParameters:
         Convert transducer parameters from the INI file to object attributes.
         """
         transducer = tran.Transducer()
-        transducer.serial = cached_input['Input parameters']['Transducer.serial_number']
-        transducer.name = cached_input['Input parameters']['Transducer.name']
-        transducer.manufact = cached_input['Input parameters']['Transducer.manufact']
-        transducer.elements = int(cached_input['Input parameters']['Transducer.elements'])
-        transducer.fund_freq = int(cached_input['Input parameters']['Transducer.fund_freq_khz'])
-        transducer.natural_foc = float(cached_input['Input parameters']['Transducer.natural_foc_mm'])
-        transducer.min_foc = float(cached_input['Input parameters']['Transducer.min_foc_mm'])
-        transducer.max_foc = float(cached_input['Input parameters']['Transducer.max_foc_mm'])
-        transducer.steer_info = cached_input['Input parameters']['Transducer.steer_info']
-        transducer.is_active = cached_input['Input parameters']['Transducer.is_active'] == 'True'
+        transducer.set_transducer_info(cached_input['Input parameters']['Transducer.serial_number'])
 
         oper_freq = int(cached_input['Input parameters']['Operating frequency [kHz]'])
 
@@ -915,10 +941,15 @@ class InputParameters:
         Convert focus and power parameters for sequences from the INI file to object attributes.
         """
 
+        exit_foc = get_config_value(logger, config, 'Focus', 'Option.exit',
+                                    'Focus wrt exit plane [mm]')
+        bowl_foc = get_config_value(logger, config, 'Focus', 'Option.bowl',
+                                    'Focus wrt mid bowl [mm]')
+
         seq.chosen_focus = cached_input['Input parameters.Protocol']['Alignment.chosen_focus']
-        if seq.chosen_focus == config['General']['Focus option.exit']:
+        if seq.chosen_focus == exit_foc:
             focus_str = cached_input['Input parameters.Protocol']['Alignment.focus_wrt_exit_plane_mm']
-        elif seq.chosen_focus == config['General']['Focus option.bowl']:
+        elif seq.chosen_focus == bowl_foc:
             focus_str = cached_input['Input parameters.Protocol']['Alignment.focus_wrt_mid_bowl_mm']
         else:
             focus_str = ""
@@ -927,23 +958,32 @@ class InputParameters:
 
         # Retrieve and set power parameters based on the power option
         power_option = cached_input['Input parameters.Protocol']['Alignment.power_option']
-        power_value = float(cached_input['Input parameters.Protocol']['Alignment.power_value'])
-
+        power_value_str = cached_input['Input parameters.Protocol']['Alignment.power_value']
+        power_value = [float(value) for value in power_value_str.strip('][').split(',')]
+        
         for focus in focus_array:
             basic_seq = seq.clone()
-            if basic_seq.chosen_focus == config['General']['Focus option.exit']:
+
+            if basic_seq.chosen_focus == exit_foc:
                 basic_seq.focus_wrt_exit_plane = focus
-            elif basic_seq.chosen_focus == config['General']['Focus option.bowl']:
+            elif basic_seq.chosen_focus == bowl_foc:
                 basic_seq.focus_wrt_mid_bowl = focus
 
+            gp_power = get_config_value(logger, config, 'Power', 'Option.glob_pow',
+                                        'Global power [mW]')
+            press_power = get_config_value(logger, config, 'Power', 'Option.press',
+                                           'Max. pressure in free water [MPa]')
+            volt_power = get_config_value(logger, config, 'Power', 'Option.volt', 'Voltage [V]')
+            ampl_power = get_config_value(logger, config, 'Power', 'Option.ampl', 'Amplitude [%]')
+
             basic_seq.chosen_power = power_option
-            if power_option == config['General']['Power option.glob_pow']:
+            if power_option == gp_power:
                 basic_seq.global_power = power_value
-            elif power_option == config['General']['Power option.press']:
+            elif power_option == press_power:
                 basic_seq.press = power_value
-            elif power_option == config['General']['Power option.volt']:
+            elif power_option == volt_power:
                 basic_seq.volt = power_value
-            elif power_option == config['General']['Power option.ampl']:
+            elif power_option == ampl_power:
                 basic_seq.ampl = power_value
 
             return basic_seq
@@ -987,10 +1027,22 @@ class InputParameters:
 
         perform_all_seqs = cached_input['Input parameters']['Perform all sequences in sequence without waiting for user input?'] == 'True'
 
+        adjust_message = cached_input['Input parameters.ACD processing']['Moving processing window along?']
+
+        adjust_value = 0
+        if adjust_message == get_config_value(logger, config, 'Characterization',
+                                              'acd adjustment.plus',
+                                              '+1 - axial measurement moving from transducer'):
+            adjust_value = 1
+        elif adjust_message == get_config_value(logger, config, 'Characterization',
+                                                'acd adjustment.min',
+                                                '-1 - axial measurement moving towards transducer'):
+            adjust_value = -1
+
         acd_param = {
             "begus": float(cached_input['Input parameters.ACD processing']['Beginning time of processing window [us]']),
             "endus": float(cached_input['Input parameters.ACD processing']['End time of processing window [us]']),
-            "adjust": cached_input['Input parameters.ACD processing']['Moving processing window along?']
+            "adjust": adjust_value
         }
 
         return temp, dis_oxy, coord_zero, perform_all_seqs, acd_param

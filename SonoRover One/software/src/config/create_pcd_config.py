@@ -24,10 +24,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 **Attribution Notice**:
-If you use this kit in your research or project, please include the following attribution:
-Margely Cornelissen, Stein Fekkes (Radboud University, Nijmegen, The Netherlands) & Erik Dumont
-(Image Guided Therapy, Pessac, France) (2024), Radboud FUS measurement kit (version 1.0),
-https://github.com/Donders-Institute/Radboud-FUS-measurement-kit
+If you use this kit in your research or project, please refer to the 'How to Cite' section in the
+README.md file of https://github.com/Donders-Institute/Radboud-FUS-measurement-kit.
 """
 
 import configparser
@@ -36,6 +34,18 @@ import configparser
 CONFIG_FILE = 'pcd_config.ini'
 
 pcd_config = configparser.ConfigParser(interpolation=None)
+
+pcd_config['Default'] = {}
+pcd_config['Default']['output_dir'] = 'C:\\Temp\\PCD_acquisition_output'
+pcd_config['Default']['sampl_freq_multi'] = str(50)
+pcd_config['Default']['acquisition_time_us'] = str(500)
+pcd_config['Default']['pulse_dur_ms'] = str(0.2)
+pcd_config['Default']['per_elem_ampl'] = str(5)
+pcd_config['Default']['all_elems_ampl'] = str(1)
+
+pcd_config['Limit'] = {}
+pcd_config['Limit']['all_elems_ampl'] = str(5)
+pcd_config['Limit']['per_elem_ampl'] = str(10)
 
 pcd_config['IS_PCD15287_01001'] = {}
 pcd_config['IS_PCD15287_01001']['Baseline path'] = "C:\\Temp\\Measurements performed by researchers\\PCD measurements\\Baseline measurements\\Imasonic_15287_1001_R75"

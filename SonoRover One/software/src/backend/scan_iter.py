@@ -24,11 +24,11 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 **Attribution Notice**:
-If you use this kit in your research or project, please include the following attribution:
-Margely Cornelissen, Stein Fekkes (Radboud University, Nijmegen, The Netherlands) & Erik Dumont
-(Image Guided Therapy, Pessac, France) (2024), Radboud FUS measurement kit (version 1.0),
-https://github.com/Donders-Institute/Radboud-FUS-measurement-kit
+If you use this kit in your research or project, please refer to the 'How to Cite' section in the
+README.md file of https://github.com/Donders-Institute/Radboud-FUS-measurement-kit.
 """
+
+from config.logging_config import logger
 
 class Scan_Iter:
 	def __init__(self, ns,nr,nc, scan='Dir'):
@@ -38,7 +38,7 @@ class Scan_Iter:
 		self.N = ns * nr * nc
 		self.cur_index = 0
 		self.direct = True if scan=='Dir' else False
-		print(f'ns: {self.ns}, nr: {self.nr}, nc: {self.nc}, N: {self.N}, direct: {self.direct}' )
+		logger.debug(f'ns: {self.ns}, nr: {self.nr}, nc: {self.nc}, N: {self.N}, direct: {self.direct}' )
 
 	def __iter__(self):
 		'Returns itself as an iterator object'

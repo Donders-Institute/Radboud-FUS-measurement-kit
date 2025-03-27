@@ -24,10 +24,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 **Attribution Notice**:
-If you use this kit in your research or project, please include the following attribution:
-Margely Cornelissen, Stein Fekkes (Radboud University, Nijmegen, The Netherlands) & Erik Dumont
-(Image Guided Therapy, Pessac, France) (2024), Radboud FUS measurement kit (version 1.0),
-https://github.com/Donders-Institute/Radboud-FUS-measurement-kit
+If you use this kit in your research or project, please refer to the 'How to Cite' section in the
+README.md file of https://github.com/Donders-Institute/Radboud-FUS-measurement-kit.
 """
 
 # Basic packages
@@ -38,6 +36,8 @@ import copy
 
 # Own packages
 from config.config import config_info as config
+from backend.utils import get_config_value
+from config.logging_config import logger
 
 
 class Hydrophone:
@@ -69,11 +69,18 @@ class Hydrophone:
 
         try:
             self.serial = serial
-            self.name = config['Characterization.Equipment.' + serial]['Name']
-            self.sens_v_pa = (config['Characterization.Equipment.' + serial]
-                                    ['Sensitivity (V/Pa) datasheet'])
+            section = 'Characterization.Equipment.' + serial
+            get_config_value(logger, config, section, 'Name', 'Unknown hydrophone name')
+            self.name = get_config_value(logger, config, section, 'Name', 'Unknown hydrophone name')
+            self.sens_v_pa = get_config_value(logger, config, section,
+                                              'Sensitivity (V/Pa) datasheet',
+                                              'Unknown hydrophone datasheet')
+
         except KeyError:
-            sys.exit(f'No hydrophone with serial number {serial} found in configuration file.')
+            message = (f'No hydrophone with serial number {serial} found in' +
+                       ' configuration file.')
+            logger.critical(message)
+            sys.exit(message)
 
     def __str__(self):
         """
@@ -115,7 +122,8 @@ def get_hydro_serials():
         List[str]: Serial numbers for available hydrophones.
     """
 
-    hydro_serial = config['Characterization.Equipment']['Hydrophones'].split(', ')
+    hydro_serial = get_config_value(logger, config, 'Characterization.Equipment', 'Hydrophones',
+                                    '').split('\n')
 
     return hydro_serial
 
@@ -131,11 +139,21 @@ def get_hydro_names():
     names = []
     for serial in get_hydro_serials():
         try:
-            hydro_name = config['Characterization.Equipment.' + serial]['Name']
+            section = 'Characterization.Equipment.' + serial
+            hydro_name = get_config_value(logger, config, section, 'Name',
+                                          'Unknown hydrophone name')
         except KeyError:
-            sys.exit(f'No hydrophone with serial number {serial} found in' +
-                     ' configuration file.')
+            message = (f'No hydrophone with serial number {serial} found in' +
+                       ' configuration file.')
+            logger.critical(message)
+            sys.exit(message)
+
         names.append(hydro_name)
+
+    if len(names) < 1:
+        message = ('No hydrophones found in configuration file.')
+        logger.critical(message)
+        sys.exit(message)
 
     return names
 
@@ -154,12 +172,17 @@ def get_hydro_list():
             hydro = Hydrophone()
             hydro.set_hydro_info(serial)
         except KeyError:
-            sys.exit(f'No hydrophone with serial number {serial} found in' +
-                     ' configuration file.')
+            message = (f'No hydrophone with serial number {serial} found in' +
+                       ' configuration file.')
+            logger.critical(message)
+            sys.exit(message)
+
         hydro_list.append(hydro)
 
     if len(hydro_list) < 1:
-        sys.exit('No hydrophones found in configuration file.')
+        message = ('No hydrophones found in configuration file.')
+        logger.critical(message)
+        sys.exit(message)
 
     return hydro_list
 
