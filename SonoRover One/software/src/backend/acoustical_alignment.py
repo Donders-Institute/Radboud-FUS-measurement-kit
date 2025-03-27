@@ -491,6 +491,7 @@ def calculate_acoustical_axis(middle_points, z_exit_plane, temp_dir_output):
     Returns:
     dict: Acoustical axis data containing the origin point and direction vector.
     """
+
     if len(middle_points) < 2:  # We need at least two points to determine a linear relationship
         logger.error('At least two middle points are needed to calculate ' +
                      'the acoustical axis.')
