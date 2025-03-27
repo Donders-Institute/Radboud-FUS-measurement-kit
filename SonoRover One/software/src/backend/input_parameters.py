@@ -24,10 +24,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 **Attribution Notice**:
-If you use this kit in your research or project, please include the following attribution:
-Margely Cornelissen, Stein Fekkes (Radboud University, Nijmegen, The Netherlands) & Erik Dumont
-(Image Guided Therapy, Pessac, France) (2024), Radboud FUS measurement kit (version 1.0),
-https://github.com/Donders-Institute/Radboud-FUS-measurement-kit
+If you use this kit in your research or project, please refer to the 'How to Cite' section in the
+README.md file of https://github.com/Donders-Institute/Radboud-FUS-measurement-kit.
 """
 
 # Basic packages
@@ -825,9 +823,20 @@ class InputParameters:
         cached_input['Input parameters.ACD processing']['End time of processing window [us]'] = (
             str(self._acd_param["endus"])
             )
+
+        adjust_message = get_config_value(logger, config, 'Characterization', 'acd adjustment.zero',
+                                          '0 - no adjustment')
+        if self._acd_param["adjust"] == 1:
+            adjust_message = get_config_value(logger, config, 'Characterization',
+                                              'acd adjustment.plus',
+                                              '+1 - axial measurement moving from transducer')
+        elif self._acd_param["adjust"] == -1:
+            adjust_message = get_config_value(logger, config, 'Characterization',
+                                              'acd adjustment.min',
+                                              '-1 - axial measurement moving towards transducer')
+
         cached_input['Input parameters.ACD processing']['Moving processing window along?'] = (
-            str(self._acd_param["adjust"])
-            )
+            adjust_message)
 
         return cached_input
 
@@ -1018,10 +1027,22 @@ class InputParameters:
 
         perform_all_seqs = cached_input['Input parameters']['Perform all sequences in sequence without waiting for user input?'] == 'True'
 
+        adjust_message = cached_input['Input parameters.ACD processing']['Moving processing window along?']
+
+        adjust_value = 0
+        if adjust_message == get_config_value(logger, config, 'Characterization',
+                                              'acd adjustment.plus',
+                                              '+1 - axial measurement moving from transducer'):
+            adjust_value = 1
+        elif adjust_message == get_config_value(logger, config, 'Characterization',
+                                                'acd adjustment.min',
+                                                '-1 - axial measurement moving towards transducer'):
+            adjust_value = -1
+
         acd_param = {
             "begus": float(cached_input['Input parameters.ACD processing']['Beginning time of processing window [us]']),
             "endus": float(cached_input['Input parameters.ACD processing']['End time of processing window [us]']),
-            "adjust": int(cached_input['Input parameters.ACD processing']['Moving processing window along?'])
+            "adjust": adjust_value
         }
 
         return temp, dis_oxy, coord_zero, perform_all_seqs, acd_param

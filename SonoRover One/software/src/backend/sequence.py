@@ -24,10 +24,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 **Attribution Notice**:
-If you use this kit in your research or project, please include the following attribution:
-Margely Cornelissen, Stein Fekkes (Radboud University, Nijmegen, The Netherlands) & Erik Dumont
-(Image Guided Therapy, Pessac, France) (2024), Radboud FUS measurement kit (version 1.0),
-https://github.com/Donders-Institute/Radboud-FUS-measurement-kit
+If you use this kit in your research or project, please refer to the 'How to Cite' section in the
+README.md file of https://github.com/Donders-Institute/Radboud-FUS-measurement-kit.
 """
 
 # Basic packages
@@ -325,13 +323,13 @@ class CharacSequence(sequence.Sequence):
 
         # Extract general excel information from config
         glob_pow_input = get_config_value(logger, config, "Characterization", "prot_excel.glob_pow",
-                                          "SC - Global power [mW] (fill in 'Corresponding value')"),
+                                          "SC - Global power [mW] (fill in 'Corresponding value')")
         press_input = get_config_value(logger, config, "Characterization", "prot_excel.press",
-                                       "IGT - Max. pressure in free water [MPa] (fill in 'Corresponding value')"),
+                                       "IGT - Max. pressure in free water [MPa] (fill in 'Corresponding value')")
         volt_input = get_config_value(logger, config, "Characterization", "prot_excel.volt",
-                                      "IGT - Voltage [V] (fill in 'Corresponding value')"),
+                                      "IGT - Voltage [V] (fill in 'Corresponding value')")
         ampl_input = get_config_value(logger, config, "Characterization", "prot_excel.ampl",
-                                      "IGT - Amplitude [%] (fill in 'Corresponding value')"),
+                                      "IGT - Amplitude [%] (fill in 'Corresponding value')")
 
         power_param = str(seq_row[excel_ind["power"]])
         if power_param == glob_pow_input:
@@ -344,7 +342,7 @@ class CharacSequence(sequence.Sequence):
         elif power_param == press_input:
             self.press = abs(float(seq_row[excel_ind["power_value"]]))
 
-        elif power_param ==  volt_input:
+        elif power_param == volt_input:
             voltages = str(seq_row[excel_ind["power_value"]])
             volt_str = re.sub(r"[,\[\]\s]+", " ", voltages).strip()
 
@@ -355,7 +353,7 @@ class CharacSequence(sequence.Sequence):
                 logger.critical(message)
                 sys.exit(message)
 
-        elif power_param ==  ampl_input:
+        elif power_param == ampl_input:
             amplitudes = str(seq_row[excel_ind["power_value"]])
             ampl_str = re.sub(r"[,\[\]\s]+", " ", amplitudes).strip()
 
@@ -365,6 +363,10 @@ class CharacSequence(sequence.Sequence):
                 message = 'Amplitude array cannot be converted to a float array.'
                 logger.critical(message)
                 sys.exit(message)
+        else:
+            message = f'No power value found in sequence {self.seq_number}.'
+            logger.critical(message)
+            sys.exit(message)
 
         # Timing parameters
         # ## pulse ## #

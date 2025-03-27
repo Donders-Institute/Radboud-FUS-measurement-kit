@@ -24,10 +24,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 **Attribution Notice**:
-If you use this kit in your research or project, please include the following attribution:
-Margely Cornelissen, Stein Fekkes (Radboud University, Nijmegen, The Netherlands) & Erik Dumont
-(Image Guided Therapy, Pessac, France) (2024), Radboud FUS measurement kit (version 1.0),
-https://github.com/Donders-Institute/Radboud-FUS-measurement-kit
+If you use this kit in your research or project, please refer to the 'How to Cite' section in the
+README.md file of https://github.com/Donders-Institute/Radboud-FUS-measurement-kit.
 """
 
 # Basic packages
@@ -519,7 +517,6 @@ class ProtocolDialog(ctk.CTkToplevel):
 
         serial_ds = ds.get_serial_from_name(self.ds_combo.get())
         self.input_param.driving_sys = serial_ds
-        self.ac_align_seq.driving_sys = serial_ds
         if 'COM' in self.input_param.driving_sys.connect_info:
             self.com_us.delete(0, tk.END)
             com_us_num = self.input_param.driving_sys.connect_info.removeprefix('COM')
@@ -561,7 +558,6 @@ class ProtocolDialog(ctk.CTkToplevel):
 
         new_tran_serial = tran.get_serial_from_name(self.trans_combo.get())
         self.input_param.transducer = new_tran_serial
-        self.ac_align_seq.transducer = new_tran_serial
 
         self.oper_freq_entr.delete(0, tk.END)
         self.oper_freq_entr.insert(0, int(self.input_param.transducer.fund_freq))

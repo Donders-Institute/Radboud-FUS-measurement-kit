@@ -24,10 +24,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 **Attribution Notice**:
-If you use this kit in your research or project, please include the following attribution:
-Margely Cornelissen, Stein Fekkes (Radboud University, Nijmegen, The Netherlands) & Erik Dumont
-(Image Guided Therapy, Pessac, France) (2024), Radboud FUS measurement kit (version 1.0),
-https://github.com/Donders-Institute/Radboud-FUS-measurement-kit
+If you use this kit in your research or project, please refer to the 'How to Cite' section in the
+README.md file of https://github.com/Donders-Institute/Radboud-FUS-measurement-kit.
 """
 
 # -------------------------------------------------------------------------------
@@ -718,7 +716,7 @@ class Acquisition:
                                                 "piecewise polynomial fit of " +
                                                 f"{self.sequence.volt_curve_file}\n ")
 
-            params['Sequence']['focus_curve'] = ("- Pressure to amplitude conversion: Using " +
+            params['Sequence']['power_curve'] = ("- Pressure to amplitude conversion: Using " +
                                                  "piecewise polynomial fit of " +
                                                  f"{self.sequence.power_curve_file}\n ")
 

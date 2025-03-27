@@ -24,10 +24,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 **Attribution Notice**:
-If you use this kit in your research or project, please include the following attribution:
-Margely Cornelissen, Stein Fekkes (Radboud University, Nijmegen, The Netherlands) & Erik Dumont
-(Image Guided Therapy, Pessac, France) (2024), Radboud FUS measurement kit (version 1.0),
-https://github.com/Donders-Institute/Radboud-FUS-measurement-kit
+If you use this kit in your research or project, please refer to the 'How to Cite' section in the
+README.md file of https://github.com/Donders-Institute/Radboud-FUS-measurement-kit.
 """
 
 # Basic packages
@@ -520,7 +518,7 @@ def calculate_acoustical_axis(middle_points, z_exit_plane, temp_dir_output):
 
     # Line through the origin in the direction of the direction_vector
     line_length = float(get_config_value(logger, config, 'Characterization',
-                                         'default.axis_length ', 140))
+                                         'default.axis_length', 140))
     stepsize = float(get_config_value(logger, config, 'Characterization',
                                       'default.axis_stepsize', 0.5))
     n_points = int(math.ceil(line_length*stepsize))

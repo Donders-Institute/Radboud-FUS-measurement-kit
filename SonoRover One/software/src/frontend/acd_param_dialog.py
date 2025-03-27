@@ -24,10 +24,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 **Attribution Notice**:
-If you use this kit in your research or project, please include the following attribution:
-Margely Cornelissen, Stein Fekkes (Radboud University, Nijmegen, The Netherlands) & Erik Dumont
-(Image Guided Therapy, Pessac, France) (2024), Radboud FUS measurement kit (version 1.0),
-https://github.com/Donders-Institute/Radboud-FUS-measurement-kit
+If you use this kit in your research or project, please refer to the 'How to Cite' section in the
+README.md file of https://github.com/Donders-Institute/Radboud-FUS-measurement-kit.
 """
 
 # Basic packages
@@ -129,8 +127,20 @@ class ACDParamDialog(ctk.CTkToplevel):
 
         acd_adjust_options = get_config_value(logger, config, 'Characterization', 'ACD adjustment',
                                               '').split('\n')
+
+        adjust_message = get_config_value(logger, config, 'Characterization', 'acd adjustment.zero',
+                                          '0 - no adjustment')
+        if self.acd_param["adjust"] == 1:
+            adjust_message = get_config_value(logger, config, 'Characterization',
+                                              'acd adjustment.plus',
+                                              '+1 - axial measurement moving from transducer')
+        elif self.acd_param["adjust"] == -1:
+            adjust_message = get_config_value(logger, config, 'Characterization',
+                                              'acd adjustment.min',
+                                              '-1 - axial measurement moving towards transducer')
+
         self.adjust = self._create_combo("Moving processing window along?", acd_adjust_options,
-                                         self.acd_param["adjust"], self._event_handling)
+                                         adjust_message, self._event_handling)
 
         # Error message label
         self._add_row()
@@ -343,18 +353,17 @@ class ACDParamDialog(ctk.CTkToplevel):
         self.acd_param["begus"] = self.begus.get()
         self.acd_param["endus"] = self.endus.get()
         adjust_value = self.adjust.get()
-        
+
         if adjust_value == get_config_value(logger, config, 'Characterization',
-                                                  'acd adjustment.zero', 
-                                                  '0 - no adjustment'):
+                                            'acd adjustment.zero', '0 - no adjustment'):
             self.acd_param["adjust"] = 0
-        elif adjust_value == get_config_value(
-                logger, config, 'Characterization','acd adjustment.plus', 
-                '+1 - axial measurement moving from transducer'):
+        elif adjust_value == get_config_value(logger, config, 'Characterization',
+                                              'acd adjustment.plus',
+                                              '+1 - axial measurement moving from transducer'):
             self.acd_param["adjust"] = 1
-        elif adjust_value == get_config_value(
-                logger, config, 'Characterization','acd adjustment.min', 
-                '-1 - axial measurement moving towards transducer'):
+        elif adjust_value == get_config_value(logger, config, 'Characterization',
+                                              'acd adjustment.min',
+                                              '-1 - axial measurement moving towards transducer'):
             self.acd_param["adjust"] = -1
 
         # Close the dialog
