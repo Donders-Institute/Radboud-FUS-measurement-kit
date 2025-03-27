@@ -24,10 +24,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 **Attribution Notice**:
-If you use this kit in your research or project, please include the following attribution:
-Margely Cornelissen, Stein Fekkes (Radboud University, Nijmegen, The Netherlands) & Erik Dumont
-(Image Guided Therapy, Pessac, France) (2024), Radboud FUS measurement kit (version 1.0),
-https://github.com/Donders-Institute/Radboud-FUS-measurement-kit
+If you use this kit in your research or project, please refer to the 'How to Cite' section in the
+README.md file of https://github.com/Donders-Institute/Radboud-FUS-measurement-kit.
 """
 
 # Basic packages
@@ -41,9 +39,12 @@ import tkinter
 from config.config import config_info as config
 from config.logging_config import logger
 
+from backend.utils import get_config_value
+
 
 def continue_acquisition_dialog(sequence):
-    message = config['Characterization']['Continue acquisition message']
+    message = get_config_value(logger, config, 'Characterization', 'Continue acquisition message',
+                               'Continue acquisition with the following sequence:')
     message += '\n' + str(sequence)
 
     master = tkinter.Tk()
@@ -54,13 +55,19 @@ def continue_acquisition_dialog(sequence):
     response = message_box.get()
 
     if response is None:
-        sys.exit('Pipeline is cancelled by user.')
+        message = 'Pipeline is cancelled by user.'
+        logger.critical(message)
+        sys.exit(message)
 
-    logger.info(f"Message box closed with response: {response}")
+    logger.debug(f"Message box closed with response: {response}")
 
 
 def check_disconnection_dialog(add_message):
-    message = config['Characterization']['Disconnection message']
+    default_message = ('Ensure the following: \n - PicoScope software is not connected to the ' +
+                       'PicoScope in use. \n - Universal Gcode Sender is not connected to the ' +
+                       'positioning system.')
+    message = get_config_value(logger, config, 'Characterization', 'Disconnection message',
+                               default_message)
     message += add_message
 
     master = tkinter.Tk()
@@ -71,6 +78,8 @@ def check_disconnection_dialog(add_message):
     response = message_box.get()
 
     if response is None:
-        sys.exit('Pipeline is cancelled by user.')
+        message = 'Pipeline is cancelled by user.'
+        logger.critical(message)
+        sys.exit(message)
 
-    logger.info(f"Message box closed with response: {response}")
+    logger.debug(f"Message box closed with response: {response}")

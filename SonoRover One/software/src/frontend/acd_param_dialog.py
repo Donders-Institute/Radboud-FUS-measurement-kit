@@ -24,23 +24,23 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 **Attribution Notice**:
-If you use this kit in your research or project, please include the following attribution:
-Margely Cornelissen, Stein Fekkes (Radboud University, Nijmegen, The Netherlands) & Erik Dumont
-(Image Guided Therapy, Pessac, France) (2024), Radboud FUS measurement kit (version 1.0),
-https://github.com/Donders-Institute/Radboud-FUS-measurement-kit
+If you use this kit in your research or project, please refer to the 'How to Cite' section in the
+README.md file of https://github.com/Donders-Institute/Radboud-FUS-measurement-kit.
 """
 
 # Basic packages
 import os
+import sys
 import tkinter as tk
 
 # Miscellaneous packages
 import customtkinter as ctk
 
-import logging
-
 # Own packages
 from config.config import config_info as config
+from config.logging_config import logger
+
+from backend.utils import get_config_value
 
 
 class ACDParamDialog(ctk.CTkToplevel):
@@ -87,8 +87,10 @@ class ACDParamDialog(ctk.CTkToplevel):
             self._resize_window()
 
         except AttributeError:
-            print(logging.exception('AttributeError'))
+            message = 'AttributeError in protocol dialog'
+            logger.critical(message)
             self._cancel_action()
+            sys.exit(message)
 
     def _resize_window(self):
         """
@@ -103,7 +105,9 @@ class ACDParamDialog(ctk.CTkToplevel):
         # Display this window on top of all windows
         self.lift()
         self.attributes('-topmost', True)
-        self.after(5000, lambda: self.attributes('-topmost', False))  # stay for 5s
+        stay_topmost_in_ms = int(get_config_value(logger, config, 'Characterization',
+                                                  'acd_dialog.stay_topmost_in_ms', 5000))
+        self.after(stay_topmost_in_ms, lambda: self.attributes('-topmost', False))  # stay for 5s
 
     def _create_entries(self):
         """
@@ -121,10 +125,22 @@ class ACDParamDialog(ctk.CTkToplevel):
                                         is_event=True, event_handling=self._event_handling,
                                         width=200)
 
-        self.adjust = self._create_combo("Moving processing window along?",
-                                         config['Characterization']['ACD adjustment'].split('\n'),
-                                         self.acd_param["adjust"],
-                                         self._event_handling)
+        acd_adjust_options = get_config_value(logger, config, 'Characterization', 'ACD adjustment',
+                                              '').split('\n')
+
+        adjust_message = get_config_value(logger, config, 'Characterization', 'acd adjustment.zero',
+                                          '0 - no adjustment')
+        if self.acd_param["adjust"] == 1:
+            adjust_message = get_config_value(logger, config, 'Characterization',
+                                              'acd adjustment.plus',
+                                              '+1 - axial measurement moving from transducer')
+        elif self.acd_param["adjust"] == -1:
+            adjust_message = get_config_value(logger, config, 'Characterization',
+                                              'acd adjustment.min',
+                                              '-1 - axial measurement moving towards transducer')
+
+        self.adjust = self._create_combo("Moving processing window along?", acd_adjust_options,
+                                         adjust_message, self._event_handling)
 
         # Error message label
         self._add_row()
@@ -336,7 +352,19 @@ class ACDParamDialog(ctk.CTkToplevel):
 
         self.acd_param["begus"] = self.begus.get()
         self.acd_param["endus"] = self.endus.get()
-        self.acd_param["adjust"] = self.adjust.get()
+        adjust_value = self.adjust.get()
+
+        if adjust_value == get_config_value(logger, config, 'Characterization',
+                                            'acd adjustment.zero', '0 - no adjustment'):
+            self.acd_param["adjust"] = 0
+        elif adjust_value == get_config_value(logger, config, 'Characterization',
+                                              'acd adjustment.plus',
+                                              '+1 - axial measurement moving from transducer'):
+            self.acd_param["adjust"] = 1
+        elif adjust_value == get_config_value(logger, config, 'Characterization',
+                                              'acd adjustment.min',
+                                              '-1 - axial measurement moving towards transducer'):
+            self.acd_param["adjust"] = -1
 
         # Close the dialog
         self._cancel_action()

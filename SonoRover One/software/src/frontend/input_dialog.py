@@ -24,10 +24,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 **Attribution Notice**:
-If you use this kit in your research or project, please include the following attribution:
-Margely Cornelissen, Stein Fekkes (Radboud University, Nijmegen, The Netherlands) & Erik Dumont
-(Image Guided Therapy, Pessac, France) (2024), Radboud FUS measurement kit (version 1.0),
-https://github.com/Donders-Institute/Radboud-FUS-measurement-kit
+If you use this kit in your research or project, please refer to the 'How to Cite' section in the
+README.md file of https://github.com/Donders-Institute/Radboud-FUS-measurement-kit.
 """
 
 # Basic packages
@@ -40,15 +38,17 @@ import tkinter as tk
 import configparser
 import customtkinter as ctk
 
-import logging
-
 # Own packages
 from config.config import config_info as config
 from config.logging_config import logger
 
+from backend.utils import get_config_value
 from backend.input_parameters import InputParameters
 import frontend.acd_param_dialog as apd
 import frontend.protocol_dialog as pd
+
+import backend.hydrophone as hp
+import backend.picoscope as ps
 
 
 class InputDialog():
@@ -93,18 +93,22 @@ class InputDialog():
         self.input_param = InputParameters()
 
         # Check if cached data exists and load if valid
-        config_path = config['Characterization']['Path of input parameters cache']
+        config_path = get_config_value(logger, config, 'Characterization',
+                                       'Path of input parameters cache',
+                                       'config//characterization_input_cache.ini')
         if os.path.exists(config_path):
             cached_input = configparser.ConfigParser(interpolation=None)
             cached_input.read(config_path)
 
             # Check if cached data exists and load if valid
             now = datetime.now()
-            if cached_input['Input parameters']['Date'] == str(now.strftime("%Y/%m/%d")):
+            date_format = get_config_value(logger, config, 'Characterization', 'Cache date format',
+                                           "%Y/%m/%d")
+            if cached_input['Input parameters']['Date'] == str(now.strftime(date_format)):
                 try:
                     self.input_param.convert_ini_to_object(cached_input)
                 except KeyError:
-                    print('Cached data cannot be read. Use default parameters')
+                    logger.warning('Cached data cannot be read. Use default parameters')
 
     def _init_body(self):
         """
@@ -130,7 +134,8 @@ class InputDialog():
             self.win.mainloop()
 
         except AttributeError:
-            logger.error(logging.exception('AttributeError'))
+            message = 'AttributeError in protocol dialog'
+            logger.critical(message)
             self._cancel_action(True)
 
     def _resize_window(self):
@@ -146,7 +151,9 @@ class InputDialog():
         # Display this window on top of all windows
         self.win.lift()
         self.win.attributes('-topmost', True)
-        self.win.after(5000, lambda: self.win.attributes('-topmost', False))  # stay for 5s
+        stay_topmost_in_ms = int(get_config_value(logger, config, 'Characterization',
+                                                  'input_dialog.stay_topmost_in_ms', 5000))
+        self.win.after(stay_topmost_in_ms, lambda: self.win.attributes('-topmost', False))  # stay for n sec
 
     def _create_entries(self):
         """
@@ -155,7 +162,9 @@ class InputDialog():
 
         # Path and filename of protocol excel file
         if self.input_param.is_ac_align is True:
-            self.input_param.protocol = 'Acoustical alignment'
+            self.input_param.protocol = get_config_value(logger, config, 'Characterization',
+                                                         'Protocol.ac_align',
+                                                         'Acoustical alignment')
         else:
             filename_ext = os.path.basename(self.input_param.path_protocol_excel_file)
             self.input_param.protocol = os.path.splitext(filename_ext)[0]
@@ -174,7 +183,7 @@ class InputDialog():
         self.com_pos = self._create_entry("COM port of positioning system", com_pos_num,
                                           is_event=True, event_handling=self._event_handling)
         # Dropdown for selecting hydrophone
-        self.hydro_combo = self._create_combo("Hydrophone", self.input_param.hydro_names,
+        self.hydro_combo = self._create_combo("Hydrophone", hp.get_hydro_names(),
                                               self.input_param.hydrophone.name,
                                               self._event_handling)
 
@@ -184,7 +193,7 @@ class InputDialog():
                                            is_event=True, event_handling=self._event_handling)
 
         # Dropdown for selecting picoscope
-        self.pico_combo = self._create_combo("PicoScope", self.input_param.pico_names,
+        self.pico_combo = self._create_combo("PicoScope", ps.get_pico_names(),
                                              self.input_param.picoscope.name,
                                              self._event_handling)
 
@@ -261,7 +270,8 @@ class InputDialog():
         self.run_button.configure(state=tk.DISABLED)
 
         # Cancel button
-        button = ctk.CTkButton(master=self.win, text="Cancel", command=lambda: self._cancel_action(True))
+        button = ctk.CTkButton(master=self.win, text="Cancel",
+                               command=lambda: self._cancel_action(True))
         button.grid(row=self.row_nr, column=1, sticky='e', ipadx=53, padx=10, pady=10)
 
     def _add_row(self):
@@ -493,7 +503,7 @@ class InputDialog():
 
     def _acd_action(self):
         if self.acd_subdialog is None or not self.acd_subdialog.winfo_exists():
-            self.acd_subdialog = apd.ACDParamDialog(self.win, self.input_param.acd_param)
+            self.acd_subdialog = apd.ACDParamDialog(self.win, self.input_param._acd_param)
         else:
             self.acd_subdialog.deiconify()  # Show the subdialog if it was hidden
 
@@ -507,18 +517,12 @@ class InputDialog():
             self.input_param.pos_com_port = f'COM{self.com_pos.get()}'
 
             # Save selected hydrophone object
-            hydro_name = self.hydro_combo.get()
-            for hydro in self.input_param.hydro_list:
-                if hydro.name == hydro_name:
-                    self.input_param.hydrophone = hydro
+            self.input_param.hydrophone = hp.get_serial_from_name(self.hydro_combo.get())
 
             self.input_param.acquisition_time = float(self.acq_time.get())
 
             # Save selected PicoScope object
-            pico_name = self.pico_combo.get()
-            for pico in self.input_param.pico_list:
-                if pico.name == pico_name:
-                    self.input_param.picoscope = pico
+            self.input_param.picoscope = ps.get_serial_from_name(self.pico_combo.get())
 
             self.input_param.sampl_freq_multi = float(self.sampl_freq.get())
 
@@ -553,5 +557,6 @@ class InputDialog():
             self.win = None
 
         if cancel_sys:
-            sys.exit('Pipeline is cancelled by user.')
-
+            message = 'Pipeline is cancelled by user.'
+            logger.critical(message)
+            sys.exit(message)

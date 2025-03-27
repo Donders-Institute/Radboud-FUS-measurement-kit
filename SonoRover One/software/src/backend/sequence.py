@@ -24,10 +24,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 **Attribution Notice**:
-If you use this kit in your research or project, please include the following attribution:
-Margely Cornelissen, Stein Fekkes (Radboud University, Nijmegen, The Netherlands) & Erik Dumont
-(Image Guided Therapy, Pessac, France) (2024), Radboud FUS measurement kit (version 1.0),
-https://github.com/Donders-Institute/Radboud-FUS-measurement-kit
+If you use this kit in your research or project, please refer to the 'How to Cite' section in the
+README.md file of https://github.com/Donders-Institute/Radboud-FUS-measurement-kit.
 """
 
 # Basic packages
@@ -41,11 +39,11 @@ import numpy
 
 import pandas as pd
 
-import re
-
 # Own packages
 from fus_driving_systems import sequence
 from config.logging_config import logger
+from config.config import config_info as config
+from backend.utils import get_config_value
 
 
 class CharacSequence(sequence.Sequence):
@@ -54,6 +52,23 @@ class CharacSequence(sequence.Sequence):
 
     Attributes:
         seq_number (int): Sequence number of the protocol in the Excel file.
+        tag (str): User-defined description of the sequence.
+        is_ac_align (bool): Flag indicating if acoustical alignment is performed. If True, no grid
+                            input is required.
+        ac_align (dict): Configuration for acoustical alignment including:
+            - distance_from_foc (list): [mm] Distance from the focus point in millimeters.
+            - init_line_len (float): [mm] Initial line length used for alignment.
+            - init_line_step (float): [mm] Step size for alignment in millimeters.
+            - init_threshold (float): [mm] Threshold for initial alignment error in millimeters.
+            - DEPRECATED reduction_factor (float): [-] Reduction factor for iterative alignment
+                                                       steps.
+            - DEPRECATED max_red_iter (int): [-] Maximum number of reduction iterations allowed.
+            - create_graphs (bool): Boolean to indicate if graphs should be created for
+                                    visualization.
+            - y_lim (float): [mV] Y-axis limit used for plotting.
+            - create_axis_file (bool): Boolean to indicate if an axis file should be generated.
+            - axis_length (float): [mm] Total length of the axis in millimeters.
+            - axis_stepsize (float): [mm] Step size for each point along the axis in millimeters.
         use_coord_excel (bool): Flag indicating if coordinate Excel file is used as input for grid.
         path_coord_excel (str): Path of the coordinate Excel file.
         coord_start (list): Coordinates [x, y, z] of the starting point in millimeters.
@@ -75,19 +90,50 @@ class CharacSequence(sequence.Sequence):
 
         # boolean if acoustical alignment is performed, if so, no grid input required.
         self.is_ac_align = False
+        dist_from_foc_str = get_config_value(logger, config, 
+                                             "Characterization", 
+                                             "default.distance_from_foc",
+                                             '-10\n10').split('\n')
+        dist_from_foc_float = [float(i) for i in dist_from_foc_str]
+
         self.ac_align = {
-            "distance_from_foc": [-10, 10],  # [mm] distance from the focus point in millimeters.
-            'init_line_len': 40,  # [mm] initial line length used for alignment.
-            'init_line_step': 0.5,  # [mm] step size for alignment in millimeters.
-            'init_threshold': 0.01,  # [mm] threshold for initial alignment error in millimeters.
-            'reduction_factor': 0.5,  # [-] reduction factor for iterative alignment steps.
-            'max_red_iter': 5,  # [-] maximum number of reduction iterations allowed.
-            'create_graphs': True,  # boolean to indicate if graphs should be created for visualization.
-            'y_lim': 200,  # [mV], y axis limit used for plotting
-            'create_axis_file': False,  # boolean to indicate if an axis file should be generated.
-            'axis_length': 140,  # [mm] total length of the axis in millimeters.
-            'axis_stepsize': 0.5  # [mm] step size for each point along the axis in millimeters.
-        }
+            "distance_from_foc": dist_from_foc_float,
+            'init_line_len': float(get_config_value(logger, config, 
+                                                    "Characterization", 
+                                                    "default.init_line_len",
+                                                    40)),
+            'init_line_step': float(get_config_value(logger, config, 
+                                                     "Characterization",
+                                                     "default.init_line_step",
+                                                     0.5)),
+            'init_threshold': float(get_config_value(logger, config, 
+                                                     "Characterization",
+                                                     "default.init_threshold",
+                                                     0.01)),
+            'reduction_factor': float(get_config_value(
+                logger, config,"Characterization", "default.reduction_factor",
+                0.5)),
+            'max_red_iter': int(get_config_value(logger, config, 
+                                                 "Characterization",
+                                                 "default.max_red_iter", 5)),
+            'create_graphs': get_config_value(logger, config, 
+                                              "Characterization", 
+                                              "default.create_graphs", 'True')
+            == 'True',
+            'y_lim': float(get_config_value(logger, config, "Characterization",
+                                            "default.y_lim", 200)),
+            'create_axis_file': get_config_value(logger, config, 
+                                                 "Characterization", 
+                                                 "default.create_axis_file",
+                                                 'True') == 'True',
+            'axis_length': float(get_config_value(logger, config, 
+                                                  "Characterization",
+                                                  "default.axis_length", 140)),
+            'axis_stepsize': float(get_config_value(logger, config, 
+                                                    "Characterization", 
+                                                    "default.axis_stepsize",
+                                                    0.5))
+            }
 
         self.use_coord_excel = False  # boolean if coordinate excel file is used as input of grid
         self.path_coord_excel = None  # path of coordinate excel file
@@ -240,7 +286,7 @@ class CharacSequence(sequence.Sequence):
 
         # Global characterization parameters
         self.driving_sys = input_param.driving_sys.serial
-        self.transducer = input_param.tran.serial
+        self.transducer = input_param.transducer.serial
         self.oper_freq = input_param.oper_freq  # [kHz]
 
         # Sequence specific characterization parameters
@@ -257,39 +303,70 @@ class CharacSequence(sequence.Sequence):
             # Convert the string to a list of floats
             try:
                 self.dephasing_degree = [float(num) for num in normalized_str.split()]
-            except:
+            except ValueError:
                 self.dephasing_degree = None
-                logger.warning('WARNING (De)phase array cannot be converted to a ' + 
+                logger.warning('WARNING (De)phase array cannot be converted to a ' +
                                'float array. Disable dephasing.')
-                print('WARNING (De)phase array cannot be converted to a ' + 
-                               'float array. Disable dephasing.')
+                print('WARNING (De)phase array cannot be converted to a ' +
+                      'float array. Disable dephasing.')
 
         focus_definition = str(seq_row[excel_ind["focus_def"]])
+        focus_exit = get_config_value(logger, config, 'Focus', 'Option.exit',
+                                      'Focus wrt exit plane [mm]')
+        focus_bowl = get_config_value(logger, config, 'Focus', 'Option.bowl',
+                                      'Focus wrt mid bowl [mm]')
+        if focus_definition == focus_exit:
+            self.focus_wrt_exit_plane = abs(float(seq_row[excel_ind["focus_value"]]))  # [mm]
 
-        match focus_definition:
-            case 'Focus wrt exit plane [mm]':
-                self.focus_wrt_exit_plane = abs(float(seq_row[excel_ind["focus_value"]]))  # [mm]
+        elif focus_definition == focus_bowl:
+            self.focus_wrt_mid_bowl = abs(float(seq_row[excel_ind["focus_value"]]))  # [mm]
 
-            case 'Focus wrt mid bowl [mm]':
-                self.focus_wrt_mid_bowl = abs(float(seq_row[excel_ind["focus_value"]]))  # [mm]
+        # Extract general excel information from config
+        glob_pow_input = get_config_value(logger, config, "Characterization", "prot_excel.glob_pow",
+                                          "SC - Global power [mW] (fill in 'Corresponding value')")
+        press_input = get_config_value(logger, config, "Characterization", "prot_excel.press",
+                                       "IGT - Max. pressure in free water [MPa] (fill in 'Corresponding value')")
+        volt_input = get_config_value(logger, config, "Characterization", "prot_excel.volt",
+                                      "IGT - Voltage [V] (fill in 'Corresponding value')")
+        ampl_input = get_config_value(logger, config, "Characterization", "prot_excel.ampl",
+                                      "IGT - Amplitude [%] (fill in 'Corresponding value')")
 
         power_param = str(seq_row[excel_ind["power"]])
-        match power_param:
+        if power_param == glob_pow_input:
             # Order is important, because the code will check if other value is
             # set: first set new parameter and then set power value of other
             # driving system to None
 
-            case 'SC - Global power [mW] (fill in \'Corresponding value\')':
-                self.global_power = abs(float(seq_row[excel_ind["power_value"]]))/1000  # SC: gp [W]
+            self.global_power = abs(float(seq_row[excel_ind["power_value"]]))/1000  # SC: gp [W]
 
-            case 'IGT - Max. pressure in free water [MPa] (fill in \'Corresponding value\')':
-                self.press = abs(float(seq_row[excel_ind["power_value"]]))
+        elif power_param == press_input:
+            self.press = abs(float(seq_row[excel_ind["power_value"]]))
 
-            case 'IGT - Voltage [V] (fill in \'Corresponding value\')':
-                self.volt = abs(float(seq_row[excel_ind["power_value"]]))
+        elif power_param == volt_input:
+            voltages = str(seq_row[excel_ind["power_value"]])
+            volt_str = re.sub(r"[,\[\]\s]+", " ", voltages).strip()
 
-            case 'IGT - Amplitude [%] (fill in \'Corresponding value\')':
-                self.ampl = abs(float(seq_row[excel_ind["power_value"]]))  # IGT: amplitude [%]
+            try:
+                self.volt = [float(num) for num in volt_str.split()]
+            except ValueError:
+                message = 'Voltage array cannot be converted to a float array.'
+                logger.critical(message)
+                sys.exit(message)
+
+        elif power_param == ampl_input:
+            amplitudes = str(seq_row[excel_ind["power_value"]])
+            ampl_str = re.sub(r"[,\[\]\s]+", " ", amplitudes).strip()
+
+            try:
+                self.ampl = [float(num) for num in ampl_str.split()]
+            except ValueError:
+                message = 'Amplitude array cannot be converted to a float array.'
+                logger.critical(message)
+                sys.exit(message)
+        else:
+            message = f'No power value found in sequence {self.seq_number}.'
+            logger.critical(message)
+            sys.exit(message)
 
         # Timing parameters
         # ## pulse ## #
@@ -311,43 +388,48 @@ class CharacSequence(sequence.Sequence):
         # convert pulse_train_rep_int to s
         self.pulse_train_rep_dur = self.pulse_train_rep_int/1000  # [s]
 
+        # Extract general excel information from config
+        coord_excel_input = get_config_value(logger, config, "Characterization",
+                                             "prot_excel.coord_excel", "Coordinate excel file")
+        grid_param_input = get_config_value(logger, config, "Characterization",
+                                            "prot_excel.grid_param", "Parameters on the right")
+
         # Grid
         excel_or_param = str(seq_row[excel_ind["excel_or_param"]])
-        match excel_or_param:
-            case 'Coordinate excel file':
-                self.use_coord_excel = True
-                self.path_coord_excel = str(seq_row[excel_ind["coord_excel"]])
+        if excel_or_param == coord_excel_input:
+            self.use_coord_excel = True
+            self.path_coord_excel = str(seq_row[excel_ind["coord_excel"]])
 
-            case 'Parameters on the right':
-                self.use_coord_excel = False
-                self.path_coord_excel = None
+        elif excel_or_param == grid_param_input:
+            self.use_coord_excel = False
+            self.path_coord_excel = None
 
-                max_x_plus = abs(float(seq_row[excel_ind["max_x_plus"]]))
-                max_x_min = abs(float(seq_row[excel_ind["max_x_min"]]))
-                max_y_plus = abs(float(seq_row[excel_ind["max_y_plus"]]))
-                max_y_min = abs(float(seq_row[excel_ind["max_y_min"]]))
-                max_z_plus = abs(float(seq_row[excel_ind["max_z_plus"]]))
-                max_z_min = abs(float(seq_row[excel_ind["max_z_min"]]))
+            max_x_plus = abs(float(seq_row[excel_ind["max_x_plus"]]))
+            max_x_min = abs(float(seq_row[excel_ind["max_x_min"]]))
+            max_y_plus = abs(float(seq_row[excel_ind["max_y_plus"]]))
+            max_y_min = abs(float(seq_row[excel_ind["max_y_min"]]))
+            max_z_plus = abs(float(seq_row[excel_ind["max_z_plus"]]))
+            max_z_min = abs(float(seq_row[excel_ind["max_z_min"]]))
 
-                dimensions = [max_x_plus, max_x_min, max_y_plus, max_y_min, max_z_plus, max_z_min]
+            dimensions = [max_x_plus, max_x_min, max_y_plus, max_y_min, max_z_plus, max_z_min]
 
-                dir_slices = str(seq_row[excel_ind["dir_slices"]])
-                dir_rows = str(seq_row[excel_ind["dir_rows"]])
-                dir_columns = str(seq_row[excel_ind["dir_columns"]])
+            dir_slices = str(seq_row[excel_ind["dir_slices"]])
+            dir_rows = str(seq_row[excel_ind["dir_rows"]])
+            dir_columns = str(seq_row[excel_ind["dir_columns"]])
 
-                directions = [dir_slices, dir_rows, dir_columns]
+            directions = [dir_slices, dir_rows, dir_columns]
 
-                step_size_x = abs(float(seq_row[excel_ind["step_size_x"]]))
-                step_size_y = abs(float(seq_row[excel_ind["step_size_y"]]))
-                step_size_z = abs(float(seq_row[excel_ind["step_size_z"]]))
+            step_size_x = abs(float(seq_row[excel_ind["step_size_x"]]))
+            step_size_y = abs(float(seq_row[excel_ind["step_size_y"]]))
+            step_size_z = abs(float(seq_row[excel_ind["step_size_z"]]))
 
-                step_sizes = [step_size_x, step_size_y, step_size_z]
+            step_sizes = [step_size_x, step_size_y, step_size_z]
 
-                self._set_start_coord_vector(input_param.coord_zero, directions, dimensions)
+            self._set_start_coord_vector(input_param.coord_zero, directions, dimensions)
 
-                self._set_all_dir_vectors(directions, step_sizes)
+            self._set_all_dir_vectors(directions, step_sizes)
 
-                self._calculate_n_vector(directions, dimensions, step_sizes)
+            self._calculate_n_vector(directions, dimensions, step_sizes)
 
 
 def _define_excel_indices(data):
@@ -361,41 +443,24 @@ def _define_excel_indices(data):
         dict: Dictionary mapping column names to their respective indices.
     """
 
-    excel_indices = {
-        "seq_num": data.columns.get_loc('Sequence number'),
-        "tag": data.columns.get_loc('Tag'),
-        "dephasing": data.columns.get_loc('(De)phase array [degree] (None = no (de)phasing) ONLY ' +
-                                          'FOR IGT DS'),
-        "pulse_dur": data.columns.get_loc('Pulse duration [us]'),
-        "pulse_rep_int": data.columns.get_loc('Pulse Repetition Interval [ms]'),
-
-        "power": data.columns.get_loc('SC - Global power [mW] or IGT - Max. pressure in free ' +
-                                      'water [Mpa], Voltage [V] or Amplitude [%]'),
-        "power_value": data.columns.get_loc('Corresponding value'),
-        "focus_def": data.columns.get_loc('Focus definition'),
-        "focus_value": data.columns.get_loc('Focus value [mm]'),
-        "ramp_mode": data.columns.get_loc('Modulation'),
-        "ramp_dur": data.columns.get_loc('Ramp duration [us]'),
-
-        "excel_or_param": data.columns.get_loc('Coordinates based on excel file or parameters on ' +
-                                               'the right?'),
-        "coord_excel": data.columns.get_loc('Path and filename of coordinate excel'),
-
-        "max_x_plus": data.columns.get_loc('max. + x [mm] w.r.t. relative zero'),
-        "max_x_min": data.columns.get_loc('max. - x [mm] w.r.t. relative zero'),
-        "max_y_plus": data.columns.get_loc('max. + y [mm] w.r.t. relative zero'),
-        "max_y_min": data.columns.get_loc('max. - y [mm] w.r.t. relative zero'),
-        "max_z_plus": data.columns.get_loc('max. + z [mm] w.r.t. relative zero'),
-        "max_z_min": data.columns.get_loc('max. - z [mm] w.r.t. relative zero'),
-
-        "dir_slices": data.columns.get_loc('direction_slices'),
-        "dir_rows": data.columns.get_loc('direction_rows'),
-        "dir_columns": data.columns.get_loc('direction_columns'),
-
-        "step_size_x": data.columns.get_loc('step_size_x [mm]'),
-        "step_size_y": data.columns.get_loc('step_size_y [mm]'),
-        "step_size_z": data.columns.get_loc('step_size_z [mm]')
-        }
+    excel_indices = {}
+    for key in [
+        "seq_num", "tag", "dephasing", "pulse_dur", "pulse_rep_int",
+        "power", "power_value", "focus_def", "focus_value", "ramp_mode", "ramp_dur",
+        "excel_or_param", "coord_excel",
+        "max_x_plus", "max_x_min", "max_y_plus", "max_y_min", "max_z_plus", "max_z_min",
+        "dir_slices", "dir_rows", "dir_columns",
+        "step_size_x", "step_size_y", "step_size_z"
+    ]:
+        column_name = get_config_value(logger, config, 'Characterization', "prot_excel_columns." +
+                                       key, default=None)
+        if column_name is not None:
+            try:
+                excel_indices[key] = data.columns.get_loc(column_name)
+            except KeyError:
+                logger.warning(f"Column '{column_name}' not found in dataset.")
+        else:
+            logger.warning(f"Missing config entry for 'prot_excel_columns.{key}'")
 
     return excel_indices
 
@@ -481,10 +546,11 @@ def generate_sequence_list(input_param):
             charac_seq.set_sequence(excel_ind, seq_row, input_param)
             sequence_list.append(charac_seq)
 
-        logger.info(f'{len(sequence_list)} different sequences found in {excel_path}')
+        logger.debug(f'{len(sequence_list)} different sequences found in {excel_path}')
 
         return sequence_list
     else:
-        logger.error('Pipeline is cancelled. The following direction cannot be found:' +
-                     f' {excel_path}')
-        sys.exit()
+        message = ('Pipeline is cancelled. The following direction cannot be found:' +
+                   f' {excel_path}')
+        logger.critical(message)
+        sys.exit(message)
