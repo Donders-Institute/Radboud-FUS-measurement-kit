@@ -517,6 +517,7 @@ class ProtocolDialog(ctk.CTkToplevel):
 
         serial_ds = ds.get_serial_from_name(self.ds_combo.get())
         self.input_param.driving_sys = serial_ds
+        self.ac_align_seq.driving_sys = serial_ds
         if 'COM' in self.input_param.driving_sys.connect_info:
             self.com_us.delete(0, tk.END)
             com_us_num = self.input_param.driving_sys.connect_info.removeprefix('COM')
@@ -558,6 +559,7 @@ class ProtocolDialog(ctk.CTkToplevel):
 
         new_tran_serial = tran.get_serial_from_name(self.trans_combo.get())
         self.input_param.transducer = new_tran_serial
+        self.ac_align_seq.transducer = new_tran_serial
 
         self.oper_freq_entr.delete(0, tk.END)
         self.oper_freq_entr.insert(0, int(self.input_param.transducer.fund_freq))
