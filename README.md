@@ -131,31 +131,51 @@ Before diving into installation, it's helpful to understand how the SonoRover On
      3. Choose 'URL' and paste the following repository URL: [https://github.com/Donders-Institute/Radboud-FUS-measurement-kit.git](https://github.com/Donders-Institute/Radboud-FUS-measurement-kit.git)
      4. Choose your desired folder and clone the repository
 
-2. **Set Up the Environment**
+2. **Step 2: Download Python 3.10**
+Ensure you have Python 3.10 installed and accessible from your command line. If Python is not installed, download it from the [official Python website](https://www.python.org/downloads/release/python-31011/). It is not necessary to add Python to your system's PATH during installation, as virtual environments allow you to manage and switch between Python versions without affecting other projects or code outside the environment.
 
-   Open your command prompt and run the following batch file to set up the virtual environment and install the necessary dependencies:
+<div align="center">
+  <img src="/images/python_path.png" alt="python_path" width="auto"  height="auto" />
+</div>
 
-   ```
-   cd your_directory_with_cloned_repository
-   install_dependencies.bat [VENV_NAME] [PYTHON_INTERPRETER_PATH]
-   ```
 
-   Parameters:
-   - **VENV_NAME**: Specify the name for the virtual environment (e.g., MyEnv). If not provided, it defaults to SONOROVER_ONE.
-   - **PYTHON_INTERPRETER_PATH**: Specify the path to the Python 3.10 interpreter if it's not in the default location. For example, C:\Path\To\Python310\python.exe.
+**Note**: The script assumes that Python 3.10 is installed. If you have a different version, make sure to adjust the script accordingly or install Python 3.10.
+
+3. **Create and setup a virtual environment**
+Open your command prompt and run the following batch file to set up the virtual environment and install the necessary dependencies. You can use input parameters to customize the environment name or directory, or Python interpreter location. You can use the default values or specify only the parameters you need by leaving others blank with "".
+
+```
+cd your_directory_with_cloned_repository
+create_venv.bat "[PYTHON_INTERPRETER_PATH]" [VENV_NAME] "[VENV_DIR]"
+```
+	
+- PYTHON_INTERPRETER_PATH: Specify the path to the Python 3.10 interpreter if it’s not in the default location. For example, C:\Path\To\Python310\python.exe.
+- VENV_NAME: Specify the name for the virtual environment (e.g., MyEnv). If not provided, it defaults to SONOROVER_ONE.
+- VENV_DIR: Specify the directory for the virtual environment (e.g., C:/Users/Me/Envs). If not provided, it defaults to C:/Users/{USERPROFILE}/Envs.
+
+Example:
+```
+create_venv.bat "C:\Path\To\Python310\python.exe" SONOROVER_ONE "C:/Users/Me/Envs"
+```
 
    The batch file will:
    - Create a virtual environment
-   - Install the required Python packages
-   - Clone the Radboud FUS driving system software repository into the SonoRover One repository
+   - Install the required Python packages and the default IDE, Spyder
+   - Clone the Radboud FUS driving system software repository into the SonoRover One repository. **Note:** The installation script automatically clones the latest released version of the Radboud FUS driving system software. If you need a different version (e.g., development branch or specific release), please refer to the [Radboud FUS driving system software README](https://github.com/Donders-Institute/Radboud-FUS-driving-system-software/blob/release/README.md) for manual installation instructions.
    - Install the Radboud FUS driving system software package
-   - Set up necessary environment variables
 
-3. **Verify Installation**
+4. **Verify Installation**
+After running the batch file, ensure that the virtual environment and dependencies are installed. You can verify this by:
 
-   After running the batch file, ensure that the virtual environment is activated and dependencies are installed by:
-   - Checking for the virtual environment in your WORKON_HOME directory
-   - Confirming that the required packages are installed
+- Checking for the virtual environment folder in your VENV_DIR directory.
+	<div align="center">
+	  <img src="/images/verify_venv.png" alt="verify_venv" width="auto"  height="auto" />
+	</div>
+
+- Confirming that the fus_driving_systems package is installed in the virtual environment site-packages folder: VENV_DIR/VENV_NAME/Lib/site-packages/.
+	<div align="center">
+	  <img src="/images/verify_fus_package.png" alt="verify_fus_package" width="auto"  height="auto" />
+	</div>
 
 #### Notes
 - **Python Version**: The script assumes that Python 3.10 is installed. If you have a different version, make sure to adjust the script accordingly or install Python 3.10.
