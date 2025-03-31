@@ -26,6 +26,7 @@
   - [✒️ How to cite](#how-to-cite)
 - [💻 Getting Started](#getting-started)
   - [🔧 Installation](#install)
+  - [🔌 Compatibility](#comp)
   - [📋 Usage](#usage)
 - [🧰 Configuration](#config)
   - [⚙ Main Configuration File](#main-config)
@@ -50,6 +51,8 @@ This project is facilitated by the Radboud Focused Ultrasound Initiative. For mo
 
 - **Affordable**
 - **High quality**
+- **Open-source**
+- **Complementary Data Analysis**
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -77,7 +80,7 @@ This project is facilitated by the Radboud Focused Ultrasound Initiative. For mo
 
 If you use this kit in your research or project, please cite it as follows:
 
-Margely Cornelissen, Stein Fekkes (Radboud University, Nijmegen, The Netherlands) & Erik Dumont (Image Guided Therapy, Pessac, France) (2024), Radboud FUS measurement kit (version 1.0), https://github.com/Donders-Institute/Radboud-FUS-measurement-kit
+Stein Fekkes, Margely Cornelissen (Radboud University, Nijmegen, The Netherlands) & Erik Dumont (Image Guided Therapy, Pessac, France) (2024), Radboud FUS measurement kit (version 1.2), https://github.com/Donders-Institute/Radboud-FUS-measurement-kit
 
 <!-- GETTING STARTED -->
 
@@ -91,49 +94,68 @@ The hardware files are stored as native solidworks files and as step format. The
 
 ### Software
 
+#### System Architecture
+
+Before diving into installation, it's helpful to understand how the SonoRover One software is structured:
+
+<div align="center">
+  <img src="/images/software_architecture.png" alt="Software Architecture" width="700" height="auto" />
+</div>
+
+**Modular Software Design**: The SonoRover One software is built on top of the standardized [Radboud FUS driving system software package](https://github.com/Donders-Institute/Radboud-FUS-driving-system-software). This modular approach provides:
+
+- **Equipment Flexibility**: Easily incorporate new equipment with different communication protocols
+- **Centralized Updates**: Core driving functionality can be updated independently
+- **Consistent Interface**: Uniform interaction with diverse hardware components
+- **Dual-Use Capability**: The same equipment configurations work in both standalone experiments and hydrophone measurements
+
 #### Important Note
 
 **This package is developed specifically for Windows operating systems.** While it might work in other environments with some modifications, full support is provided only for Windows.
 
-Clone this repository to your desired folder:
+#### Installation Steps
 
-- Git terminal
+1. **Clone the Repository**
 
-	``` sh
-		cd my-folder
-		git clone git@github.com:Donders-Institute/Radboud-FUS-measurement-kit.git
-	```
+   You can clone this repository using either:
 
-- GitHub Desktop
-	1. Click on 'Current repository'.
-	2. Click on 'Add' and select 'Clone repository...'.
-	3. Choose 'URL' and paste the following repository URL: [https://github.com/Donders-Institute/Radboud-FUS-measurement-kit.git](https://github.com/Donders-Institute/Radboud-FUS-measurement-kit.git)
-	4. Choose your desired folder and clone the repository.
+   - **Git Terminal**
+     ```sh
+     cd my-folder
+     git clone git@github.com:Donders-Institute/Radboud-FUS-measurement-kit.git
+     ```
 
-**Seamless Integration and Compatibility**: The current SonoRover One software utilizes a standardized [focused ultrasound driving system software package](https://github.com/Donders-Institute/Radboud-FUS-driving-system-software). This approach allows you to easily incorporate equipment with different communication protocols into the Radboud FUS driving system software, making it available in the SonoRover One system. By following an abstract communication structure, the software can seamlessly operate with equipment from various manufacturers, ensuring consistent, centralized updates and eliminating the need for direct management of communication protocols in both standalone and experimental settings.
+   - **GitHub Desktop**
+     1. Click on 'Current repository'
+     2. Click on 'Add' and select 'Clone repository...'
+     3. Choose 'URL' and paste the following repository URL: [https://github.com/Donders-Institute/Radboud-FUS-measurement-kit.git](https://github.com/Donders-Institute/Radboud-FUS-measurement-kit.git)
+     4. Choose your desired folder and clone the repository
 
-Open your command prompt and run the following batch file to set up the virtual environment and install the necessary dependencies. You can use input parameters to customize the environment name or Python interpreter location.
+2. **Set Up the Environment**
 
-```
-cd your_directory_with_cloned_repository
-install_dependencies.bat [VENV_NAME] [PYTHON_INTERPRETER_PATH]
-```
-	
-- VENV_NAME: Specify the name for the virtual environment (e.g., MyEnv). If not provided, it defaults to SONOROVER_ONE.
-- PYTHON_INTERPRETER_PATH: Specify the path to the Python 3.10 interpreter if it’s not in the default location. For example, C:\Path\To\Python310\python.exe.
+   Open your command prompt and run the following batch file to set up the virtual environment and install the necessary dependencies:
 
-The batch file will:
+   ```
+   cd your_directory_with_cloned_repository
+   install_dependencies.bat [VENV_NAME] [PYTHON_INTERPRETER_PATH]
+   ```
 
-- Create a virtual environment.
-- Install the required Python packages.
-- Clone the Radboud FUS driving system software repository into the SonoRover One repository.
-- Install the Radboud FUS driving system software package. 
-- Set up necessary environment variables.
+   Parameters:
+   - **VENV_NAME**: Specify the name for the virtual environment (e.g., MyEnv). If not provided, it defaults to SONOROVER_ONE.
+   - **PYTHON_INTERPRETER_PATH**: Specify the path to the Python 3.10 interpreter if it's not in the default location. For example, C:\Path\To\Python310\python.exe.
 
-After running the batch file, ensure that the virtual environment is activated and dependencies are installed. You can verify this by:
+   The batch file will:
+   - Create a virtual environment
+   - Install the required Python packages
+   - Clone the Radboud FUS driving system software repository into the SonoRover One repository
+   - Install the Radboud FUS driving system software package
+   - Set up necessary environment variables
 
-- Checking for the virtual environment in your WORKON_HOME directory.
-- Confirming that the required packages are installed.
+3. **Verify Installation**
+
+   After running the batch file, ensure that the virtual environment is activated and dependencies are installed by:
+   - Checking for the virtual environment in your WORKON_HOME directory
+   - Confirming that the required packages are installed
 
 #### Notes
 - **Python Version**: The script assumes that Python 3.10 is installed. If you have a different version, make sure to adjust the script accordingly or install Python 3.10.
@@ -145,24 +167,38 @@ If you encounter issues with the batch file not being recognized or errors durin
 - The batch file has the correct permissions to execute.
 - The repository has been cloned correctly and contains the necessary files.
 
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+## 🔌 Compatibility <a name="comp"></a>
+
+The table below outlines compatibility between different versions of the Radboud FUS driving system software and the SonoRover One software.
+
+| SonoRover One Version | Radboud FDS Compatibility | Python Version |
+|---------------------|----------------|----------------------------|
+| 1.2 (Current) | Radboud FDS v2.1 | 3.10  |
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ## 📋 Usage <a name="usage"></a>
 
 ### Software
 
+*Step 1: Activate your environment*
 With all dependencies installed, activate your environment in your command prompt. 
 
 ```
-workon [VENV_NAME]
+call [VENV_PATH]\Scripts\activate
 ```
 
-While the virtual environment is activated, you can install Spyder or any other IDE of your choice. To install Spyder, run:
+*Step 2: Install an IDE*
+While your virtual environment is activated, you can install any IDE of your choice. Spyder is pre-installed by default. To install another IDE, run:
 
 ```
-pip install spyder
+pip install [IDE]
 ```
 
-After installing Spyder, you can launch it directly from the command line within the activated virtual environment by running:
+*Step 3: Launch the IDE*
+After installing your IDE, you can launch it directly from the command line while the virtual environment is activated. For Spyder, enter:
 
 ```
 spyder
@@ -177,60 +213,129 @@ How to use the script:
 	- Open start_venv_and_ide.bat in a text editor and modify the VENV_NAME and IDE variables directly if you prefer not to use command-line arguments. To run the .bat file, just double-click it.
 	- Using the command prompt:
 		```
-		start_venv_and_ide.bat [VENV_NAME] [IDE]
+		start_venv_and_ide.bat [VENV_PATH] [IDE]
 		```
-		- VENV_NAME: Specify the name for the virtual environment (e.g., MyEnv). If not provided, it defaults to SONOROVER_ONE.
+		- VENV_PATH: Specify the path to the virtual environment (e.g., C:/Users/Me/Envs/MyEnv). If not provided, it defaults to C:/Users/{USERPROFILE}/Envs/SONOROVER_ONE.
 		- IDE: Specify the python interpreter. IF not provided, it defaults to spyder.
 
-#### Primary script
-The primary script is  [main](/SonoRover%20One/software/src/main.py). 
-Running this script launches a GUI to set the following parameters:
+#### Starting the Software
+The SonoRover One software provides a graphical interface for hydrophone measurements. This section guides you through using the software.
 
-1. **Path and filename of protocol excel file**: Select the required protocol Excel file. Refer to the example template [here](SonoRover%20One/software/example%20input/protocol%20template/template_protocol_input.xlsx). This file contains sequences with various foci, power outputs, timing parameters, and/or coordinate grids. It is specific to a driving system-transducer combination.  
-   **Note**: If you change the headers in the Excel file, you must also update the corresponding headers in the code.
-   - **Sequence**: The sequence number, ranging from 1 to the total number of sequences in the Excel file.
-   - **Modulation**: Choose from Square, Linear, or Tukey ramp shapes from the dropdown.
-   - **Ramp duration [us]**
-   - **Ramp duration step size [us]**: Temporal resolution of ramping, applicable only for the IGT system.
-   - **Pulse duration [us]**
-   - **Pulse Repetition Frequency [Hz]**
-   - **Pulse Repetition Interval [ms]**
-   - **Pulse Train Duration [ms]**
-   - **Isppa [W/cm²], Global power [mW], or Amplitude [%]**: Select the applicable power parameter for the chosen driving system from the dropdown. Amplitude is used for the IGT system; Isppa or global power is used for the Sonic Concepts system. It is recommended to use global power for the Sonic Concepts system.  
-     **Note**: If Isppa is chosen, a conversion table in an Excel file (e.g., [here](SonoRover%20One/software/example%20input/protocol%20template/isppa_to_global_power_template.xlsx)) is required with global power in mW and intensity in W/cm2. If you change the headers in the Excel file, you must also update the corresponding headers in the code.
-   - **Corresponding value**: The value for the selected power parameter.
-   - **Path and filename of Isppa to Global power conversion Excel**: Provide the path to the Isppa-global power conversion table. This parameter is skipped if Isppa is not selected.
-   - **Focus [mm]**
-   - **Coordinates based on Excel file or parameters on the right?**: Choose to define a grid using a coordinate Excel file or by defining grid sizes in this file from the dropdown. Coordinate file examples are [here](SonoRover%20One/software/example%20input/coordinate%20templates).  
-     **Note**: Coordinate files allow more flexibility in grid point arrangement. All grids are based on a chosen zero point (for example: focus or exit plane). Headers in the Excel file must match those used in the code.
-   - **Path and filename of coordinate Excel**: Provide the path to the coordinate Excel file. This parameter is skipped if 'Coordinates based on Excel file' is not selected.
-   
-   **Note**: if 'Parameters on the right' is not chosen as input parameter, below parameters are skipped.
-   - **max. ± x [mm] w.r.t. relative zero**: The maximum movement in the ±x direction in mm relative to the chosen zero point.
-   - **max. ± y [mm] w.r.t. relative zero**: The maximum movement in the ±y direction in mm relative to the chosen zero point.
-   - **max. ± z [mm] w.r.t. relative zero**: The maximum movement in the ±z direction in mm relative to the chosen zero point.
-   - **direction_slices**: Choose the direction of the slices from the dropdown. Refer to the example image in the [protocol template](SonoRover%20One/software/example%20input/protocol%20template/template_protocol_input.xlsx).
-   - **direction_rows**: Choose the direction of the rows from the dropdown. Refer to the example image in the [protocol template](SonoRover%20One/software/example%20input/protocol%20template/template_protocol_input.xlsx).
-   - **direction_columns**: Choose the direction of the columns from the dropdown. Refer to the example image in the [protocol template](SonoRover%20One/software/example%20input/protocol%20template/template_protocol_input.xlsx).
-   - **step_size_x [mm]**: The grid size in the x-direction.
-   - **step_size_y [mm]**: The grid size in the y-direction.
-   - **step_size_z [mm]**: The grid size in the z-direction.
+The primary script is [main](/SonoRover%20One/software/src/main.py). Running this script launches the main GUI:
 
-2. **US Driving System**
-3. **Transducer**
-4. **Operating frequency [kHz]**
-5. **COM port of US driving system**: Required for Sonic Concepts driving system.
-6. **COM port of positioning system**
-7. **Hydrophone acquisition time [us]**
-8. **Picoscope sampling frequency multiplication factor**: Minimum multiplication factor is 2.
-9. **Absolute G code x-coordinate of relative zero**: The x-coordinate of the chosen zero point.
-10. **Absolute G code y-coordinate of relative zero**: The y-coordinate of the chosen zero point.
-11. **Absolute G code z-coordinate of relative zero**: The z-coordinate of the chosen zero point.
-12. **Perform all protocols in sequence without waiting for user input?**: If yes, the characterization will proceed through all sequences in the protocol Excel file without stopping for input between sequences.
+<div align="center">
+  <img src="/images/GUI_main.png" alt="gui_main" width="1000" height="auto" />
+</div>
 
-After all parameters are set, click 'ok' to start the characterization. Log files and an output folder will be created in the same directory as the protocol Excel file.
+##### Main GUI Parameters
 
-![image](https://github.com/Donders-Institute/Radboud-FUS-measurement-kit/assets/134381864/dcc80f2d-cc04-42ec-afbc-a19f55aed547)
+The main interface allows you to configure the following parameters:
+
+1. **Protocol**: Opens a dialog to select a measurement protocol
+2. **COM port of positioning system**: Select the communication port for the positioning system
+3. **Hydrophone**: Select the hydrophone model to use for measurements
+4. **Hydrophone acquisition time [us]**: Set the signal acquisition duration per grid point
+5. **PicoScope**: Select the PicoScope model for signal acquisition
+6. **Picoscope sampling frequency multiplication factor**: Set the sampling rate (minimum factor is 2)
+7. **Temperature of water [C]**: Record water temperature for post-processing
+8. **Dissolved oxygen level of water [mg/L]**: Record for documentation purposes
+9. **Absolute G code coordinates of relative zero**: Set coordinates for the reference zero point
+10. **Perform all protocols in sequence without waiting for user input?**: Toggle automatic sequence execution
+
+##### Protocol Selection
+
+When you click the "Select" button, a dialog appears with system setup parameters:
+
+- **US Driving System**: Select the ultrasound system
+- **COM port of US driving system**: Required for Sonic Concepts systems
+- **Transducer**: Select the transducer model
+- **Operating frequency [kHz]**: Set the operating frequency
+
+After setting these general parameters, you'll choose between two protocol options:
+
+*Option 1: Select Protocol Excel File*
+
+<div align="center">
+  <img src="/images/GUI_protocol_excel.png" alt="gui_protocol_excel" width="1000" height="auto" />
+</div>
+
+This option allows you to select an Excel file containing predefined measurement protocols.
+- **Path and filename of protocol excel file**: Select the Excel file containing measurement protocols
+  - Template available [here](SonoRover%20One/software/example%20input/protocol%20template/template_protocol_input.xlsx)
+  - **Note**: If you modify column headers in the Excel file, update the corresponding settings in the configuration file
+
+The protocol Excel file contains the following parameters for each sequence:
+
+| Parameter | Description |
+|-----------|-------------|
+| **Sequence number** | Sequential number (1 to N) |
+| **Tag** | Additional information saved in output .ini file |
+| **Modulation** | Select from Rectangular - no ramping, Linear, or Tukey ramp shapes |
+| **Ramp duration [us]** | Duration of the ramp |
+| **Pulse duration [us]** | Duration of each pulse |
+| **Pulse Repetition Interval [ms]** | Total pulse period including ramping, pulse duration and off-time between two pulses |
+| **Power parameter** | Select appropriate power parameter for your system:<br>- IGT: Amplitude [%], Voltage [V], or Max. pressure [MPa]<br>- Sonic Concepts: Global power [mW] |
+| **Corresponding value** | Value for the selected power parameter |
+| **Focus definition** | Define focus relative to exit plane or mid bowl |
+| **Corresponding value** | Value for the selected focus parameter |
+| **(De)phase array [degree]** | For IGT systems only: option to create sham conditions |
+| **Coordinates source** | Choose between coordinate Excel file or parameter-defined grid |
+
+If using a **coordinate Excel file**:
+- Provide path to the file (examples [here](SonoRover%20One/software/example%20input/coordinate%20templates))
+- Allows flexible grid point arrangement
+- **Note**: Headers must match configuration settings
+
+If using **parameters**:
+- **max. ± x/y/z [mm]**: Maximum movement in each direction relative to zero point
+- **direction_slices/rows/columns**: Direction settings (refer to [template](SonoRover%20One/software/example%20input/protocol%20template/template_protocol_input.xlsx))
+- **step_size_x/y/z [mm]**: Grid size in each direction
+
+*Option 2: Acoustical Alignment*
+
+<div align="center">
+  <img src="/images/GUI_protocol_ac_align.png" alt="gui_protocol_ac_align" width="1000" height="auto" />
+</div>
+
+This option performs an acoustical alignment to determine the acoustical axis through iterative measurements. The process finds the center of mass of RMS voltage values per defined location and calculates the direction vector with corresponding azimuth and elevation.
+
+Parameters include:
+
+| Parameter | Description |
+|-----------|-------------|
+| **Path of output directory** | Directory for saving output and logging files |
+| **Pulse duration [us]** | Duration of each pulse |
+| **Pulse Repetition Interval [ms]** | Total pulse period including ramping, pulse duration and off-time between two pulses |
+| **Power setting** | Appropriate power parameter for your system |
+| **Focus** | Define focus relative to exit plane or mid bowl |
+| **Distance from focus wrt exit plane [mm] array** | Distances from the focus wrt exit plane to acquire middle points (negative = toward transducer) |
+| **Line length [mm]** | Length of each direction scan |
+| **Line stepsize [mm]** | Step size of direction scan |
+| **Threshold [mm]** | Convergence threshold for determining middle points |
+| **Create graphs** | Toggle creation of direction scan graphs |
+| **Y axis limit [mV]** | Y-axis limit for RMS value display |
+| **Create axial measurement file** | Toggle creation of coordinate file for axial scan |
+| **Length of axial measurement [mm]** | Define length for axial scan |
+| **Stepsize of axial measurement [mm]** | Define step size for axial scan |
+
+**Note:** The coordinate file generated by the acoustical alignment can be used as input for a subsequent measurement. This allows you to perform an axial scan along the precisely determined acoustical axis, rather than along a mechanically aligned axis.
+
+#### Running Measurements
+
+After configuring all parameters, click "OK" to start the characterization process. The software will:
+
+1. Display dialog screens to verify equipment connections
+2. Create log files in the same directory as the protocol file
+3. Create an output folder for measurement results
+4. Begin the measurement sequence
+
+If you selected "Perform all protocols in sequence without waiting for user input," the software will automatically proceed through all sequences defined in the protocol file.
+
+#### Important Notes
+
+- When performing acoustical alignment, the found X and Y values will overwrite the initial absolute G code coordinates
+- Ensure the PicoScope software is not connected to the PicoScope during measurements
+- Ensure Universal Gcode Sender is not connected to the positioning system
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
