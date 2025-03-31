@@ -49,10 +49,13 @@ This project is facilitated by the Radboud Focused Ultrasound Initiative. For mo
 
 ## 🚀 Key Features <a name="key-features"></a>
 
-- **Affordable**
-- **High quality**
-- **Open-source**
-- **Complementary Data Analysis**
+- **Comprehensive Measurement Solution:** Complete hardware and software package for ultrasound field characterization
+- **High Precision Hydrophone Measurements:** Accurate characterization of acoustic parameters and beam profiles
+- **Modular, Extensible Architecture:** Easily add new equipment with standardized interfaces
+- **Seamless Hardware Integration:** Compatible with multiple driving systems, transducers, and measurement devices
+- **Automated Acoustical Alignment:** Precise determination of the acoustical axis for optimal measurements
+- **Open-Source Software:** Fully transparent, customizable codebase with no licensing costs
+- **Complementary Data Analysis Tools:** Export and analyze measurement data with included utilities
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -80,7 +83,7 @@ This project is facilitated by the Radboud Focused Ultrasound Initiative. For mo
 
 If you use this kit in your research or project, please cite it as follows:
 
-Stein Fekkes, Margely Cornelissen (Radboud University, Nijmegen, The Netherlands) & Erik Dumont (Image Guided Therapy, Pessac, France) (2024), Radboud FUS measurement kit (version 1.2), https://github.com/Donders-Institute/Radboud-FUS-measurement-kit
+Stein Fekkes, Margely Cornelissen (Radboud University, Nijmegen, The Netherlands) & Erik Dumont (Image Guided Therapy, Pessac, France) (2025), Radboud FUS measurement kit (version 1.2), https://github.com/Donders-Institute/Radboud-FUS-measurement-kit
 
 <!-- GETTING STARTED -->
 
@@ -96,13 +99,16 @@ The hardware files are stored as native solidworks files and as step format. The
 
 #### System Architecture
 
-Before diving into installation, it's helpful to understand how the SonoRover One software is structured:
+Before diving into installation, it's helpful to understand how the SonoRover One software is structured. The SonoRover One software is built on top of the standardized [Radboud FUS driving system software package](https://github.com/Donders-Institute/Radboud-FUS-driving-system-software). 
 
+<br /> 
 <div align="center">
   <img src="/images/software_architecture.png" alt="Software Architecture" width="700" height="auto" />
 </div>
 
-**Modular Software Design**: The SonoRover One software is built on top of the standardized [Radboud FUS driving system software package](https://github.com/Donders-Institute/Radboud-FUS-driving-system-software). This modular approach provides:
+<br /> 
+
+This modular approach provides:
 
 - **Equipment Flexibility**: Easily incorporate new equipment with different communication protocols
 - **Centralized Updates**: Core driving functionality can be updated independently
