@@ -30,6 +30,7 @@ https://github.com/user-attachments/assets/676b7667-6fb5-469c-bd78-fa9b3e943115
   - [🔧 Installation](#install)
   - [🔌 Compatibility](#comp)
   - [📋 Usage](#usage)
+- [📊 Data Analysis](#data-analysis)
 - [🧰 Configuration](#config)
   - [⚙ Main Configuration File](#main-config)
   - [📻 How to add your own equipment](#add-equip)
@@ -368,6 +369,12 @@ If you selected "Perform all protocols in sequence without waiting for user inpu
 - When performing acoustical alignment, the found X and Y values will overwrite the initial absolute G code coordinates
 - Ensure the PicoScope software is not connected to the PicoScope during measurements
 - Ensure Universal Gcode Sender is not connected to the positioning system
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+# 📊 Data Analysis <a name="data-analysis"></a>
+
+REFERENCE TO MANUAL
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
