@@ -2,11 +2,11 @@
 <a name="readme-top"></a>
 
 <div align="center">
-  <img src="/images/Radboud-logo.jpg" alt="ru_logo" width="auto"  height="65" />
+  <img src="/images/Radboud-logo.jpg" alt="ru_logo" width="auto"  height="68" />
 
-  <img src="/images/fuslogo.png" alt="fus_logo" width="auto" height="67">
+  <img src="/images/fuslogo.png" alt="fus_logo" width="auto" height="70">
 
-  <img src="/images/igtlogo.jpeg" alt="igt_logo" width="auto" height="65">
+  <img src="/images/igtlogo.jpeg" alt="igt_logo" width="auto" height="68">
   
 </div>
 
