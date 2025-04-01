@@ -158,9 +158,9 @@ Open your command prompt and run the following batch file to set up the virtual 
 	create_venv.bat "[PYTHON_INTERPRETER_PATH]" [VENV_NAME] "[VENV_DIR]"
 	```
 		
-	- **PYTHON_INTERPRETER_PATH**: Specify the path to the Python 3.10 interpreter if it is not in the default location. For example, C:\Path\To\Python310\python.exe.
-	- **VENV_NAME**: Specify the name for the virtual environment (e.g., MyEnv). If not provided, it defaults to SONOROVER_ONE.
-	- **VENV_DIR**: Specify the directory for the virtual environment (e.g., C:/Users/Me/Envs). If not provided, it defaults to C:/Users/{USERPROFILE}/Envs.
+	- PYTHON_INTERPRETER_PATH: Specify the path to the Python 3.10 interpreter if it is not in the default location. For example, C:\Path\To\Python310\python.exe.
+	- VENV_NAME: Specify the name for the virtual environment (e.g., MyEnv). If not provided, it defaults to SONOROVER_ONE.
+	- VENV_DIR: Specify the directory for the virtual environment (e.g., C:/Users/Me/Envs). If not provided, it defaults to C:/Users/{USERPROFILE}/Envs.
 	
 	Example:
 	```
@@ -238,20 +238,20 @@ To simplify the process of activating the virtual environment and launching your
 How to use the script:
 1. Ensure that start_env_and_ide.bat is located in a convenient location, such as the root directory of your project or your desktop.
 2. Run the script in one of the following ways:
-	- Open start_venv_and_ide.bat in a text editor and modify the VENV_NAME and IDE variables directly if you prefer not to use command-line arguments. To run the .bat file, just double-click it.
+	- Open start_venv_and_ide.bat in a text editor and modify the VENV_PATH and IDE variables directly if you prefer not to use command-line arguments. To run the .bat file, just double-click it.
 	- Using the command prompt:
 		```
 		start_venv_and_ide.bat [VENV_PATH] [IDE]
 		```
 		- VENV_PATH: Specify the path to the virtual environment (e.g., C:/Users/Me/Envs/MyEnv). If not provided, it defaults to C:/Users/{USERPROFILE}/Envs/SONOROVER_ONE.
-		- IDE: Specify the python interpreter. IF not provided, it defaults to spyder.
+		- IDE: Specify the python interpreter. If not provided, it defaults to spyder.
 
 #### Starting the Software
 The SonoRover One software provides a graphical interface for hydrophone measurements. This section guides you through using the software.
 
 The primary script is [main](/SonoRover%20One/software/src/main.py). Running this script launches the main GUI:
 
-<div align="center">
+<div align="left">
   <img src="/images/GUI_main.png" alt="gui_main" width="1000" height="auto" />
 </div>
 
@@ -267,7 +267,7 @@ The main interface allows you to configure the following parameters:
 6. **Picoscope sampling frequency multiplication factor**: Set the sampling rate (minimum factor is 2)
 7. **Temperature of water [C]**: Record water temperature for post-processing
 8. **Dissolved oxygen level of water [mg/L]**: Record for documentation purposes
-9. **Absolute G code coordinates of relative zero**: Set coordinates for the reference zero point
+9. **Absolute G code coordinates of relative zero**: Set coordinates for the reference zero point. This initially uses the mechanical alignment coordinates as its basis. After completing an acoustical alignment, the system updates the x- and y-coordinates to match the measured acoustical axis at the specified z-coordinate.
 10. **Perform all protocols in sequence without waiting for user input?**: Toggle automatic sequence execution
 
 ##### Protocol Selection
@@ -277,13 +277,13 @@ When you click the "Select" button, a dialog appears with system setup parameter
 - **US Driving System**: Select the ultrasound system
 - **COM port of US driving system**: Required for Sonic Concepts systems
 - **Transducer**: Select the transducer model
-- **Operating frequency [kHz]**: Set the operating frequency
+- **Operating frequency [kHz]**: Set the operating frequency of the transducer
 
-After setting these general parameters, you'll choose between two protocol options:
+After setting these general parameters, you have to choose between two protocol options:
 
 *Option 1: Select Protocol Excel File*
 
-<div align="center">
+<div align="left">
   <img src="/images/GUI_protocol_excel.png" alt="gui_protocol_excel" width="1000" height="auto" />
 </div>
 
@@ -321,9 +321,11 @@ If using **parameters**:
 
 *Option 2: Acoustical Alignment*
 
-<div align="center">
+<div align="left">
   <img src="/images/GUI_protocol_ac_align.png" alt="gui_protocol_ac_align" width="1000" height="auto" />
 </div>
+
+<br />
 
 This option performs an acoustical alignment to determine the acoustical axis through iterative measurements. The process finds the center of mass of RMS voltage values per defined location and calculates the direction vector with corresponding azimuth and elevation.
 
