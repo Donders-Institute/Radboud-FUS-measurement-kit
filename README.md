@@ -39,7 +39,7 @@
 
 # 📖 Radboud FUS measurement kit <a name="about-project"></a>
 
-(Project id: **0003429** )
+(Project id: **0003429**)
 
 **Radboud FUS measurement kit** is a comprehensive kit allowing precise hydrophone measurements of your TUS transducers for verification, characterization and monitoring overall system performance.    
 
@@ -99,7 +99,7 @@ The hardware files are stored as native solidworks files and as step format. The
 
 #### System Architecture
 
-Before diving into installation, it's helpful to understand how the SonoRover One software is structured. The SonoRover One software is built on top of the standardized [Radboud FUS driving system software package](https://github.com/Donders-Institute/Radboud-FUS-driving-system-software). 
+Before diving into the installation, it is helpful to understand how the SonoRover One software is structured. The SonoRover One software is built on top of the standardized [Radboud FUS driving system software package](https://github.com/Donders-Institute/Radboud-FUS-driving-system-software). 
 
 <br /> 
 <div align="center">
@@ -121,8 +121,7 @@ This modular approach provides:
 
 #### Installation Steps
 
-1. **Clone the Repository**
-
+1. **Clone the Repository**\
    You can clone this repository using either:
 
    - **Git Terminal**
@@ -137,7 +136,7 @@ This modular approach provides:
      3. Choose 'URL' and paste the following repository URL: [https://github.com/Donders-Institute/Radboud-FUS-measurement-kit.git](https://github.com/Donders-Institute/Radboud-FUS-measurement-kit.git)
      4. Choose your desired folder and clone the repository
 
-2. **Step 2: Download Python 3.10**
+2. **Download Python 3.10**\
 Ensure you have Python 3.10 installed and accessible from your command line. If Python is not installed, download it from the [official Python website](https://www.python.org/downloads/release/python-31011/). It is not necessary to add Python to your system's PATH during installation, as virtual environments allow you to manage and switch between Python versions without affecting other projects or code outside the environment.
 
 <div align="center">
