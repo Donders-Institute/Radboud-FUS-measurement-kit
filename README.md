@@ -377,7 +377,7 @@ The SonoRover One software uses a comprehensive configuration system to control 
 
 ## ⚙️ Main Configuration File <a name="main-config"></a>
 
-The main configuration file is located at `Radboud-FUS-measurement-kit/SonoRover_One/software/src/config/characterization_config.ini`. You can either modify this file directly or use the provided `create_config.py` script to regenerate it with your changes.
+The main configuration file is located at [here](SonoRover%20One/software/src/config/characterization_config.ini). You can either modify this file directly or use the provided [create_config.py](SonoRover%20One/software/src/config/create_config.py) script to regenerate it with your changes.
 
 ### General Settings
 
@@ -401,7 +401,7 @@ initial part of log filename = log_
 
 - **logger name**: Identifier for the logger instance
 - **timestamp format**: Format used for timestamps in logs 
-- **log level console**: Minimum severity level displayed in console (WARNING, ERROR, CRITICAL)
+- **log level console**: Minimum severity level displayed in console (INFO, DEBUG, WARNING, ERROR, CRITICAL)
 - **log level file**: Minimum severity level saved to log files (INFO, DEBUG, WARNING, ERROR, CRITICAL)
 - **initial part of log filename**: Prefix for all generated log files
 
@@ -419,8 +419,8 @@ default output directory = //ru.nl//WrkGrp//FUS_Hub//Hydrophone measurements//Me
 
 - **path of input parameters cache**: Location where user input parameters are cached
 - **cache date format**: Date format used in the cache file
-- **temporary output path**: Directory for temporary measurement output
-- **temporary logging path**: Directory for temporary log files
+- **temporary output path**: Directory that temporarily stores measurement output. This approach allows data to be transferred to an online folder after acquisition is complete, without slowing down the measurement process. 
+- **temporary logging path**: Directory that temporarily stores logging. This approach allows data to be transferred to an online folder after acquisition is complete, without slowing down the measurement process. 
 - **default protocol directory**: Default location for measurement protocols displayed in GUI
 - **default output directory**: Default location for saving measurement results displayed in GUI
 
@@ -449,8 +449,8 @@ ac_align.additional_x_lim = 15
 
 - **output_name_suffix**: Suffix for output data files
 - **ac_align.output_name_suffix**: Suffix for acoustical alignment output files
-- **ac_align.axis_suffix**: Suffix for acoustical axis files
-- **ac_align.additional_x_lim**: Additional space added to X-axis limit of acoustical alignment plot (15mm)
+- **ac_align.axis_suffix**: Suffix for acoustical axis plots
+- **ac_align.additional_x_lim**: Additional space added to X-axis limit of acoustical alignment plot (15 mm)
 
 ### Acquisition Equipment Configuration
 
@@ -476,7 +476,7 @@ pos_sys.reacquire_attempts = 5
 
 ### Excel Column Definitions
 
-The configuration file defines column names used in coordinate and protocol Excel files. If you modify the headers in your Excel templates, you'll need to update these settings to match.
+The configuration file defines column names used in coordinate and protocol Excel files. If you modify the headers in your Excel templates, you will need to update these settings to match.
 
 ```ini
 coord_excel_columns.meas_num = Measurement number
@@ -562,7 +562,7 @@ sensitivity (v/pa) datasheet = config//hydrophones//YOUR-MODEL-NAME Calibration 
 The hydrophone identifier must match one of the identifiers defined in the  `[Characterization.Equipment]` section under *hydrophones*. The `name` parameter is displayed in the GUI.
 
 #### Step 3: Create a Sensitivity Datasheet
-Create a new datasheet in the `Radboud-FUS-measurement-kit\SonoRover One\software\src\config\hydrophones` folder, using one of the existing files as a template. This file contains the frequency-sensitivity mapping for your hydrophone.
+Create a new datasheet in the [SonoRover One\software\src\config\hydrophones](SonoRover%20One/software/src/config/hydrophones) folder, using one of the existing files as a template. This file contains the frequency-sensitivity mapping for your hydrophone.
 
 If sensitivity values are not known, set all values to zero, but note that measurement output values will be incorrect. 
 
@@ -576,7 +576,7 @@ Currently, only PicoScope oscilloscopes are supported. The software supports the
 To add a new PicoScope model:
 
 #### Step 1: Extend pico.py
-Extend the `Radboud-FUS-measurement-kit/SonoRover_One/software/src/backend/pico.py` script with a class for your PicoScope model:
+Extend the [pico.py](SonoRover%20One/software/src/backend/pico.py) script with a class for your PicoScope model:
 
 ```python
 class ScopeYOUR_MODEL_ID(Scope5000):
@@ -648,7 +648,11 @@ The `pico.py identification` parameter must match the identifier used in the `ge
 
 ## Software
 
-- [ ] **Compatibility check of chosen equipment**
+- [ ] Eliminate Excel dependencies through GUI expansion and restructuring
+- [ ] Implement line scanning capability for faster acquisition
+- [ ] Develop comprehensive unit test framework
+- [ ] Add timer functionality
+- [ ] Implement signal detection check before proceeding with measurements
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
