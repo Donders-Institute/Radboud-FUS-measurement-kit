@@ -1,16 +1,16 @@
 # Radboud FUS measurement kit
 <a name="readme-top"></a>
 
-<video src="/images/SonoRoverOne_in_action.mp4" width=180/>
-
 <div align="center">
-  <img src="/images/Radboud-logo.jpg" alt="ru_logo" width="auto"  height="70" />
+  <img src="/images/Radboud-logo.jpg" alt="ru_logo" width="auto"  height="84" />
 
-  <img src="/images/fuslogo.png" alt="fus_logo" width="auto" height="70">
+  <img src="/images/fuslogo.png" alt="fus_logo" width="auto" height="87">
 
-  <img src="/images/igtlogo.jpeg" alt="igt_logo" width="auto" height="70">
+  <img src="/images/igtlogo.jpeg" alt="igt_logo" width="auto" height="84">
   
 </div>
+
+https://github.com/user-attachments/assets/676b7667-6fb5-469c-bd78-fa9b3e943115
 
 <div align="center">
   
