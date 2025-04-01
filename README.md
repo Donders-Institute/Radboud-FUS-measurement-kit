@@ -14,7 +14,7 @@ https://github.com/user-attachments/assets/676b7667-6fb5-469c-bd78-fa9b3e943115
 
 <div align="center">
   
-  <img src="/images/sonorover-one.png" alt="sonorover-one" width="1000"  height="auto" />
+  <img src="/images/sonorover-one-extended.png" alt="sonorover-one" width="1000"  height="auto" />
   
 </div>
 
