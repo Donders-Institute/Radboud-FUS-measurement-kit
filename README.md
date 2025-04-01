@@ -47,6 +47,8 @@ https://github.com/user-attachments/assets/676b7667-6fb5-469c-bd78-fa9b3e943115
 
 This project is facilitated by the Radboud Focused Ultrasound Initiative. For more information, please visit the [website](https://www.ru.nl/en/donders-institute/research/research-facilities/focused-ultrasound-initiative-fus).
 
+**⚠️ DEVELOPMENT STATUS**: This repository is currently under active development and is provided AS IS. Features may be incomplete, undergo significant changes, or contain bugs. Use at your own discretion.
+
 <!-- Features -->
 
 ## 🚀 Key Features <a name="key-features"></a>
