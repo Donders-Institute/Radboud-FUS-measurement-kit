@@ -41,12 +41,12 @@ config['General']['Maximum number of output filename'] = str(1000)
 config['Logging'] = {}
 config['Logging']['Logger name'] = 'SonoRover_One'
 config['Logging']['Timestamp format'] = '%Y-%m-%d_%H-%M-%S'
-config['Logging']['Log level console'] = 'INFO'
+config['Logging']['Log level console'] = 'WARNING'
 config['Logging']['Log level file'] = 'DEBUG'
 config['Logging']['Initial part of log filename'] = 'log_'
 
 config['Versions'] = {}
-config['Versions']['SonoRover One software'] = '1.1.1'
+config['Versions']['SonoRover One software'] = '1.2.0'
 
 config['Characterization'] = {}
 config['Characterization']['Path of input parameters cache'] = ('config//' +

@@ -183,5 +183,5 @@ def move_output_data(logger, from_dir, to_dir):
         logger.info(f'Output files have been moved to {to_dir}')
         print(f'Output files have been moved to {to_dir}', end='\n')
     except Exception as e:
-        logger.error(f'Moving output files failed: {e}. Output files can be found in {from_dir}.')
-        print(f'WARNING Moving output files failed: {e}. Output files can be found in {from_dir}.')
+        logger.error(f'\n WARNING! \n \n Moving output files failed: {e}. Output files can be found in {from_dir}.')
+        print(f'\n WARNING! \n \n Moving output files failed: {e}. Output files can be found in {from_dir}.')

@@ -86,6 +86,8 @@ def perform_pcd_acquisition(picoscope_serial, transducer_serial, driving_system_
     None
     """
 
+    _load_config_files()
+
     # Retrieve values from config only if they are None
     if output_dir is None:
         output_dir = get_config_value(logger, config_info, 'Default', 'output_dir',
@@ -121,8 +123,6 @@ def perform_pcd_acquisition(picoscope_serial, transducer_serial, driving_system_
                    f'{all_elem_limit:.2f} [%] and might damage the PCD element. Stop measurement.')
         logger.critical(message)
         sys.exit(message)
-
-    _load_config_files()
 
     # Initialize equipment
     pico_object, seq = _initialize_equipment(picoscope_serial, transducer_serial,
