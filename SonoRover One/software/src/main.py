@@ -24,10 +24,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 **Attribution Notice**:
-If you use this kit in your research or project, please include the following attribution:
-Margely Cornelissen, Stein Fekkes (Radboud University, Nijmegen, The Netherlands) & Erik Dumont
-(Image Guided Therapy, Pessac, France) (2024), Radboud FUS measurement kit (version 1.0),
-https://github.com/Donders-Institute/Radboud-FUS-measurement-kit
+If you use this kit in your research or project, please refer to the 'How to Cite' section in the
+README.md file of https://github.com/Donders-Institute/Radboud-FUS-measurement-kit.
 """
 
 # Basic packages
@@ -41,13 +39,11 @@ import numpy as np
 # Own packages
 from config.config import config_info, read_additional_config
 from config.logging_config import initialize_logger, close_logger
+from backend.utils import get_config_value, move_to_archive, move_output_data
 
 from fus_driving_systems import config as fds_config
 from fus_driving_systems.config import logging_config as fds_logging_config
-
-from distutils.dir_util import copy_tree
-from pathlib import Path
-import shutil
+from fus_driving_systems.utils import get_config_file
 
 test_scanner_only = False
 init_motor = True
@@ -62,21 +58,26 @@ def main():
     """
 
     # Check if temporary output folder exists and is empty, otherwise archive contents
-    move_to_archive(config_info['Characterization']['Temporary output path'])
+    temp_output_path = get_config_value(None, config_info, 'Characterization',
+                                        'Temporary output path', 'C:\\Temp\\General output folder')
+    move_to_archive(temp_output_path)
 
     # Initialize logger
-    log_path = config_info['Characterization']['Temporary logging path']
+    log_path = get_config_value(None, config_info, 'Characterization', 'Temporary logging path',
+                                'C:\\Temp\\General output folder\\logs')
     try:
-        logger = initialize_logger(log_path, config_info['General']['Logger name'])
+        logger_name = get_config_value(None, config_info, 'Logging', 'Logger name', 'SonoRover_One')
+        logger = initialize_logger(log_path, logger_name)
 
-        version = config_info['Versions']['SonoRover One software']
-        logger.info(f'Characterization performed with the following software: {version}')
+        version = get_config_value(logger, config_info, 'Versions', 'SonoRover One software',
+                                   'Unknown')
+        logger.debug(f'Characterization performed with the following software: {version}')
 
         # Sync fus_driving_systems logging
         fds_logging_config.sync_logger(logger)
 
         # Read additional fus_driving_systems config file
-        inp_file = impresources.files(fds_config) / 'ds_config.ini'
+        inp_file = impresources.files(fds_config) / get_config_file()
         read_additional_config(inp_file)
 
         # Delay import due to initialization of logger
@@ -92,7 +93,8 @@ def main():
         input_param = input_dialog.input_param
 
         if input_param is not None:
-            logger.info(f'Characterization performed with the following parameters: \n {input_param}')
+            logger.debug('Characterization performed with the following parameters: ' +
+                         f'\n {input_param}')
 
             # No sequence chosen using GUI, so read excel file
             if not input_param.sequences:
@@ -118,7 +120,7 @@ def main():
                         # Wait for user input before continuing
                         check_dialogs.continue_acquisition_dialog(seq)
 
-                    logger.info(f'Performing the following sequence: \n {seq}')
+                    logger.debug(f'Performing the following sequence: \n {seq}')
 
                     if is_testing:
                         # Test functions
@@ -128,10 +130,7 @@ def main():
                     else:
                         if seq.is_ac_align:
                             found_middle_points = acquisition.acoustical_alignment(seq)
-                            if n_dist == 1:
-                                middle_points[n_dist*i:n_dist*(i+1), :] = found_middle_points
-                            else:
-                                middle_points[n_dist*i:n_dist*(i+1), :] = found_middle_points
+                            middle_points[n_dist*i:n_dist*(i+1), :] = found_middle_points
                         else:
                             acquisition.acquire_sequence(seq)
 
@@ -140,83 +139,25 @@ def main():
                     ac_align.process_acoustical_alignment(input_param.sequences[0],
                                                           input_param.coord_zero, middle_points,
                                                           output_name, input_param.temp_dir_output)
-                    
+
             finally:
                 acquisition.close_all()
         else:
-            sys.exit('No input parameters found.')
+            message = 'No input parameters found.'
+            logger.critical(message)
+            sys.exit(message)
     finally:
         close_logger()
-        
+
     # Move logging data
     move_output_data(logger, log_path, input_param.temp_dir_output)
 
     # All sequences are finished, so move data and remove second folder
     move_output_data(logger, input_param.temp_dir_output, input_param.dir_output)
 
-    print('Pipeline finished.', end='\n')
-
-
-def move_to_archive(folder_path):
-    folder = Path(folder_path)
-    archive_folder = folder / "archive"
-
-    # Check if the folder exists
-    if not folder.exists():
-        folder.mkdir(parents=True, exist_ok=True)
-        return
-
-    # Create the archive folder if it doesn't exist
-    if not archive_folder.exists():
-        archive_folder.mkdir(parents=True, exist_ok=True)
-
-    # Check if the folder is empty
-    if any(folder.iterdir()):  # Check if folder is empty
-
-        # Move all files and subfolders to the archive folder
-        for item in folder.iterdir():
-            if item.name == "archive":  # Skip the archive folder itself
-                continue
-            destination = archive_folder / item.name
-
-            # Handle conflict if the destination already exists
-            if destination.exists():
-                counter = 1
-                new_destination = destination.with_name(f"{item.stem}_{counter}{item.suffix}")
-                while new_destination.exists():
-                    counter += 1
-                    new_destination = destination.with_name(f"{item.stem}_{counter}{item.suffix}")
-                destination = new_destination  # Use the new unique name
-            try:
-                shutil.move(str(item), destination)
-                print(f"Moved '{item}' to '{destination}'.", end='\n')
-            except PermissionError:
-                print('The process cannot access the file because it is being used by another pro' +
-                      f'cess or you do not have permission to move this file. Skip {item} for now.',
-                      end='\n')
-    else:
-        print(f"The folder '{folder}' is empty; nothing to move.", end='\n')
-
-    print(f"All content moved to archive folder: {archive_folder}", end='\n')
-
-
-def move_output_data(logger, from_dir, to_dir):
-    """
-    Move output data to the final directory in case it is a internet drive to save acquisition time.
-
-    Args:
-        from_dir: Directory files are moved from.
-        to_dir: Directory files are moved to.
-    """
-
-    try:
-        copy_tree(from_dir, to_dir)
-
-        logger.info(f'Output files have been moved to {to_dir}')
-        print(f'Output files have been moved to {to_dir}', end='\n')
-    except Exception as e:
-        logger.error(f'Moving output files failed: {e}. Output files can be found in {from_dir}.')
-        print(f'WARNING Moving output files failed: {e}. Output files can be found in {from_dir}.')
+    message = 'Pipeline finished.'
+    logger.info(message)
+    print(message, end='\n')
 
 
 if __name__ == '__main__':
