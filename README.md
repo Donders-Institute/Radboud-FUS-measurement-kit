@@ -68,12 +68,12 @@ This project is facilitated by the Radboud Focused Ultrasound Initiative. For mo
 
 ## 👥 Authors <a name="authors"></a>
 
-👤 **[Stein Fekkes](https://www.ru.nl/en/people/fekkes-s), [FUS Initiative](https://www.ru.nl/en/donders-institute/research/research-facilities/focused-ultrasound-initiative-fus), Radboud University**
+👤 **[Stein Fekkes](https://www.ru.nl/en/people/fekkes-s), [FUS Initiative](https://www.ru.nl/en/donders-institute/research/research-facilities/focused-ultrasound-initiative-fus), Radboud University***
 
 - GitHub: [@StefFek-GIT](https://github.com/StefFek-GIT)
 - [LinkedIn](https://linkedin.com/in/sfekkes)
 
-👤 **[Margely Cornelissen](https://www.ru.nl/en/people/cornelissen-m), [FUS Initiative](https://www.ru.nl/en/donders-institute/research/research-facilities/focused-ultrasound-initiative-fus), Radboud University**
+👤 **[Margely Cornelissen](https://www.ru.nl/en/people/cornelissen-m), [FUS Initiative](https://www.ru.nl/en/donders-institute/research/research-facilities/focused-ultrasound-initiative-fus), Radboud University***
 
 - GitHub: [@MaCuinea](https://github.com/MaCuinea)
 - [LinkedIn](https://linkedin.com/in/margely-cornelissen)
@@ -81,6 +81,8 @@ This project is facilitated by the Radboud Focused Ultrasound Initiative. For mo
 👤 **Erik Dumont, [Image Guided Therapy (IGT)](http://www.imageguidedtherapy.com/)**
 - GitHub: [@erikdumontigt](https://github.com/erikdumontigt)
 - [LinkedIn](https://linkedin.com/in/erik-dumont-986a814)
+  
+*These authors contributed equally.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -88,7 +90,11 @@ This project is facilitated by the Radboud Focused Ultrasound Initiative. For mo
 
 If you use this kit in your research or project, please cite it as follows:
 
-Stein Fekkes, Margely Cornelissen (Radboud University, Nijmegen, The Netherlands) & Erik Dumont (Image Guided Therapy, Pessac, France) (2025), Radboud FUS measurement kit (version 1.2), https://github.com/Donders-Institute/Radboud-FUS-measurement-kit
+Stein Fekkes*, Margely Cornelissen* (Radboud University, Nijmegen, The Netherlands) & Erik Dumont (Image Guided Therapy, Pessac, France) (2025), Radboud FUS measurement kit (version 1.2), https://github.com/Donders-Institute/Radboud-FUS-measurement-kit
+
+*These authors contributed equally.
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 <!-- GETTING STARTED -->
 
