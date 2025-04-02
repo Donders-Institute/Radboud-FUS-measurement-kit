@@ -711,34 +711,25 @@ class Acquisition:
             params['Sequence']['Unknown power unit'] = str(self.sequence.power_value)
 
         if self.input_param.driving_sys.require_conv_eq:
+           params['Sequence']['volt_curve'] = ("- Voltage to amplitude conversion: Using " +
+                                                "piecewise polynomial fit of " +
+                                                f"{self.sequence.volt_curve_file}\n ")
 
-            params['Sequence']["Voltage [V] vs. amplitude [%] equation (A = a*V + b)"] = (
-                f"A = {self.sequence.V2A_a}*V + {self.sequence.V2A_b} \n ")
-            
-            params['Sequence']["Pressure [Pa] vs. amplitude [%] equation (A = a*P + b)"] = (
-                f" P = {self.sequence.P2A_a}*V + {self.sequence.P2A_b} \n ")
-            
-            params['Sequence']["FWHM center wrt exit plane [mm] vs. set focus [%] equation (SF " +
-                               "= a*FWHMC + b)"] = (f"SF = {self.sequence.DF2SF_a}*FWHMC + " +
-                                                    f"{self.sequence.DF2SF_b} \n ")
-            
-            params['Sequence']["Normalized pressure [-] vs. focal depth wrt exit plane [mm] " +
-                               "equation between a focus wrt exit plane of " +
-                               f"{self.sequence.F2EQF1_low_lim} and {self.sequence.F2EQF1_up_lim}" +
-                               " [mm] (EQ1 = a0 + a1*f + a2*f^2 + a3*f^3 + a4*f^4 + a5*f^5)"] = (
-                               f"EQ1 = {self.sequence.F2EQF1_a0} + {self.sequence.F2EQF1_a1}*f + " +
-                               f"{self.sequence.F2EQF1_a2}*f^2 + {self.sequence.F2EQF1_a3}*f^3 + " +
-                               f"{self.sequence.F2EQF1_a4}*f^4 + {self.sequence.F2EQF1_a5}*f^5 + " +
-                               f"{self.sequence.F2EQF1_a6}*f^6 + {self.sequence.F2EQF1_a7}*f^7 \n ")
-            
-            params['Sequence']["Normalized pressure [-] vs. focal depth wrt exit plane [mm] " +
-                               "equation between a focus wrt exit plane of " +
-                               f"{self.sequence.F2EQF2_low_lim} and {self.sequence.F2EQF2_up_lim}" +
-                               " [mm] (EQ2 = a0 + a1*f + a2*f^2 + a3*f^3 + a4*f^4 + a5*f^5)"] = (
-                               f"EQ2 = {self.sequence.F2EQF2_a0} + {self.sequence.F2EQF2_a1}*f + " +
-                               f"{self.sequence.F2EQF2_a2}*f^2 + {self.sequence.F2EQF2_a3}*f^3 + " +
-                               f"{self.sequence.F2EQF2_a4}*f^4 + {self.sequence.F2EQF2_a5}*f^5 + " +
-                               f"{self.sequence.F2EQF2_a6}*f^6 + {self.sequence.F2EQF2_a7}*f^7 \n ")
+            params['Sequence']['power_curve'] = ("- Pressure to amplitude conversion: Using " +
+                                                 "piecewise polynomial fit of " +
+                                                 f"{self.sequence.power_curve_file}\n ")
+
+            params['Sequence']['focus_curve'] = ("- Focus conversion: Using piecewise " +
+                                                 "polynomial fit of " +
+                                                 f"{self.sequence.focus_curve_file}\n ")
+
+            params['Sequence']['eq_curve'] = ("- Normalization factor calculation: Using " +
+                                              "piecewise polynomial fit of " +
+                                              f"{self.sequence.eq_curve_file}\n ")
+
+            params['Sequence']["Normalized pressure [-] based on chosen focal depth wrt exit " +
+                               f"plane of {self.sequence._focus_wrt_exit_plane} [mm]"] = (
+                               f"{self.sequence._eq_factor} \n ")
 
         params['Sequence']['Pulse duration [ms]'] = str(self.sequence.pulse_dur)
         params['Sequence']['Pulse repetition interval [ms]'] = str(self.sequence.pulse_rep_int)
