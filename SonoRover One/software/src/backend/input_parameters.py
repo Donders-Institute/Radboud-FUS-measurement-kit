@@ -894,6 +894,7 @@ class InputParameters:
         """
         
         is_ac_align = cached_input['Input parameters.Protocol']['Alignment.Acoustical'] == 'True'
+        sequences = []
         if is_ac_align:
             seq = sequence.CharacSequence()
             seq.is_ac_align = True
