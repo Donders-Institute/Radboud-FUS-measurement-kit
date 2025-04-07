@@ -892,7 +892,7 @@ class InputParameters:
         """
         Convert sequence data from the INI file to a list of sequence objects.
         """
-        sequences = []
+        
         is_ac_align = cached_input['Input parameters.Protocol']['Alignment.Acoustical'] == 'True'
         if is_ac_align:
             seq = sequence.CharacSequence()
@@ -907,9 +907,8 @@ class InputParameters:
             seq = self._convert_alignment_parameters(seq, cached_input)
 
             # Convert focus and power parameters
-            seq = self._convert_focus_and_power_parameters(seq, cached_input)
+            sequences = self._convert_focus_and_power_parameters(seq, cached_input)
 
-            sequences.append(seq)
         else:
             self._path_protocol_excel_file = cached_input['Input parameters.Protocol']['Path and filename of protocol excel file']
 
@@ -961,6 +960,7 @@ class InputParameters:
         power_value_str = cached_input['Input parameters.Protocol']['Alignment.power_value']
         power_value = [float(value) for value in power_value_str.strip('][').split(',')]
         
+        sequences = []
         for focus in focus_array:
             basic_seq = seq.clone()
 
@@ -985,8 +985,10 @@ class InputParameters:
                 basic_seq.volt = power_value
             elif power_option == ampl_power:
                 basic_seq.ampl = power_value
+                
+            sequences.append(basic_seq)
 
-            return basic_seq
+        return sequences
 
     def _convert_hydrophone(self, cached_input):
         """
