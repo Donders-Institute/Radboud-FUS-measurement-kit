@@ -70,7 +70,7 @@ pcd_config['IS_PCD15287_01002']['Baseline files'] = '\n'.join(
      'PCD_acquisition_2025-02-05_12-10-56_elem_1_of_IS_PCD15287_01002_IGT-32-ch_comb_1x10-ch.raw',
      'PCD_acquisition_2025-02-05_12-10-59_elem_2_of_IS_PCD15287_01002_IGT-32-ch_comb_1x10-ch.raw',
      'PCD_acquisition_2025-02-05_12-11-01_elem_3_of_IS_PCD15287_01002_IGT-32-ch_comb_1x10-ch.raw',
-     'PCD_acquisition_2025-02-05_12-11-14_elem_4_of_IS_PCD15287_01002_IGT-32-ch_comb_1x10-ch.raw',
+     'PCD_acquisition_2025-02-05_12-11-04_elem_4_of_IS_PCD15287_01002_IGT-32-ch_comb_1x10-ch.raw',
      'PCD_acquisition_2025-02-05_12-11-07_elem_5_of_IS_PCD15287_01002_IGT-32-ch_comb_1x10-ch.raw',
      'PCD_acquisition_2025-02-05_12-11-09_elem_6_of_IS_PCD15287_01002_IGT-32-ch_comb_1x10-ch.raw',
      'PCD_acquisition_2025-02-05_12-11-12_elem_7_of_IS_PCD15287_01002_IGT-32-ch_comb_1x10-ch.raw',
