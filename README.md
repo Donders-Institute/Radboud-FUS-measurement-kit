@@ -104,7 +104,7 @@ Stein Fekkes*, Margely Cornelissen* (Radboud University, Nijmegen, The Netherlan
 
 ### Hardware
 
-The hardware files are stored as native solidworks files and as step format. The main assembly file: W0003510-00-01-SonoRover One.SLDASM will contain all references to part files and subassemblies. For detailed assembly instructions, refer to the [Setup Manual](/SonoRover%20One/hardware/documentation/sonorover%20One%20setup%20manual%20v0_8.pdf).
+The hardware files are stored as native solidworks files and as step format. The main assembly file: W0003510-00-01-SonoRover One.SLDASM will contain all references to part files and subassemblies. For detailed assembly instructions, refer to the [Setup Manual](/SonoRover%20One/hardware/Documentation/SonoRover%20One%20Setup%20manual%20V0_8.pdf).
 
 ### Software
 
@@ -216,7 +216,7 @@ The table below outlines compatibility between different versions of the Radboud
 ## 📋 Usage <a name="usage"></a>
 
 ### Hardware
-For usage instructions, refer to paragraph 3.2 *Pre-measurement setup instructions* of the [Setup Manual](/SonoRover%20One/hardware/documentation/sonorover%20One%20setup%20manual%20v0_8.pdf).
+For usage instructions, refer to paragraph 3.2 *Pre-measurement setup instructions* of the [Setup Manual](/SonoRover%20One/hardware/Documentation/SonoRover%20One%20Setup%20manual%20V0_8.pdf).
 
 ### Software
 
@@ -380,7 +380,7 @@ If you selected "Perform all protocols in sequence without waiting for user inpu
 
 # 📊 Data Analysis <a name="data-analysis"></a>
 
-For usage instructions, refer to the [User Manual SonoRover One Data Analysis](/SonoRover%20One/hardware/documentation/SonoRover%20One%20Data%20Analysis%20User%20manual%20V0_8.pdf).
+For usage instructions, refer to the [User Manual SonoRover One Data Analysis](/SonoRover%20One/hardware/Documentation/SonoRover%20One%20Data%20Analysis%20User%20manual%20V0_8.pdf).
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
