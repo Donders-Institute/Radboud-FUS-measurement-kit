@@ -46,7 +46,7 @@ config['Logging']['Log level file'] = 'DEBUG'
 config['Logging']['Initial part of log filename'] = 'log_'
 
 config['Versions'] = {}
-config['Versions']['SonoRover One software'] = '1.2.3'
+config['Versions']['SonoRover One software'] = '1.2.4'
 
 config['Characterization'] = {}
 config['Characterization']['Path of input parameters cache'] = ('config//' +
