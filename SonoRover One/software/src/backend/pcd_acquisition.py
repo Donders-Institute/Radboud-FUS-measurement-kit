@@ -188,6 +188,10 @@ def _initialize_equipment(picoscope_serial, transducer_serial, driving_system_se
     seq = sequence.CharacSequence()
     seq.driving_sys = driving_system_serial
     seq.transducer = transducer_serial
+
+    # Fix to bypass conversion equations checks TODO: permanent fix is on backlog
+    seq.transducer.max_foc = 100
+
     seq.pulse_dur = pulse_dur
 
     seq.set_focus_wrt_mid_bowl(seq.transducer.natural_foc, False)
