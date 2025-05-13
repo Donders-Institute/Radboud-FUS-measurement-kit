@@ -699,13 +699,13 @@ class Acquisition:
             params['Sequence']['Maximum pressure in free water [MPa]'] = (str(self.sequence.press))
             params['Sequence']['Voltage [V]'] = str(self.sequence.volt)
             params['Sequence']['Amplitude [%]'] = str(self.sequence.ampl)
-        elif self.input_param.driving_sys.chosen_power == gp_power:
+        elif self.sequence.chosen_power == gp_power:
             params['Sequence']['Global power [W]'] = str(self.sequence.global_power)
-        elif self.input_param.driving_sys.chosen_power == press_power:
+        elif self.sequence.chosen_power == press_power:
             params['Sequence']['Maximum pressure in free water [MPa]'] = (str(self.sequence.press))
-        elif self.input_param.driving_sys.chosen_power == ampl_power:
+        elif self.sequence.chosen_power == ampl_power:
             params['Sequence']['Amplitude [%]'] = str(self.sequence.ampl)
-        elif self.input_param.driving_sys.chosen_power == volt_power:
+        elif self.sequence.chosen_power == volt_power:
             params['Sequence']['Voltage [V]'] = str(self.sequence.volt)
         else:
             params['Sequence']['Unknown power unit'] = str(self.sequence.power_value)
