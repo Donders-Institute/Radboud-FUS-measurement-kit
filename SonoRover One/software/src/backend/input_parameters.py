@@ -979,7 +979,7 @@ class InputParameters:
 
             basic_seq.chosen_power = power_option
             if power_option == gp_power:
-                basic_seq.global_power = power_value
+                basic_seq.global_power = power_value[0]
             elif power_option == press_power:
                 basic_seq.press = power_value
             elif power_option == volt_power:
