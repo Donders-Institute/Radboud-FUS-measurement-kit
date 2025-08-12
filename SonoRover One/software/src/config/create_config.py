@@ -185,14 +185,14 @@ config['Characterization']['default.pos_com_port'] = 'COM3'
 config['Characterization']['default.temp'] = ''
 config['Characterization']['default.dis_oxy'] = ''
 
-config['Characterization']['default.x_coord_zero'] = str(-63)
-config['Characterization']['default.y_coord_zero'] = str(-62.5)
-config['Characterization']['default.z_coord_zero'] = str(-154)
+config['Characterization']['default.x_coord_zero'] = str(-62.5)
+config['Characterization']['default.y_coord_zero'] = str(-61.0)
+config['Characterization']['default.z_coord_zero'] = str(-154.1)
 
 config['Characterization']['default.perform_all_seqs'] = str(True)
 
-config['Characterization']['default.distance_from_foc'] = '\n'.join([str(-10), str(10)])
-config['Characterization']['default.init_line_len'] = str(40)
+config['Characterization']['default.distance_from_foc'] = '\n'.join([str(0)])
+config['Characterization']['default.init_line_len'] = str(30)
 config['Characterization']['default.init_line_step'] = str(0.5)
 config['Characterization']['default.init_threshold'] = str(0.01)
 config['Characterization']['default.reduction_factor'] = str(0.5)
@@ -215,18 +215,18 @@ config['Characterization']['pos_sys.reacquire_attempts'] = str(5)
 
 config['Characterization.Equipment'] = {}
 
-HYDROPHONES = ['HGL 0200 SN2845', 'HGL 0200 SN3030', 'HNR 0500 SN2439']
+HYDROPHONES = ['HGL 0200 SN3030', 'HGL 0200 SN2845', 'HNR 0500 SN2439']
 config['Characterization.Equipment']['Hydrophones'] = '\n'.join(HYDROPHONES)
 
 config['Characterization.Equipment.' + HYDROPHONES[0]] = {}
 config['Characterization.Equipment.' + HYDROPHONES[0]]['Name'] = 'Hydrophone ' + HYDROPHONES[0]
 config['Characterization.Equipment.' + HYDROPHONES[0]]['Sensitivity (V/Pa) datasheet'] = (
-    'config//hydrophones//HGL 0200 SN2845 Calibration datasheet.xlsx')
+    'config//hydrophones//HGL 0200 SN3030 Calibration datasheet.xlsx')
 
 config['Characterization.Equipment.' + HYDROPHONES[1]] = {}
 config['Characterization.Equipment.' + HYDROPHONES[1]]['Name'] = 'Hydrophone ' + HYDROPHONES[1]
 config['Characterization.Equipment.' + HYDROPHONES[1]]['Sensitivity (V/Pa) datasheet'] = (
-    'config//hydrophones//HGL 0200 SN3030 Calibration datasheet.xlsx')
+    'config//hydrophones//HGL 0200 SN2845 Calibration datasheet.xlsx')
 
 config['Characterization.Equipment.' + HYDROPHONES[2]] = {}
 config['Characterization.Equipment.' + HYDROPHONES[2]]['Name'] = 'Hydrophone ' + HYDROPHONES[2]
