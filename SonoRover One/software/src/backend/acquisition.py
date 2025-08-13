@@ -711,22 +711,22 @@ class Acquisition:
             params['Sequence']['Unknown power unit'] = str(self.sequence.power_value)
 
         if self.input_param.driving_sys.require_conv_eq:
-           params['Sequence']['volt_curve'] = ("- Voltage to amplitude conversion: Using " +
-                                                "piecewise polynomial fit of " +
-                                                f"{self.sequence.volt_curve_file}\n ")
+            params['Sequence']['volt_curve'] = ("- Voltage to amplitude conversion: Using " +
+                                                 "piecewise polynomial fit of " +
+                                                 f"{self.sequence.volt_curve_file}\n ")
 
             params['Sequence']['power_curve'] = ("- Pressure to amplitude conversion: Using " +
                                                  "piecewise polynomial fit of " +
                                                  f"{self.sequence.power_curve_file}\n ")
-
+            
             params['Sequence']['focus_curve'] = ("- Focus conversion: Using piecewise " +
                                                  "polynomial fit of " +
                                                  f"{self.sequence.focus_curve_file}\n ")
-
+            
             params['Sequence']['eq_curve'] = ("- Normalization factor calculation: Using " +
                                               "piecewise polynomial fit of " +
                                               f"{self.sequence.eq_curve_file}\n ")
-
+            
             params['Sequence']["Normalized pressure [-] based on chosen focal depth wrt exit " +
                                f"plane of {self.sequence._focus_wrt_exit_plane} [mm]"] = (
                                f"{self.sequence._eq_factor} \n ")
