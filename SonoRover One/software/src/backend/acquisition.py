@@ -59,7 +59,7 @@ from frontend import check_dialogs
 
 from fus_driving_systems.igt import igt_ds as fds_igt
 from fus_driving_systems.sonic_concepts import sonic_concepts_ds as fds_sc
-from fus_driving_systems.utils import get_config_value
+from fus_driving_systems.utils import get_config_value, check_attribute
 
 from config.config import config_info
 from config.logging_config import logger
@@ -699,6 +699,20 @@ class Acquisition:
             params['Sequence']['Maximum pressure in free water [MPa]'] = (str(self.sequence.press))
             params['Sequence']['Voltage [V]'] = str(self.sequence.volt)
             params['Sequence']['Amplitude [%]'] = str(self.sequence.ampl)
+
+            if self.sequence.chosen_power == press_power:
+                if check_attribute(logger, self.sequence, 'input_press_mpa'):
+                    params['Sequence']['Input pressure in free water [MPa]'] = (str(self.sequence.
+                                                                                    input_press_mpa)
+                                                                                )
+                if check_attribute(logger, self.sequence, 'eq_press_mpa'):
+                    params['Sequence']['Equalized pressure in free water [MPa]'] = str(self.
+                                                                                       sequence.
+                                                                                       eq_press_mpa)
+                if check_attribute(logger, self.sequence, 'calculated_ampl'):
+                    params['Sequence']['Calculated amplitude [%]'] = str(self.sequence.
+                                                                         calculated_ampl)
+
         elif self.sequence.chosen_power == gp_power:
             params['Sequence']['Global power [W]'] = str(self.sequence.global_power)
         elif self.sequence.chosen_power == press_power:
