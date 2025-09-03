@@ -59,13 +59,14 @@ from frontend import check_dialogs
 
 from fus_driving_systems.igt import igt_ds as fds_igt
 from fus_driving_systems.sonic_concepts import sonic_concepts_ds as fds_sc
-from fus_driving_systems.utils import get_config_value, check_attribute
+from fus_driving_systems.utils import get_config_value
 
 from config.config import config_info
 from config.logging_config import logger
 
 from backend.motor_GRBL import MotorsXYZ
 from backend import pico
+from backend.utils import check_attribute
 
 
 class Acquisition:
