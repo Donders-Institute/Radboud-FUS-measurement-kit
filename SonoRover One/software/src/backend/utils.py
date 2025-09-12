@@ -76,7 +76,7 @@ def get_config_value(logger, config, section, key, default, isSysExit=False):
         message = "Config not found"
         if isSysExit:
             sys.exit(message)
-        
+
         log_warning(message)
         return default
 
@@ -100,6 +100,7 @@ def get_config_value(logger, config, section, key, default, isSysExit=False):
 
     # Return the config value if found
     return config[section][key]
+
 
 def get_config_folder():
     """
@@ -185,3 +186,21 @@ def move_output_data(logger, from_dir, to_dir):
     except Exception as e:
         logger.error(f'\n WARNING! \n \n Moving output files failed: {e}. Output files can be found in {from_dir}.')
         print(f'\n WARNING! \n \n Moving output files failed: {e}. Output files can be found in {from_dir}.')
+
+
+def check_attribute(logger, obj, attr):
+    """
+    Check whether an object has a given attribute and log a warning if it does not.
+
+    Args:
+        logger (logging.Logger): Logger instance used to issue warnings.
+        obj (object): The object to inspect.
+        attr (str): The attribute name to check for.
+    """
+
+    if hasattr(obj, attr):
+        return True
+    else:
+        logger.warning(f'Object {obj.__class__.__name__} has no attribute called {attr}. ' +
+                       'Parameter is not logged.')
+        return False

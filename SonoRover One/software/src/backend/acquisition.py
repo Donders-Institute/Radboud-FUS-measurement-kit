@@ -66,6 +66,7 @@ from config.logging_config import logger
 
 from backend.motor_GRBL import MotorsXYZ
 from backend import pico
+from backend.utils import check_attribute
 
 
 class Acquisition:
@@ -699,6 +700,20 @@ class Acquisition:
             params['Sequence']['Maximum pressure in free water [MPa]'] = (str(self.sequence.press))
             params['Sequence']['Voltage [V]'] = str(self.sequence.volt)
             params['Sequence']['Amplitude [%]'] = str(self.sequence.ampl)
+            
+            if self.sequence.chosen_power == press_power:
+                if check_attribute(logger, self.sequence, 'input_press_mpa'):
+                    params['Sequence']['Input pressure in free water [MPa]'] = (str(self.sequence.
+                                                                                    input_press_mpa)
+                                                                                )
+                if check_attribute(logger, self.sequence, 'eq_press_mpa'):
+                    params['Sequence']['Equalized pressure in free water [MPa]'] = str(self.
+                                                                                       sequence.
+                                                                                       eq_press_mpa)
+                if check_attribute(logger, self.sequence, 'calculated_ampl'):
+                    params['Sequence']['Calculated amplitude [%]'] = str(self.sequence.
+                                                                         calculated_ampl)
+
         elif self.sequence.chosen_power == gp_power:
             params['Sequence']['Global power [W]'] = str(self.sequence.global_power)
         elif self.sequence.chosen_power == press_power:
@@ -711,7 +726,7 @@ class Acquisition:
             params['Sequence']['Unknown power unit'] = str(self.sequence.power_value)
 
         if self.input_param.driving_sys.require_conv_eq:
-           params['Sequence']['volt_curve'] = ("- Voltage to amplitude conversion: Using " +
+            params['Sequence']['volt_curve'] = ("- Voltage to amplitude conversion: Using " +
                                                 "piecewise polynomial fit of " +
                                                 f"{self.sequence.volt_curve_file}\n ")
 
