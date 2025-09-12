@@ -90,7 +90,7 @@ This project is facilitated by the Radboud Focused Ultrasound Initiative. For mo
 
 If you use this kit in your research or project, please cite it as follows:
 
-Stein Fekkes*, Margely Cornelissen* (Radboud University, Nijmegen, The Netherlands) & Erik Dumont (Image Guided Therapy, Pessac, France) (2024-2025), Radboud FUS measurement kit (version 1.2), https://github.com/Donders-Institute/Radboud-FUS-measurement-kit
+Stein Fekkes*, Margely Cornelissen* (Radboud University, Nijmegen, The Netherlands) & Erik Dumont (Image Guided Therapy, Pessac, France) (2024-2025), Radboud FUS measurement kit (version 1.3), https://github.com/Donders-Institute/Radboud-FUS-measurement-kit
 
 *These authors contributed equally.
 
@@ -210,6 +210,11 @@ The table below outlines compatibility between different versions of the Radboud
 | SonoRover One Version | Radboud FDS Compatibility | Python Version |
 |---------------------|----------------|----------------------------|
 | 1.2 (Current) | Radboud FDS v2.1 | 3.10  |
+| 1.3 (Current) | Radboud FDS v2.2+ | 3.10  |
+
+Note:
+- Newest version is **not compatible** with Radboud FDS v2.1 or lower  
+- Tested with **Python 3.10**
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 

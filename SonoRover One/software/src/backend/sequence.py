@@ -83,54 +83,54 @@ class CharacSequence(sequence.Sequence):
         Initialize a characterization sequence with default values.
         """
 
-        super().__init__()
+        super().__init__(engineering_mode=True)
 
         self.seq_number = 0   # sequence number of protocol in excel file
         self.tag = ''  # user can add a description to the sequence
 
         # boolean if acoustical alignment is performed, if so, no grid input required.
         self.is_ac_align = False
-        dist_from_foc_str = get_config_value(logger, config, 
-                                             "Characterization", 
+        dist_from_foc_str = get_config_value(logger, config,
+                                             "Characterization",
                                              "default.distance_from_foc",
                                              '-10\n10').split('\n')
         dist_from_foc_float = [float(i) for i in dist_from_foc_str]
 
         self.ac_align = {
             "distance_from_foc": dist_from_foc_float,
-            'init_line_len': float(get_config_value(logger, config, 
-                                                    "Characterization", 
+            'init_line_len': float(get_config_value(logger, config,
+                                                    "Characterization",
                                                     "default.init_line_len",
                                                     40)),
-            'init_line_step': float(get_config_value(logger, config, 
+            'init_line_step': float(get_config_value(logger, config,
                                                      "Characterization",
                                                      "default.init_line_step",
                                                      0.5)),
-            'init_threshold': float(get_config_value(logger, config, 
+            'init_threshold': float(get_config_value(logger, config,
                                                      "Characterization",
                                                      "default.init_threshold",
                                                      0.01)),
             'reduction_factor': float(get_config_value(
-                logger, config,"Characterization", "default.reduction_factor",
+                logger, config, "Characterization", "default.reduction_factor",
                 0.5)),
-            'max_red_iter': int(get_config_value(logger, config, 
+            'max_red_iter': int(get_config_value(logger, config,
                                                  "Characterization",
                                                  "default.max_red_iter", 5)),
-            'create_graphs': get_config_value(logger, config, 
-                                              "Characterization", 
+            'create_graphs': get_config_value(logger, config,
+                                              "Characterization",
                                               "default.create_graphs", 'True')
             == 'True',
             'y_lim': float(get_config_value(logger, config, "Characterization",
                                             "default.y_lim", 200)),
-            'create_axis_file': get_config_value(logger, config, 
-                                                 "Characterization", 
+            'create_axis_file': get_config_value(logger, config,
+                                                 "Characterization",
                                                  "default.create_axis_file",
                                                  'True') == 'True',
-            'axis_length': float(get_config_value(logger, config, 
+            'axis_length': float(get_config_value(logger, config,
                                                   "Characterization",
                                                   "default.axis_length", 140)),
-            'axis_stepsize': float(get_config_value(logger, config, 
-                                                    "Characterization", 
+            'axis_stepsize': float(get_config_value(logger, config,
+                                                    "Characterization",
                                                     "default.axis_stepsize",
                                                     0.5))
             }
