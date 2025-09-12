@@ -700,7 +700,7 @@ class Acquisition:
             params['Sequence']['Maximum pressure in free water [MPa]'] = (str(self.sequence.press))
             params['Sequence']['Voltage [V]'] = str(self.sequence.volt)
             params['Sequence']['Amplitude [%]'] = str(self.sequence.ampl)
-
+            
             if self.sequence.chosen_power == press_power:
                 if check_attribute(logger, self.sequence, 'input_press_mpa'):
                     params['Sequence']['Input pressure in free water [MPa]'] = (str(self.sequence.
