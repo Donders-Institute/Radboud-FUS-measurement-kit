@@ -105,14 +105,15 @@ def perform_pcd_acquisition(picoscope_serial, transducer_serial, driving_system_
         pulse_dur = float(get_config_value(logger, config_info, 'Default', 'pulse_dur_ms', 0.2))
 
     if amplitude is None:
-        amplitude = float(get_config_value(logger, config_info, 'Default', 'per_elem_ampl', 5))
+        amplitude = float(get_config_value(logger, config_info, 'Default', 'per_elem_ampl', 2.5))
 
     if all_elem_ampl is None:
-        all_elem_ampl = float(get_config_value(logger, config_info, 'Default', 'all_elems_ampl', 1))
+        all_elem_ampl = float(get_config_value(logger, config_info, 'Default', 'all_elems_ampl',
+                                               0.5))
 
     # Check amplitudes
-    per_elem_limit = float(get_config_value(logger, config_info, 'Limit', 'per_elem_ampl', 10))
-    all_elem_limit = float(get_config_value(logger, config_info, 'Limit', 'all_elems_ampl', 5))
+    per_elem_limit = float(get_config_value(logger, config_info, 'Limit', 'per_elem_ampl', 5))
+    all_elem_limit = float(get_config_value(logger, config_info, 'Limit', 'all_elems_ampl', 2.5))
     if amplitude > per_elem_limit:
         message = (f'Amplitude of {amplitude} [%] for firing all elements at once exceeds ' +
                    f'{per_elem_limit:.2f} [%] and might damage the PCD element. Stop measurement.')
