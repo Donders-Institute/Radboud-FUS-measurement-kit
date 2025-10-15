@@ -13,6 +13,16 @@ classdef dataCalc
         ampEstimation = [];
         spatialFilt = [];
         holography = [];
+        pressureCurve = [];
+
+        equalizationCurvature    = [];
+        equalizationCurvatureFit = []
+
+        powerCurvature    = [];
+        powerCurvatureFit = [];
+
+        focusCurvature    = [];
+        focusCurvatureFit = [];
 
         pressure   = [];
         intensity  = [];
@@ -20,6 +30,8 @@ classdef dataCalc
         ISPPA      = [];
         ISPPAsc    = [];
         hydrophone = [];
+
+        reshapedCoordinates = [];
 
     end
 
@@ -76,6 +88,11 @@ classdef dataCalc
             hydrophone(2).calDate{1} = datetime('2024-08-26');
             hydrophone(2).sensitivity{1} = obj.readCalData(hydrophone(2).fileName{1});
 
+            % HNR 0500 2439: calibration for low frequency by NPL calibration 30-04-2025
+            hydrophone(2).fileName{2} = '2024100030-1-Data.xlsx';
+            hydrophone(2).calDate{2} = datetime('2025-04-22'); % ADD XLS READ!
+            %hydrophone(2).sensitivity{2} = obj.readCalData(hydrophone(1).fileName{2});
+
             % HGL 0200 3030: Initial calibration 20-11-2024
             hydrophone(3).fileName{1} = 'HGL0200-3030_AG2010-1446-20_CA_20241120.txt';
             hydrophone(3).Type = 'Hydrophone HGL 0200 SN3030';
@@ -86,34 +103,35 @@ classdef dataCalc
 
             %--------------------------------------------------------------
             % Create a figure for sensitivity comparison
-            figure('Color',[1 1 1]);
+            if 0
+                figure('Color',[1 1 1]);
 
-            % Plot the sensitivity values for the first hydrophone, comparing two calibration dates
-            yyaxis left
-            plot(1000*hydrophone(1).sensitivity{1}(:,1), 1./(1e9*hydrophone(1).sensitivity{1}(:,2)), 'r.-'); hold on;
-            plot(1000*hydrophone(1).sensitivity{2}(:,1), 1./(1e9*hydrophone(1).sensitivity{2}(:,2)), 'b.-');
+                % Plot the sensitivity values for the first hydrophone, comparing two calibration dates
+                yyaxis left
+                plot(1000*hydrophone(1).sensitivity{1}(:,1), 1./(1e9*hydrophone(1).sensitivity{1}(:,2)), 'r.-'); hold on;
+                plot(1000*hydrophone(1).sensitivity{2}(:,1), 1./(1e9*hydrophone(1).sensitivity{2}(:,2)), 'b.-');
 
-            % Label the left axis (Sensitivity)
-            ylabel('Sensitivity (mV/MPa)');
-            yyaxis right
-            % Plot relative deviation between the two calibration data sets
-            plot(1000*hydrophone(1).sensitivity{1}(:,1), 100*(hydrophone(1).sensitivity{2}(:,2) ./ hydrophone(1).sensitivity{1}(:,2)));
-            ylim([90 110]); ylabel('Relative deviation [%]');
-            box off; grid minor;
+                % Label the left axis (Sensitivity)
+                ylabel('Sensitivity (mV/MPa)');
+                yyaxis right
+                % Plot relative deviation between the two calibration data sets
+                plot(1000*hydrophone(1).sensitivity{1}(:,1), 100*(hydrophone(1).sensitivity{2}(:,2) ./ hydrophone(1).sensitivity{1}(:,2)));
+                ylim([90 110]); ylabel('Relative deviation [%]');
+                box off; grid minor;
 
-            % Add legend and labels
-            legend([hydrophone(1).Type, ' ', datestr(hydrophone(1).calDate{1})], ...
-                [hydrophone(1).Type, ' ', datestr(hydrophone(1).calDate{2})], ...
-                ['Relative deviation [%]']);
-            xlabel('Frequency [kHz]');
-            xlim([0 1000]);
+                % Add legend and labels
+                legend([hydrophone(1).Type, ' ', datestr(hydrophone(1).calDate{1})], ...
+                    [hydrophone(1).Type, ' ', datestr(hydrophone(1).calDate{2})], ...
+                    ['Relative deviation [%]']);
+                xlabel('Frequency [kHz]');
+                xlim([0 1000]);
+            end
 
             %--------------------------------------------------------------
             % Connect the preprocessed data and hydrophone calibration data to the object
             obj.prepData = prepData;
             obj.hydrophone = hydrophone;
         end
-
 
         function obj = calcAmplitude(obj,setNrs,ampEstMethod)
             % CALCAMPLITUDE Estimates the amplitude and phase of signals based on the chosen method.
@@ -210,8 +228,7 @@ classdef dataCalc
             end
         end
 
-
-        function obj = calcSpatialFiltering(obj,steNrs,scf,ripple,passBandAtten)
+        function obj = calcSpatialFiltering(obj,setNrs,scf,ripple,passBandAtten)
 
 
             % CALCSPATIALFILTERING Applies spatial low-pass filtering to amplitude data.
@@ -238,39 +255,41 @@ classdef dataCalc
             for i = 1:size(obj.ampEstimation,2)
 
                 if isequal(obj.prepData.dim(i,:),[0 0 1]) && isfield(obj.prepData.p{i}.scan,'dz')
+                    if obj.prepData.p{1}.scan.dz~=0
 
-                    % strore input values to object.
-                    obj.spatialFilt{i}.scf           = scf;             % spatial cutoff frequecy [1/mm]
-                    obj.spatialFilt{i}.ripple        = ripple;          % passband ripple [dB]
-                    obj.spatialFilt{i}.passBandAtten = passBandAtten;   % stopband attentuation in [dB]
+                        % strore input values to object.
+                        obj.spatialFilt{i}.scf           = scf;             % spatial cutoff frequecy [1/mm]
+                        obj.spatialFilt{i}.ripple        = ripple;          % passband ripple [dB]
+                        obj.spatialFilt{i}.passBandAtten = passBandAtten;   % stopband attentuation in [dB]
 
-                    amp = obj.ampEstimation{i}.amp;
+                        amp = obj.ampEstimation{i}.amp;
 
-                    % Design the low pass filter
-                    Fs              = 1/obj.prepData.p{i}.scan.dz;   % Sampling frequency [samples/mm] in z direction
-                    Nyquist         = Fs/2;
-                    fCutOff         = scf;              % spatial cutoff frequency scf [1/mm]
+                        % Design the low pass filter
+                        Fs              = 1/obj.prepData.p{i}.scan.dz;   % Sampling frequency [samples/mm] in z direction
+                        Nyquist         = Fs/2;
+                        fCutOff         = scf;              % spatial cutoff frequency scf [1/mm]
 
-                    % Example parameters; source needs checking. filterorder
-                    % determination by GPT
-                    Ap = ripple;        % Passband ripple in dB
-                    As = passBandAtten; % Stopband attenuation in dB
+                        % Example parameters; source needs checking. filterorder
+                        % determination by GPT
+                        Ap = ripple;        % Passband ripple in dB
+                        As = passBandAtten; % Stopband attenuation in dB
 
-                    % Calculate filter order
-                    N = ceil((log10(sqrt((10^(0.1*Ap) - 1)/(10^(0.1*As)))) / log10(fCutOff / Fs)));
+                        % Calculate filter order
+                        N = ceil((log10(sqrt((10^(0.1*Ap) - 1)/(10^(0.1*As)))) / log10(fCutOff / Fs)));
 
-                    % define filter
-                    [b,a] = butter(N, fCutOff/Nyquist, 'low');
+                        % define filter
+                        [b,a] = butter(N, fCutOff/Nyquist, 'low');
 
-                    % do the filtering
-                    filtAmplitude = filtfilt(b,a,amp);
+                        % do the filtering
+                        filtAmplitude = filtfilt(b,a,amp);
 
-                    % set pressures below zero to zero; no
-                    % underpressures possible
-                    filtAmplitude(filtAmplitude<0) =0;
+                        % set pressures below zero to zero; no
+                        % underpressures possible
+                        filtAmplitude(filtAmplitude<0) =0;
 
-                    % Storage
-                    obj.spatialFilt{i}.amp = filtAmplitude;
+                        % Storage
+                        obj.spatialFilt{i}.amp = filtAmplitude;
+                    end
                 end
             end
         end
@@ -335,18 +354,23 @@ classdef dataCalc
                     obj.pressure{i}.sensFreq, obj.hydrophone(h).calDate{d}))
 
                 % Check if spatial filtering amplitude data exists
-                if isfield(obj.spatialFilt{i}, 'amp')
+                if i <= numel(obj.spatialFilt) % FIX sometimes this is needed ~isempty(obj.spatialFilt{i})
+                    if ~isempty(obj.spatialFilt{i})
+                        % Apply spatial filter correction to amplitude
+                        obj.pressure{i}.amp.spatialFilt = obj.spatialFilt{i}.amp / obj.pressure{i}.sensFreq;
 
-                    % Apply spatial filter correction to amplitude
-                    obj.pressure{i}.amp.spatialFilt = obj.spatialFilt{i}.amp / obj.pressure{i}.sensFreq;
-
-                    % Perform FWHM (Full Width at Half Maximum) calculation if the data is 1D along z-axis
-                    if isequal(obj.prepData.dim(i,:), [0 0 1])
-                        z = obj.prepData.coordinates{i}(:,6); % Extract z-coordinates (in mm)
-                        % Estimate spatial filtering metrics using the amplitude data
-                        obj.pressure{i}.amp.spatialFiltMetrics = estMetrics(obj, z, obj.pressure{i}.amp.spatialFilt');
+                        % Perform FWHM (Full Width at Half Maximum) calculation if the data is 1D along z-axis
+                        if isequal(obj.prepData.dim(i,:), [0 0 1])
+                            z = obj.prepData.coordinates{i}(:,6); % Extract z-coordinates (in mm)
+                            % Estimate spatial filtering metrics using the amplitude data
+                            obj.pressure{i}.amp.spatialFiltMetrics = estMetrics(obj, z, obj.pressure{i}.amp.spatialFilt');
+                        end
                     end
                 end
+
+                % add reshaped data
+                [obj.pressure{i}.amp.reshaped, obj.reshapedCoordinates{i}] = reshaper(obj,obj.pressure{i}.amp.raw, obj.prepData.coordinates{i}(:,4:6));
+
             end
 
             obj.pressure{i}.Unit = 'Pa';
@@ -391,7 +415,13 @@ classdef dataCalc
 
             for i = 1:size(obj.intensity,2)
 
+                % calculate raw intensity
                 obj.ISPPA{i}.amp.raw          = obj.intensity{i}.amp.raw/2/100^2;
+
+                % add reshaped data
+                [obj.ISPPA{i}.amp.reshaped, ~] = reshaper(obj,obj.ISPPA{i}.amp.raw, obj.prepData.coordinates{i}(:,4:6));
+
+
                 if isfield(obj.intensity{i}.amp,'spatialFilt')
                     obj.ISPPA{i}.amp.spatialFilt  = obj.intensity{i}.amp.spatialFilt/2/100^2;
 
@@ -614,14 +644,300 @@ classdef dataCalc
                     obj.holography{i}.pressure3D    = ASamp3D ./ obj.pressure{i}.sensFreq;
 
                     % Extract the axial profile at the center of the grid
-                    obj.holography{i}.grid.z = squeeze(obj.holography{i}.grid.zm(ceil(n/2),ceil(n/2),:));
+                    obj.holography{i}.grid.z = squeeze(obj.holography{i}.grid.zmi(ceil(n/2),ceil(n/2),:));
                     obj.holography{i}.centerAxialProfile = squeeze(obj.holography{i}.pressure3D(ceil(n/2),ceil(n/2),:));
                 end
             end
         end
 
+        function obj = equalizationCurve(obj,setNrs,type)
+
+
+            % max pressure curve based on the position of the max or FWHM center
+            j = 1;
+            for i = setNrs
+
+                if strcmp(type,'max')
+                    obj.pressureCurve.x(j) = obj.pressure{i}.amp.spatialFiltMetrics(2);
+                    obj.pressureCurve.type = 'Max Pressure position';
+                elseif strcmp(type,'FWHMcenter')
+                    obj.pressureCurve.x(j) = obj.pressure{i}.amp.spatialFiltMetrics(4);
+                    obj.pressureCurve.type = 'FWHM center position';
+                end
+
+                obj.pressureCurve.y(j) = obj.pressure{i}.amp.spatialFiltMetrics(1); % max pressure value of each profile
+                obj.pressureCurve.y(j) = max(obj.pressure{i}.amp.spatialFilt);
+                obj.pressureCurve.F(j) = obj.prepData.p{i}.TD.Focus2;
+
+                j = j+1;
+
+            end
+
+            % creat equalization curve normalized to natural focus
+            % find pressure at natural focus which is the normalization
+            % pressure
+            obj.pressureCurve.normPressure = obj.pressureCurve.y(obj.pressureCurve.F == obj.prepData.p{1}.TD.naturalFocus);
+
+            % calculate the equyalziation curve
+            obj.equalizationCurvature.x = obj.pressureCurve.x;
+            obj.equalizationCurvature.y = obj.pressureCurve.normPressure./obj.pressureCurve.y;
+
+            % equalize axial profiles
+            j = 1;
+            for i = setNrs
+                if isnan(obj.pressureCurve.x(j))
+                    obj.pressure{i}.amp.equalized = nan;
+                else
+                    %obj.pressureCurve.x(j);
+                    obj.pressure{i}.amp.equalized = obj.equalizationCurvature.y(j) * obj.pressure{i}.amp.spatialFilt;
+                end
+                j = j+1;
+            end
+
+        end
+
+        function obj = equalizationCurveFit(obj,xTransform,p)
+
+            % clear previous allcoations
+            obj.equalizationCurvatureFit = [];
+
+            x = obj.equalizationCurvature.x';
+            y = obj.equalizationCurvature.y';
+
+            xi = linspace(min(x), max(x), 200)';
+
+            for i=1:numel(xTransform)
+
+                [splineFitStruct, DW] = splineFitFunc(x,y,xTransform{i},p);
+
+                switch xTransform{i}
+                    case 'log'
+                        x_smooth = log(xi);
+                    case 'oneover'
+                        x_smooth = 1./(xi);
+                    case 'sqrt'
+                        x_smooth = sqrt(xi);
+                    case 'none'
+                        x_smooth = xi;
+                    case 'otherwise'
+                        x_smooth = xi;
+                end
+
+                % apply fit for x_smooth
+                y_smooth = feval(splineFitStruct, x_smooth);
+
+                % storage
+                obj.equalizationCurvatureFit.splineFit(i).struct         = splineFitStruct;
+                obj.equalizationCurvatureFit.splineFit(i).DurbinWatson   = DW;
+                obj.equalizationCurvatureFit.splineFit(i).xTransform     = xTransform{i};
+                obj.equalizationCurvatureFit.splineFit(i).data.x         = xi;
+                obj.equalizationCurvatureFit.splineFit(i).data.y         = y_smooth;
+                obj.equalizationCurvatureFit.splineFit(i).data.xType     = obj.pressureCurve.type;
+
+            end
+
+        end
+
+        function obj = powerCurve(obj,setNrs)
+
+
+            j = 1;
+
+            obj.powerCurvature = [];
+            obj.powerCurvature.setNrs = setNrs;
+
+            for i = setNrs
+
+                % Pressure on X-axis
+                obj.powerCurvature.x(j) = max(obj.pressure{i}.amp.spatialFilt);
+                % Amplitude on Y-axis
+                obj.powerCurvature.y(j) = str2num(obj.prepData.p{i}.amp.power);
+                j = j+1;
+            end
+        end
+
+        function obj = powerCurveFit(obj,xTransform,p)
+
+            % Determine average attenuation factor
+            obj.powerCurvatureFit.meanAttFactor.x = 5:5:60;
+            obj.powerCurvatureFit.meanAttFactor.y = (obj.powerCurvature.x(21:32)./obj.powerCurvature.x(1:12));
+
+            %% LENNART INTERVENTION
+            %take average attenuation fatcor between 35% and 60% 
+            meanAtt  =  ones(1,6) * mean(obj.powerCurvatureFit.meanAttFactor.y(7:12));
+            %%
+
+            %stdAttFactor = std(obj.powerCurvature.x(21:32)./obj.powerCurvature.x(1:12));
+            %dB = 20*log10(mean(obj.powerCurvatureFit.meanAttFactor)); sprintf('Attenuation = %.2f',dB)
+
+           % figure; plot(obj.powerCurvatureFit.meanAttFactor.x,20*log10(obj.powerCurvatureFit.meanAttFactor.y))
+
+            pf1 = polyfit(obj.powerCurvatureFit.meanAttFactor.x(7:12),meanAtt,1);
+            obj.powerCurvatureFit.meanAttFactor.xi = 5:5:100;
+            obj.powerCurvatureFit.meanAttFactor.yi = polyval(pf1, obj.powerCurvatureFit.meanAttFactor.xi);
+
+            % extrapolate pressure values without attenuation
+            obj.powerCurvature.x(33:40) = obj.powerCurvatureFit.meanAttFactor.yi(13:20) .* obj.powerCurvature.x(13:20);
+
+            % overwrite with minimal value !
+            %obj.powerCurvature.x(33:40) = min(obj.powerCurvatureFit.meanAttFactor.y)* obj.powerCurvature.x(13:20);
+            obj.powerCurvature.y(33:40) = obj.powerCurvature.y(13:20);
+
+            % prep fitting
+            x =[0, obj.powerCurvature.x(21:40)];
+            y =[0, obj.powerCurvature.y(21:40)];
+
+
+            xi = linspace(min(x), 1.1*max(x), 200);
+            xi = x;
+
+          %  figure; plot(x,y,'k.-')
+
+            % do a lineair fit on all points
+            pf1 = polyfit(x,y,1);
+            obj.powerCurvatureFit.linFit.data.x = xi;
+            obj.powerCurvatureFit.linFit.data.y = polyval(pf1, xi);
+            obj.powerCurvatureFit.linFit.data.fit = pf1;
+
+
+            % do a lineair fit only on measured points
+            rpf1 = polyfit(x(1:13),y(1:13),1);
+            obj.powerCurvatureFit.rawLinFit.data.x = xi;
+            obj.powerCurvatureFit.rawLinFit.data.y = polyval(rpf1, xi);
+            obj.powerCurvatureFit.rawLinFit.data.fit = rpf1;
+
+
+            % do a quadratic fit
+            pf2 = polyfit(x,y,2);
+            obj.powerCurvatureFit.quadraticFit.data.x = xi;
+            obj.powerCurvatureFit.quadraticFit.data.y = polyval(pf2, xi);
+            obj.powerCurvatureFit.quadraticFit.data.fit = pf2;
+
+            % do the splinefitfit
+
+            % for i=1:numel(xTransform)
+            % 
+            %     [splineFitStruct, DW] = splineFitFunc(x',y',xTransform{i},p);
+            % 
+            %     switch xTransform{i}
+            %         case 'log'
+            %             x_smooth = log(xi);
+            %         case 'oneover'
+            %             x_smooth = 1./(xi);
+            %         case 'sqrt'
+            %             x_smooth = sqrt(xi);
+            %         case 'none'
+            %             x_smooth = xi';
+            %         case 'otherwise'
+            %             x_smooth = xi;
+            %     end
+            % 
+            %     % apply fit for x_smooth
+            %     y_smooth = feval(splineFitStruct, x_smooth);
+            % 
+            %     % storage
+            %     obj.powerCurvatureFit.splineFit(i).struct         = splineFitStruct;
+            %     obj.powerCurvatureFit.splineFit(i).DurbinWatson   = DW;
+            %     obj.powerCurvatureFit.splineFit(i).xTransform     = xTransform{i};
+            %     obj.powerCurvatureFit.splineFit(i).data.x         = xi;
+            %     obj.powerCurvatureFit.splineFit(i).data.y         = y_smooth;
+            % end
+
+
+
+            %disp(['Range of X values: ', num2str(min(obj.powerCurvature.x)), ' to ', num2str(max(obj.powerCurvature.x))]);
+            %disp(['Number of unique X values: ', num2str(numel(unique(obj.powerCurvature.x)))]);
+
+            % [mdl] = linearRegression(obj, obj.powerCurvature.x, obj.powerCurvature.y);
+            %
+            %  % Perform linear regression: y = m*x + b
+            %  pf1 = polyfit(obj.powerCurvature.x, obj.powerCurvature.y, 1);  % p(1) = slope (m), p(2) = intercept (b)
+            %  % Quadratic
+            %  pf2 = polyfit(obj.powerCurvature.x, obj.powerCurvature.y, 2);  % p(1) = slope (m), p(2) = intercept (b)
+            %
+            %  format long e
+            %  disp(pf1)
+            %  disp(pf2)
+            %  format short
+            %
+            %  % Extract slope and intercept
+            %  % slope = p(1);
+            %  % intercept = p(2);
+            %   % lineair fit
+            %   obj.powerCurvatureFit.linFit.pf = pf1;
+            %   obj.powerCurvatureFit.linFit.x = linspace(0,3e6,100);
+            %   obj.powerCurvatureFit.linFit.y = polyval(pf1,obj.powerCurvatureFit.linFit.x);
+            %
+            % %  obj.powerCurvatureFit.linFit.mdl = mdl;
+            %   obj.powerCurvatureFit.pFit.pf = pf2;
+            %   obj.powerCurvatureFit.pFit.x = linspace(0,3e6,100);
+            %   obj.powerCurvatureFit.pFit.y = polyval(pf2,obj.powerCurvatureFit.pFit.x);
+            %
+            %   %obj.powerCurvatureFit.linFit.y = predict(mdl,obj.powerCurvatureFit.linFit.x');
+            %
+
+        end
+
+        function obj = focusCurve(obj,setNrs)
+            % focus curve versus the FWHM center wrt the exit plane
+            for i = setNrs
+
+                obj.focusCurvature.x(i) = obj.pressure{i}.amp.spatialFiltMetrics(4);
+                obj.focusCurvature.type = 'FWHM center position';
+                obj.focusCurvature.y(i) = obj.prepData.p{i}.TD.Focus2;
+            end
+        end
+
+        function obj = focusCurveFit(obj,xTransform,p)
+
+            % clear previous allcoations
+            obj.focusCurvatureFit = [];
+
+            x = obj.focusCurvature.x';
+            y = obj.focusCurvature.y';
+
+            xi = linspace(min(x), max(x), 200)';
+
+            for i=1:numel(xTransform)
+
+                [splineFitStruct, DW] = splineFitFunc(x,y,xTransform{i},p);
+
+                switch xTransform{i}
+                    case 'log'
+                        x_smooth = log(xi);
+                    case 'oneover'
+                        x_smooth = 1./(xi);
+                    case 'sqrt'
+                        x_smooth = sqrt(xi);
+                    case 'none'
+                        x_smooth = xi;
+                    case 'otherwise'
+                        x_smooth = xi;
+                end
+
+                % apply fit for x_smooth
+                y_smooth = feval(splineFitStruct, x_smooth);
+
+                % storage
+                obj.focusCurvatureFit.splineFit(i).struct         = splineFitStruct;
+                obj.focusCurvatureFit.splineFit(i).DurbinWatson   = DW;
+                obj.focusCurvatureFit.splineFit(i).xTransform     = xTransform{i};
+                obj.focusCurvatureFit.splineFit(i).data.x         = xi;
+                obj.focusCurvatureFit.splineFit(i).data.y         = y_smooth;
+
+                % linfit
+                [mdl] = linearRegression(obj,x,y);
+
+                obj.focusCurvatureFit.linFit.mdl = mdl;
+                obj.focusCurvatureFit.linFit.x   = linspace(0,200,100);
+                obj.focusCurvatureFit.linFit.y   = predict(mdl,obj.focusCurvatureFit.linFit.x');
+
+            end
+
+        end
 
     end
+
     methods(Access = private)
 
         function data = readCalData(~, fileNamePath)
@@ -708,7 +1024,6 @@ classdef dataCalc
             amplitude = P1;  % Set the amplitude to the computed single-sided power spectrum
         end
 
-
         function metrics = estMetrics(obj, x, ym)
             % ESTMETRICS Estimates various metrics (maximum value, position, FWHM) for each signal in ym.
             %
@@ -735,23 +1050,70 @@ classdef dataCalc
                 [maxVal, maxIndex] = max(y);
 
                 try
-                    % Find the Full Width at Half Maximum (FWHM) points
-                    % crossing() function finds the points where the signal crosses half of its maximum value
-                    [ind, x0, y0, x0close, x0close] = crossing(y, x, 0.5 * y(maxIndex), 'linear');
 
-                    % Check if there are two crossing points (i.e., FWHM)
-                    if numel(x0) == 2
-                        % Store the metrics: max value, position of max value, left point, mean of FWHM, and right point
-                        metrics(:,i) = [maxVal, x(maxIndex), x0(1), mean(x0), x0(2)];
+                    %%%
+                    [a,~] = find(y>0.5*y(maxIndex));
 
-                        % Check if there is only one crossing point (FWHM only on one side)
-                    elseif numel(x0) == 1
-                        metrics(:,i) = [maxVal, x(maxIndex), x0(1), nan, max(x)];
+                    a2 = a(diff(a)==1);
+                    a2 = [a2(1)-1;a2;a2(end)+[1;2]];
+                        
+                    % around max peak
+                    v = (a2-maxIndex);
 
-                        % If no crossing points are found, set all metrics to NaN
+                    d = diff(v);
+                    blocks = [0; find(d~=1); numel(v)];
+
+                    % look for block that contains zero
+                    seq = [];
+                    for k = 1:numel(blocks)-1
+                        idx = blocks(k)+1 : blocks(k+1);
+                        if any(v(idx) == 0)
+                            seq = v(idx);
+                            %return
+                        end
+                    end
+                    if k>1
+                        seq = [seq(1)-1;seq];
+                    end
+
+                    seq2 = seq + maxIndex;
+
+                    if all(seq2 > 0) && seq2(end)<numel(x)
+                        % peak selection
+                        ys = zeros(size(y));
+                        ys(seq2) = y(seq2);
+
+
+                        %%%
+                        % Find the Full Width at Half Maximum (FWHM) points
+                        % crossing() function finds the points where the signal crosses half of its maximum value
+                        [ind, x0, y0, x0close, x0close] = crossing(ys, x, 0.5 * ys(maxIndex), 'linear');
+
+                        if 0
+                            % check plotting
+                            figure; plot(x,y,'k.'); hold on; plot(x(a),y(a),'bo');line([0, 140],[0.5*y(maxIndex),0.5*y(maxIndex)])
+                            plot(x(a2),y(a2),'bx')
+                            plot(x,ys,'ro')
+                            plot(x0,[0.5 * ys(maxIndex),0.5 * ys(maxIndex)],'gx')
+                        end
+
+                        % Check if there are two crossing points (i.e., FWHM)
+                        if numel(x0) == 2
+                            % Store the metrics: max value, position of max value, left point, mean of FWHM, and right point
+                            metrics(:,i) = [maxVal, x(maxIndex), x0(1), mean(x0), x0(2)];
+
+                            % Check if there is only one crossing point (FWHM only on one side)
+                        elseif numel(x0) == 1
+                            metrics(:,i) = [maxVal, x(maxIndex), x0(1), nan, max(x)];
+
+                            % If no crossing points are found, set all metrics to NaN
+                        else
+                            metrics(:,i) = [maxVal, x(maxIndex), nan, nan, nan];
+                            disp('No focus determination possible, setting metrics to NaN.');
+                        end
                     else
-                        metrics(:,i) = [maxVal, x(maxIndex), nan, nan, nan];
-                        disp('No focus determination possible, setting metrics to NaN.');
+                        metrics(:,i) = [nan, nan, nan, nan, nan];
+                        disp('No full peak present');
                     end
                 catch
                     % If there's an error in the process, return NaN for the metrics
@@ -762,7 +1124,53 @@ classdef dataCalc
             end
         end
 
+        function [mdl] = linearRegression(obj, x, y)
 
+            % Check if the input vectors are of the same length
+            if length(x) ~= length(y)
+                error('x and y must be the same length.');
+            end
+
+            % Perform linear regression
+            mdl = fitlm(x, y);  % fitlm fits a linear model to the data
+
+            % % Extract the statistics
+            % slope       = mdl.Coefficients.Estimate(2);             % Slope (coefficient for x)
+            % intercept   = mdl.Coefficients.Estimate(1);             % Intercept (coefficient for constant)
+            % R2          = mdl.Rsquared.Ordinary;                    % R-squared value
+            % pValue      = mdl.Coefficients.pValue(2);               % p-value for the slope
+
+            % reverse slope
+            % Calculate the reverse slope and intercept
+            %reverse_slope = 1 / slope;  % New slope (inverse of original slope)
+            %reverse_intercept = -intercept / slope;  % New intercept (negative original intercept divided by original slope)
+
+        end
+
+        function [reshapedMatrix, reshapedCoordinates] = reshaper(~,vectorData, vectorCoordinates)
+
+            rs = [numel(unique(vectorCoordinates(:,1))),numel(unique(vectorCoordinates(:,2))),numel(unique(vectorCoordinates(:,3)))];
+
+            % check consistency
+            if numel(vectorData)== rs(1)*rs(2)*rs(3)
+
+                % reshape data
+                reshapedMatrix.data     = double(reshape(vectorData,rs));
+
+                % reshape coordinates
+                reshapedCoordinates(:,:,:,1) = double(reshape(vectorCoordinates(:,1),rs));
+                reshapedCoordinates(:,:,:,2) = double(reshape(vectorCoordinates(:,2),rs));
+                reshapedCoordinates(:,:,:,3) = double(reshape(vectorCoordinates(:,3),rs));
+
+            else
+                disp('Cannot reshape')
+
+                reshapedMatrix = [];
+                reshapedCoordinates = [];
+
+            end
+
+        end
     end
 end
 

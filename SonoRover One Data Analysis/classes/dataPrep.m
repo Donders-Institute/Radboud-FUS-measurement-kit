@@ -544,12 +544,26 @@ classdef dataPrep
             s.amp.name = S.Equipment.drivingSystem_name;
             s.amp.manufacturer = S.Equipment.drivingSystem_manufact;
             if isequal(S.Equipment.drivingSystem_manufact, 'Sonic Concepts')
-                s.amp.power = S.Sequence.sc_GlobalPower_w_;
+                try
+                    s.amp.power = S.Sequence.globalPower_w_;
+                catch
+                    s.amp.power = S.Sequence.sc_GlobalPower_w_;
+                end
                 s.amp.powerUnit = 'W';
             elseif isequal(S.Equipment.drivingSystem_manufact, 'IGT')
-                s.amp.power = S.Sequence.igt_Amplitude___;
+                try
+                    s.amp.power = S.Sequence.igt_Amplitude___;
+                catch
+                    s.amp.power = S.Sequence.amplitude___;
+                end
                 s.amp.powerUnit = '%';
-                s.amp.maxPressure = S.Sequence.igt_MaximumPressureInFreeWater_mpa_;
+                try
+                    s.amp.maxPressure = S.Sequence.igt_MaximumPressureInFreeWater_mpa_;
+                catch
+                    if isfield(S.Sequence,'maximumPressureInFreeWater_mpa_')
+                    s.amp.maxPressure = S.Sequence.maximumPressureInFreeWater_mpa_;
+                    end
+                end
                 s.amp.maxPressureUnit = 'MPa';
             end
 
@@ -558,10 +572,31 @@ classdef dataPrep
             s.TD.ID = S.Equipment.transducer_serial_number;
             s.TD.f0 = S.Equipment.transducer_fund_freq * 1e3;  % Convert from kHz to Hz
             s.TD.f0Unit = 'Hz';
-            s.TD.Focus = S.Sequence.focusWrtExitPlane_mm_;
+            try
+                s.TD.focusWrtExitPlane  = S.Sequence.focusWrtExitPlane_mm_;
+                s.TD.focusWrtBowlMiddle = S.Sequence.focusWrtBowlMiddle_mm_;
+            catch
+
+                % try
+                %     s.TD.Focus = S.Sequence.focusWrtExitPlane_mm_;
+                %     s.TD.FocusReference = 'WRT exit Plane';
+                % catch % for the first initial characterization of teh imasonic transducers. before splitted in to wrt exit plane or wrt midbowl. is now midbowl
+                %     s.TD.Focus = S.Sequence.focus_um_;
+                %     s.TD.FocusReference = 'WRT mid Bowl in case of RAW IGT';
+                % end
+            end
+            % make adaptive!!! only use now for calibration ---------------
+            s.TD.Focus = S.Sequence.focusWrtExitPlane_mm_;%;s.TD.focusWrtBowlMiddle;
+            s.TD.FocusReference = 'WRT to exit plane';% 'WRT mid Bowl';
+
+            s.TD.Focus2 = S.Sequence.focusWrtBowlMiddle_mm_;
+            s.TD.FocusReference2 = 'WRT mid Bowl';
+            %--------------------------------------------------------------
+
             s.TD.FocusUnit = 'mm';
             s.TD.focalRange = [S.Equipment.transducer_min_foc, S.Equipment.transducer_max_foc];
             s.TD.focalRangeUnit = 'mm';
+            s.TD.naturalFocus = S.Equipment.transducer_natural_foc;
 
             % Oscilloscope information: name and ID
             s.OS.name = S.Acquisition.picoscope;
