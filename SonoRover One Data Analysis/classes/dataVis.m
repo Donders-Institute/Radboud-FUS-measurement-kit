@@ -248,6 +248,9 @@ classdef dataVis
                         if isnan(normVal(5))
                             if ~isempty(obj.calcData.ISPPAsc)
                                 y = obj.calcData.ISPPAsc{i}.amp.spatialFilt;
+
+                             %   y2 = obj.calcData.ISPPA{i}.amp.spatialFilt;
+
                                 yl = [0 35];
                             else
                                 y = [];
@@ -320,7 +323,15 @@ classdef dataVis
 
                         EstFocus(ii) = obj.calcData.pressure{i}.amp.spatialFiltMetrics(4);
                         
-                        plot(SetFocus(ii),obj.calcData.pressure{i}.amp.spatialFiltMetrics(4),'k.'); hold on; axis square; box off; grid minor
+                        switch yAxis
+                            case 'Pressure [MPa]'
+                                plot(SetFocus(ii),obj.calcData.pressure{i}.amp.spatialFiltMetrics(4),'k.'); hold on; axis square; box off;
+                            case 'ISPPA scaled [W/cm2]'
+
+                                plot(SetFocus(ii),obj.calcData.ISPPA{i}.amp.spatialFiltMetrics(4),'k.'); hold on; axis square; box off;
+                        end
+                        % end
+                        grid on
 
                         if ii == numel(setNrs)
                             pf1 = polyfit(SetFocus(~isnan(EstFocus)),EstFocus(~isnan(EstFocus)),1);
@@ -337,6 +348,7 @@ classdef dataVis
                         end
     
                         xlabel(focusPlot); ylabel('Estimated FWHM center position wrt extiplane [mm]')
+
                     else
                         hold on
                         plot(x,y,'k');
@@ -397,11 +409,13 @@ classdef dataVis
 
                         else
                             % NFD data
-
+                            subplot(1,2,1)
                             plot(x,NFD.NFdata(idx(1),idx(2)).z_ISPPA(:,ii),'color',colorMap(ii,:),'LineStyle','--')
                             leg{cm} = sprintf('NF F = %2.1f mm ',obj.prepData.p{i}.TD.Focus);
                             cm = cm+1;
                         end
+
+                        clear M;
 
                     end
 
@@ -412,9 +426,12 @@ classdef dataVis
 
                     end
 
-                    % % labels
-                    % xlabel(xAxis)
-                    % ylabel(yAxisl)
+                    % labels
+                    if singleView
+                        subplot(1,2,1)
+                    end
+                    xlabel(xAxis)
+                    ylabel(yAxisl)
 
                     if ~singleView
                         title(sprintf('%s Focus = %2.1f mm \n %s',obj.prepData.p{i}.TD.name,obj.prepData.p{i}.TD.Focus,obj.prepData.p{i}.measurement.type))

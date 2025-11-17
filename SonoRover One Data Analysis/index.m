@@ -66,7 +66,7 @@ pr.defaultDataPath = '\\ru.nl\WrkGrp\FUS_Hub\Hydrophone measurements\Measurement
 pr.defaultDataPathTesting ='\\ru.nl\WrkGrp\FUS_Hub\Hydrophone measurements\Measurements\2024\Transducers\Imasonic_15287_1001\20241022 Imasonic characterization measurement\Output of T [Imasonic 10 ch. PCD15287_01001 ROC 75 mm] - DS [IGT 128 ch. - 1 x 10 ch.]\P[Axial__Characterization_Protocol2]';
 
 % set the location of the NeuroFus data sheets
-pr.neuroFUSFolderLocation = 'C:\Users\sfekk\Radboud Universiteit\neuromod - equipment\24_NeuroFUS_steering_tables\';
+pr.neuroFUSFolderLocation = 'C:\Users\sfekk\OneDrive\Radboud Universiteit\Radboud Universiteit\neuromod - hardware\24_NeuroFUS_steering_tables\';
 
 % Define input parameters
 
@@ -233,28 +233,28 @@ if 0 % signal time series videos
     xAxis = {'Samples [#]','Time [mus]', 'Cycles [#]'};
     yAxis = {'Voltage [mV]','Pressure [MPa]'};
     NoF = []; % Number of Frames to record, [] = all frames available
-    dataVisual.pulseSelection([1:4],xAxis{2},yAxis{1},NoF);
+    dataVisual.pulseSelection([1],xAxis{2},yAxis{1},NoF);
 end
 %%
-if 0 % axial profiles for charaterization 
-   dataVisual = dataVis(prepData,calcData);
-    % view all the axial profiles and compare them with the NeuroFUS data
+if 0 % axial profiles plotting also used for charaterization   
+    % view all the axial profiles and compare them with the NeuroFUS data (
+    % oiptionally, when available)
+   
     xAxis = {'Distance WRT exitplane [mm]'};
     yAxis = {'Voltage [mV]','Raw & Filt pressure [MPa]','Pressure [MPa]','ISPPA [W/cm2]','ISPPA scaled [W/cm2]'};
     focusPlot = {'Set Focus wrt exitplane [mm]','Set Focus wrt midbowl [mm]'};
     singleView = {true,false};
     normVal = [nan, nan, nan, nan, nan];
-    for sv = 2%:numel(singleView)
-        for y = 2%1:numel(yAxis)
-            dataVisual.axialProfiles([1:13],xAxis{1},yAxis{y},NFD,normVal,focusPlot{2},singleView{sv});
-
+    for sv = 1%:numel(singleView)
+        for y = 3%1:numel(yAxis)
+            dataVisual.axialProfiles([setNrs],xAxis{1},yAxis{y},NFD,normVal,focusPlot{1},singleView{sv});
         end
     end    
 end
 
 %%
 if 0 % axial profiles for verification
-    selM(1,:) = 1:4;
+    selM(1,:) = 1:10;
    % selM(2,:) = 11:20;
    % selM(3,:) = 21:30;
    % selM(4,:) = 31:40;
@@ -276,9 +276,9 @@ if 0 % axial profiles for verification
 end
 
 %%
-if 1 % Cross-sectional images XY of cSection
+if 0 % Cross-sectional images XY of cSection
     % view
-        setNr = 13
+        setNr = 21
         xAxis = {'Lateral [mm]'};
         yAxis = {'Elevational [mm]'};
         value = {'Voltage [mV]','Pressure [MPa]','ISPPA [W/cm2]'};
@@ -308,9 +308,9 @@ if 0 % Cross-sectional profiles
     end
 end
 
-if 1 % Sagital of ZX cross-section
+if 0 % Sagital of ZX cross-section
     % view
-    setNr = 14;
+    setNr = 19;
     xAxis = {'Lateral [mm]'};
     yAxis = {'Axial [mm]'};
     value = {'Voltage [mV]','Pressure [MPa]','ISPPA [W/cm2]'};
@@ -337,7 +337,7 @@ end
 
 if 0
     % visualize 3D holography
-    transverseLoc = [1,20,65,100];
+    transverseLoc = [1,30,45,60];
     dataVisual.holography(transverseLoc,zv)
 end
 

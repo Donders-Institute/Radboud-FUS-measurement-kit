@@ -104,24 +104,27 @@ classdef dataCalc
             %--------------------------------------------------------------
             % Create a figure for sensitivity comparison
             if 0
+
+                HNR = 1; % the hydrophone number
+
                 figure('Color',[1 1 1]);
 
                 % Plot the sensitivity values for the first hydrophone, comparing two calibration dates
                 yyaxis left
-                plot(1000*hydrophone(1).sensitivity{1}(:,1), 1./(1e9*hydrophone(1).sensitivity{1}(:,2)), 'r.-'); hold on;
-                plot(1000*hydrophone(1).sensitivity{2}(:,1), 1./(1e9*hydrophone(1).sensitivity{2}(:,2)), 'b.-');
+                plot(1000*hydrophone(HNR).sensitivity{1}(:,1), 1./(1e9*hydrophone(HNR).sensitivity{1}(:,2)), 'r.-'); hold on;
+                plot(1000*hydrophone(HNR).sensitivity{2}(:,1), 1./(1e9*hydrophone(HNR).sensitivity{2}(:,2)), 'b.-');
 
                 % Label the left axis (Sensitivity)
                 ylabel('Sensitivity (mV/MPa)');
                 yyaxis right
                 % Plot relative deviation between the two calibration data sets
-                plot(1000*hydrophone(1).sensitivity{1}(:,1), 100*(hydrophone(1).sensitivity{2}(:,2) ./ hydrophone(1).sensitivity{1}(:,2)));
+                plot(1000*hydrophone(HNR).sensitivity{1}(:,1), 100*(hydrophone(HNR).sensitivity{2}(:,2) ./ hydrophone(HNR).sensitivity{1}(:,2)));
                 ylim([90 110]); ylabel('Relative deviation [%]');
                 box off; grid minor;
 
                 % Add legend and labels
-                legend([hydrophone(1).Type, ' ', datestr(hydrophone(1).calDate{1})], ...
-                    [hydrophone(1).Type, ' ', datestr(hydrophone(1).calDate{2})], ...
+                legend([hydrophone(HNR).Type, ' ', datestr(hydrophone(HNR).calDate{1})], ...
+                    [hydrophone(HNR).Type, ' ', datestr(hydrophone(HNR).calDate{2})], ...
                     ['Relative deviation [%]']);
                 xlabel('Frequency [kHz]');
                 xlim([0 1000]);
@@ -306,7 +309,6 @@ classdef dataCalc
             %   - Retrieves the most recent calibration data prior to the measurement.
             %   - Interpolates hydrophone sensitivity at the measurement frequency.
             %   - Computes the pressure from filtered signal data and estimated amplitudes.
-            %   - Applies spatial filtering corrections if available.
             %   - Performs Full Width at Half Maximum (FWHM) calculations for 1D data.
             %   - Assigns pressure units as Pascals ('Pa').
             %
@@ -415,7 +417,7 @@ classdef dataCalc
 
             for i = 1:size(obj.intensity,2)
 
-                % calculate raw intensity
+                % calculate raw ISPPA
                 obj.ISPPA{i}.amp.raw          = obj.intensity{i}.amp.raw/2/100^2;
 
                 % add reshaped data
@@ -470,7 +472,7 @@ classdef dataCalc
                     tpo = []; % Initialize amplifier index
 
                     % Loop through the Near Field Data (NFD) structure to find a match
-                    for TD = 1:size(NFD.NFdata,1)
+                    for TD = 7%1:size(NFD.NFdata,1)
                         for TPO = 1:size(NFD.NFdata,2)
 
                             % Check if the current NFD entry has a valid file name

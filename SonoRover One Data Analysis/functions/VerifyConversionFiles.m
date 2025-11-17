@@ -28,8 +28,8 @@ AmplitudePercentage2 = [];
 amplFactor = [];
 IGTsetFocus = [];
 
-MaxPressurePa = 1e6
-FWHMCenterPosition = 90
+%MaxPressurePa = 1e6
+%FWHMCenterPosition = 90
 
 
 
@@ -84,7 +84,7 @@ for j = 1:numel(MaxPressurePa)
     text(equalizationCurveFit.splineFitFunc.p.breaks(end)+1,AmplitudePercentage2(end,j),sprintf('%0.2f MPa',MaxPressurePa(j)*1e-6),'FontSize', 8, 'FontWeight', 'bold')
 end
 
-% high definition colorplot
+%% high definition colorplot
 FWHMCenterPosition = [equalizationCurveFit.splineFitFunc.p.breaks(1):0.1:equalizationCurveFit.splineFitFunc.p.breaks(end)]; %mm
 MaxPressurePa = [0.25:0.02:3]*1e6; %Pa
 

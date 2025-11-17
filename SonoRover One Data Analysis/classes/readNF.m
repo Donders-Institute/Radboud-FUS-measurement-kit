@@ -93,6 +93,7 @@ classdef readNF
             obj.NFdata(7,2).dataArea        = 'P19:AB80';
             obj.NFdata(7,2).propertiesArea  = 'T5:V16';
 
+            % DPX
             obj.NFdata(8,2).fileName        = 'DPX-500-022 4-Ch. Focal Steering';
             obj.NFdata(8,2).dataArea        = 'T20:AJ121';
             obj.NFdata(8,2).propertiesArea  = 'T5:V16';
