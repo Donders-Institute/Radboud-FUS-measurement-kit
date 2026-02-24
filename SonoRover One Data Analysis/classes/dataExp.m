@@ -108,8 +108,9 @@ classdef dataExp    %DATACALC Summary of this class goes here
             j = 1;
             for i = setNrs
                 % Store general metadata for each measurement
-                data{j}.exportDate = datetime;  % Current date and time
+                data{j}.exportTimeStamp = datetime;  % Current date and time
                 data{j}.metrologySetup = obj.prepData.pr.metrologySetup;  % Metrology setup
+             %SF   data{j}.measurementTimeStamp = obj.prepData...;% measurement date and time
 
                 % Extract specific measurement information
                 data{j}.type = obj.prepData.p{i}.measurement.type;  % Measurement type

@@ -245,8 +245,8 @@ if 0 % axial profiles plotting also used for charaterization
     focusPlot = {'Set Focus wrt exitplane [mm]','Set Focus wrt midbowl [mm]'};
     singleView = {true,false};
     normVal = [nan, nan, nan, nan, nan];
-    for sv = 1%:numel(singleView)
-        for y = 3%1:numel(yAxis)
+    for sv = 2%:numel(singleView)
+        for y = 5%%1:numel(yAxis)
             dataVisual.axialProfiles([setNrs],xAxis{1},yAxis{y},NFD,normVal,focusPlot{1},singleView{sv});
         end
     end    

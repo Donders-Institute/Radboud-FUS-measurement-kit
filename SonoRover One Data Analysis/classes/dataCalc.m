@@ -593,9 +593,12 @@ classdef dataCalc
                     % Convert amplitude and phase into complex representation
                     complexAmp2D = amp2D .* exp(1i * phase2D);
 
+                    % 
                     % Perform interpolation to increase resolution using Fourier-based method
-                    complexAmp2Di = interpft(complexAmp2D, size(complexAmp2D,1)*ipf, 1);
-                    complexAmp2Di = interpft(complexAmp2Di, size(complexAmp2D,2)*ipf, 2);
+                    %complexAmp2Dic = interpft(complexAmp2D, size(complexAmp2D,1)*ipf, 1);
+                    %complexAmp2Dic = interpft(complexAmp2Dic, size(complexAmp2D,2)*ipf, 2);
+
+                    complexAmp2Di = interpftn(complexAmp2D, size(complexAmp2D)*ipf);
 
                     % Create a circular mask to remove outer regions
                     [n,~] = size(complexAmp2Di);
