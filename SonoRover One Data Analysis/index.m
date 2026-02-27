@@ -160,6 +160,8 @@ ampEstMethod = 4;
 
 calcData = calcData.calcAmplitude(setNrs,ampEstMethod);
 
+% related to frequency, use different filtering (SCF param) for 500 kHz vs 250 kHz
+% compare with raw signal!
 % axial spatial filtering (butterworth) to mitigate of hydrophone reflection interference
 scf           = 0.2; % spatial cutoff frequecy [1/mm], used 0.1 to make the equalization curve which seems to harsh... 0.2 is better
 ripple        = 1;    % passband ripple [dB]
@@ -181,7 +183,7 @@ calcData = calcData.calcISPPA2NFscale(setNrs,NFD);
 
 if 0
     % calculate holography
-    ipf = 5; % interpolation factor of amplitude and phase data
+    ipf = 5; % interpolation factor of amplitude and phase data [grid points]
     zv = [0:1:140]*1e-3; % [m' the vector in z-direction of the computed volume
     calcData = calcData.calcHolography(setNrs,ipf,zv);
 end
@@ -354,6 +356,8 @@ end
 
 % visualize power curve
 if 0
+    % Note: Attenuated and non-attenuated power distinguision is hardcoded in
+    % powerCurve()!
     dataVisual.powerCurve()
 end
 

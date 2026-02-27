@@ -2,7 +2,7 @@
 %Verification script for transducer calibration
 clear all; close all; clc;
 % start location
-pwd = 'Y:\Hydrophone measurements\Measurements\2025\Transducers\';
+pwd = '\\ru.nl\WrkGrp\FUS_Hub\Hydrophone measurements\Measurements\2025\Transducers\';
 
 % Let user pick a folder
 folderPath = uigetdir(pwd, 'Select a folder containing JSON files');

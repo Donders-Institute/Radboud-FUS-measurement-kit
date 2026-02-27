@@ -365,7 +365,7 @@ classdef dataCalc
                         if isequal(obj.prepData.dim(i,:), [0 0 1])
                             z = obj.prepData.coordinates{i}(:,6); % Extract z-coordinates (in mm)
                             % Estimate spatial filtering metrics using the amplitude data
-                            obj.pressure{i}.amp.spatialFiltMetrics = estMetrics(obj, z, obj.pressure{i}.amp.spatialFilt');
+                            obj.pressure{i}.amp.spatialFiltMetrics = estMetrics(obj, z, obj.pressure{i}.amp.spatialFilt', obj.prepData.p{1,i}.TD.focalRange(1));
                         end
                     end
                 end
@@ -429,7 +429,7 @@ classdef dataCalc
 
                     % calculate Metrics
                     z = obj.prepData.coordinates{i}(:,6); % Extract z-coordinates (in mm)
-                    obj.ISPPA{i}.amp.spatialFiltMetrics = estMetrics(obj, z, obj.ISPPA{i}.amp.spatialFilt');
+                    obj.ISPPA{i}.amp.spatialFiltMetrics = estMetrics(obj, z, obj.ISPPA{i}.amp.spatialFilt', obj.prepData.p{1,i}.TD.focalRange(1));
 
                 end
             end
@@ -472,7 +472,7 @@ classdef dataCalc
                     tpo = []; % Initialize amplifier index
 
                     % Loop through the Near Field Data (NFD) structure to find a match
-                    for TD = 7%1:size(NFD.NFdata,1)
+                    for TD = 1:size(NFD.NFdata,1)
                         for TPO = 1:size(NFD.NFdata,2)
 
                             % Check if the current NFD entry has a valid file name
@@ -510,14 +510,14 @@ classdef dataCalc
                             % Perform Full Width at Half Maximum (FWHM) calculation if the data is 1D along the z-axis
                             if isequal(obj.prepData.dim(i,:), [0 0 1]) || isfield(obj.prepData.p{i}.scan, 'dz')
                                 z = obj.prepData.coordinates{i}(:,6); % Extract z-coordinates (in mm)
-                                obj.ISPPAsc{i}.amp.spatialFiltMetrics = estMetrics(obj, z, obj.ISPPAsc{i}.amp.spatialFilt');
+                                obj.ISPPAsc{i}.amp.spatialFiltMetrics = estMetrics(obj, z, obj.ISPPAsc{i}.amp.spatialFilt', obj.prepData.p{1,i}.TD.focalRange(1));
                             end
                         end
 
                         % Perform FWHM calculation for the pressure spatially filtered data
                         if isequal(obj.prepData.dim(i,:), [0 0 1]) && isfield(obj.prepData.p{i}.scan, 'dz')
                             z = obj.prepData.coordinates{i}(:,6); % Extract z-coordinates (in mm)
-                            obj.pressure{i}.amp.spatialFiltMetrics = estMetrics(obj, z, obj.pressure{i}.amp.spatialFilt');
+                            obj.pressure{i}.amp.spatialFiltMetrics = estMetrics(obj, z, obj.pressure{i}.amp.spatialFilt', obj.prepData.p{1,i}.TD.focalRange(1));
                         end
 
                         % Store calculated scale factor and relevant metadata in the object
@@ -1029,7 +1029,7 @@ classdef dataCalc
             amplitude = P1;  % Set the amplitude to the computed single-sided power spectrum
         end
 
-        function metrics = estMetrics(obj, x, ym)
+        function metrics = estMetrics(obj, x, ym, minFocWrtExitPlane)
             % ESTMETRICS Estimates various metrics (maximum value, position, FWHM) for each signal in ym.
             %
             % This function calculates metrics such as the maximum value, the position of the
@@ -1039,6 +1039,9 @@ classdef dataCalc
             % Inputs:
             %   - x: The vector of x-values (e.g., time or frequency values corresponding to ym).
             %   - ym: A matrix where each column represents a signal to analyze.
+            %   - minFocWrtExitPlane: Minimum focus position with respect to the exit plane. This value is
+            %     used to constrain the search for the maximum so that peaks in the near field 
+            %     are ignored and the highest value around the focus region is selected instead.
             %
             % Outputs:
             %   - metrics: A matrix where each column corresponds to the metrics for each signal.
@@ -1051,8 +1054,17 @@ classdef dataCalc
 
                 y = ym(:,i);  % Extract the current signal
 
+                % Skip searching area just before lowest possible focus
+                % setting to prevent finding maximum in near field (NF)
+                focusWindowTowardsNF = 8; % [mm]
+                cutOffLeft = minFocWrtExitPlane - focusWindowTowardsNF;
+                [~, cutOffIndex] = min(abs(x - cutOffLeft));
+
                 % Find the maximum value and its index in the signal
-                [maxVal, maxIndex] = max(y);
+                [maxVal, localIdx] = max(y(cutOffIndex:end));
+
+                % Compensate for smaller window
+                maxIndex = localIdx + cutOffIndex - 1;
 
                 try
 
