@@ -99,20 +99,23 @@ def perform_pcd_acquisition(picoscope_serial, transducer_serial, driving_system_
 
     if acquisition_time is None:
         acquisition_time = float(get_config_value(logger, config_info, 'Default',
-                                                  'acquisition_time_us', 500))
+                                                  'acquisition_time_us', 150))
 
     if pulse_dur is None:
-        pulse_dur = float(get_config_value(logger, config_info, 'Default', 'pulse_dur_ms', 0.2))
+        pulse_dur = float(get_config_value(logger, config_info, 'Default', 'pulse_dur_ms', 0.025))
+
+    pulse_rep_int = float(get_config_value(logger, config_info, 'Default', 'pulse_rep_int_ms',
+                                           0.17))
 
     if amplitude is None:
-        amplitude = float(get_config_value(logger, config_info, 'Default', 'per_elem_ampl', 2.5))
+        amplitude = float(get_config_value(logger, config_info, 'Default', 'per_elem_ampl', 10))
 
     if all_elem_ampl is None:
         all_elem_ampl = float(get_config_value(logger, config_info, 'Default', 'all_elems_ampl',
-                                               0.5))
+                                               1))
 
     # Check amplitudes
-    per_elem_limit = float(get_config_value(logger, config_info, 'Limit', 'per_elem_ampl', 5))
+    per_elem_limit = float(get_config_value(logger, config_info, 'Limit', 'per_elem_ampl', 15))
     all_elem_limit = float(get_config_value(logger, config_info, 'Limit', 'all_elems_ampl', 2.5))
     if amplitude > per_elem_limit:
         message = (f'Amplitude of {amplitude} [%] for firing all elements at once exceeds ' +
@@ -127,7 +130,8 @@ def perform_pcd_acquisition(picoscope_serial, transducer_serial, driving_system_
 
     # Initialize equipment
     pico_object, seq = _initialize_equipment(picoscope_serial, transducer_serial,
-                                             driving_system_serial, pulse_dur, all_elem_ampl)
+                                             driving_system_serial, pulse_dur, pulse_rep_int,
+                                             all_elem_ampl)
 
     is_exist = os.path.exists(output_dir)
     if not is_exist:
@@ -165,6 +169,14 @@ def perform_pcd_acquisition(picoscope_serial, transducer_serial, driving_system_
 def _load_config_files():
     """
     Loads additional configuration files for the fus_driving_systems and PCD acquisition.
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    None
     """
 
     # Read additional fus_driving_systems config file
@@ -177,9 +189,31 @@ def _load_config_files():
 
 
 def _initialize_equipment(picoscope_serial, transducer_serial, driving_system_serial, pulse_dur,
-                          all_elem_ampl):
+                          pulse_rep_int, all_elem_ampl):
     """
     Initializes the PicoScope and driving system sequence.
+
+    Parameters
+    ----------
+    picoscope_serial : str
+        Serial number of the PicoScope device.
+    transducer_serial : str
+        Serial number of the transducer.
+    driving_system_serial : str
+        Serial number of the driving system.
+    pulse_dur : float
+        Pulse duration in milliseconds.
+    pulse_rep_int : float
+        Pulse repetition interval in milliseconds.
+    all_elem_ampl : float
+        Excitation amplitude applied to all elements to be fired simulatenously.
+
+    Returns
+    -------
+    pico_object : PicoScope
+        Configured PicoScope object.
+    seq : CharacSequence
+        Configured sequence object for the driving system.
     """
 
     # Set equipment
@@ -194,6 +228,7 @@ def _initialize_equipment(picoscope_serial, transducer_serial, driving_system_se
     seq.transducer.max_foc = 100
 
     seq.pulse_dur = pulse_dur
+    seq.pulse_rep_int = pulse_rep_int
 
     seq.set_focus_wrt_mid_bowl(seq.transducer.natural_foc, False)
     seq.ampl = all_elem_ampl
@@ -203,13 +238,38 @@ def _initialize_equipment(picoscope_serial, transducer_serial, driving_system_se
 
 def _acquire_and_save_data(pcd_acq, seq, pico_object, output_dir, acquisition_time, amplitude):
     """
-    Handles the acquisition, processing, and saving of data.
+    Acquires PCD data, processes it, and saves both raw data and visualization outputs.
+
+    Parameters
+    ----------
+    pcd_acq : Acquisition
+        Initialized acquisition object for controlling measurement hardware.
+    seq : CharacSequence
+        Sequence configuration for the driving system.
+    pico_object : PicoScope
+        PicoScope device object used for acquisition.
+    output_dir : str
+        Directory where output files (raw data and plots) will be saved.
+    acquisition_time : float
+        Total acquisition duration in microseconds.
+    amplitude : float
+        Excitation amplitude for individual elements.
+
+    Returns
+    -------
+    None
     """
 
     baseline_path = get_config_value(logger, config_info, seq.transducer.serial, 'Baseline path',
                                      '')
     baseline_filenames = get_config_value(logger, config_info, seq.transducer.serial,
                                           'Baseline files', '').split('\n')
+
+    # Calculate time of flight to remove mechanically induced vibration
+    speed_of_sound = float(get_config_value(logger, config_info, 'General',
+                                            'Speed of sound water [m/s]', 1500))
+
+    time_of_flight_us = ((seq.transducer.natural_foc / 1000) / speed_of_sound) * 1e6
 
     n_elem = seq.transducer.elements
     for i_elem in range(n_elem + 1):
@@ -230,6 +290,12 @@ def _acquire_and_save_data(pcd_acq, seq, pico_object, output_dir, acquisition_ti
         volt_data = pcd_acq.acquire_data(attempt=0, sequence=seq)
         time_us = np.linspace(0, acquisition_time, pcd_acq.sample_count)
 
+        # Exclude mechanically induced vibration
+        window = time_us >= time_of_flight_us
+
+        time_us_cut = time_us[window]
+        volt_data_cut = volt_data[window]
+
         date_time = datetime.now()
         timestamp_format = get_config_value(logger, config_info, 'Logging', 'Timestamp format',
                                             '%Y-%m-%d_%H-%M-%S')
@@ -247,14 +313,14 @@ def _acquire_and_save_data(pcd_acq, seq, pico_object, output_dir, acquisition_ti
 
         raw_path = os.path.join(output_dir, filename + '.raw')
         with open(raw_path, 'ab') as outraw:
-            volt_data.tofile(outraw)
+            volt_data_cut.tofile(outraw)
 
         ampl_title = [f'{x:.1f}' for x in seq.ampl]
         fig_title = (f'{elem_title} - {seq.transducer.name} \n {seq.driving_sys.name} -' +
                      f' {pico_object.pico_py_ident}, ' +
                      f'pulse: {seq.pulse_dur:.3f} [ms], ampl.: {ampl_title} [%]')
 
-        _plot_comparison_fig(time_us, raw_baseline_path, volt_data, fig_title, output_path)
+        _plot_comparison_fig(time_us_cut, raw_baseline_path, volt_data_cut, fig_title, output_path)
 
         if i_elem < n_elem:
             amplitudes[i_elem] = amplitude
@@ -266,7 +332,24 @@ def _acquire_and_save_data(pcd_acq, seq, pico_object, output_dir, acquisition_ti
 
 def _plot_comparison_fig(time_us, raw_path, volt_data, title, output_path):
     """
-    Plots and saves a comparison figure between baseline and acquired voltage data.
+    Generates and saves a comparison plot of baseline and acquired voltage signals.
+
+    Parameters
+    ----------
+    time_us : numpy.ndarray
+        Time vector corresponding to the acquired signal, in microseconds.
+    raw_path : str
+        File path to the baseline raw data. If empty, no baseline is used.
+    volt_data : numpy.ndarray
+        Acquired voltage signal.
+    title : str
+        Title of the generated figure.
+    output_path : str
+        File path where the plot image will be saved.
+
+    Returns
+    -------
+    None
     """
 
     if raw_path != '':
@@ -290,7 +373,7 @@ def _plot_comparison_fig(time_us, raw_path, volt_data, title, output_path):
     # Define symmetric y-axis limits
     y_min, y_max = -y_abs_max, y_abs_max
 
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(20, 10))
+    fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(20, 10))
     fig.suptitle(title)
 
     fig.text(0.5, 0.005, 'Time [us]', ha='center')
@@ -298,20 +381,37 @@ def _plot_comparison_fig(time_us, raw_path, volt_data, title, output_path):
 
     if raw_path != '':
         ax1.plot(time_us, raw_baseline_data, color='g')
-        ax1.axhline(y=base_rms, color='g', linestyle='--', label=f'{base_rms:.2f} V')
-        ax1.text(x=max(time_us) * 0.95, y=base_rms, s=f'RMS {base_rms:.2f} [V]', color='g',
+        ax1.axhline(y=base_rms, color='g', linestyle='--', label=f'{base_rms:.3f} V')
+        ax1.text(x=max(time_us) * 0.95, y=base_rms, s=f'RMS {base_rms:.3f} [V]', color='g',
                  verticalalignment='bottom', horizontalalignment='right')
         ax1.set_title('Baseline')
         ax1.set_ylim(y_min, y_max)
         ax1.grid(True)
 
     ax2.plot(time_us, volt_data, color='r')
-    ax2.axhline(y=rms, color='r', linestyle=':', label=f'{rms:.2f} V')
-    ax2.text(x=max(time_us) * 0.95, y=rms, s=f'RMS {rms:.2f} [V]', color='r',
+    ax2.axhline(y=rms, color='r', linestyle=':', label=f'{rms:.3f} V')
+    ax2.text(x=max(time_us) * 0.95, y=rms, s=f'RMS {rms:.3f} [V]', color='r',
              verticalalignment='bottom', horizontalalignment='right')
     ax2.set_title('Acquired')
     ax2.set_ylim(y_min, y_max)
     ax2.grid(True)
+
+    if raw_path != '':
+        diff = volt_data - raw_baseline_data
+        diff_rms = np.sqrt(np.mean(diff**2))
+
+        ax3.plot(time_us, raw_baseline_data, color='g', alpha=0.5, label='Baseline')
+        ax3.plot(time_us, volt_data, color='r', alpha=0.5, label='Acquired')
+        ax3.plot(time_us, diff, color='b', label='Difference')
+
+        ax3.axhline(y=base_rms, color='g', linestyle='--', label=f'Baseline RMS: {base_rms:.3f} V')
+        ax3.axhline(y=rms, color='r', linestyle=':', label=f'Acquired RMS: {rms:.3f} V')
+        ax3.axhline(y=diff_rms, color='b', linestyle='-.', label=f'Diff RMS: {diff_rms:.3f} V')
+
+        ax3.set_title('Comparison')
+        ax3.set_ylim(y_min, y_max)
+        ax3.legend()
+        ax3.grid(True)
 
     plt.tight_layout(rect=[0, 0.03, 1, 0.95])
     plt.savefig(output_path)
