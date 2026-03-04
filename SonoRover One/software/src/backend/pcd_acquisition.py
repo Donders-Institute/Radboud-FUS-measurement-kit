@@ -97,25 +97,21 @@ def perform_pcd_acquisition(picoscope_serial, transducer_serial, driving_system_
         sampl_freq_multi = float(get_config_value(logger, config_info, 'Default',
                                                   'sampl_freq_multi', 50))
 
-    if acquisition_time is None:
-        acquisition_time = float(get_config_value(logger, config_info, 'Default',
-                                                  'acquisition_time_us', 150))
-
     if pulse_dur is None:
         pulse_dur = float(get_config_value(logger, config_info, 'Default', 'pulse_dur_ms', 0.025))
 
     pulse_rep_int = float(get_config_value(logger, config_info, 'Default', 'pulse_rep_int_ms',
-                                           0.17))
+                                           0.18))
 
     if amplitude is None:
-        amplitude = float(get_config_value(logger, config_info, 'Default', 'per_elem_ampl', 10))
+        amplitude = float(get_config_value(logger, config_info, 'Default', 'per_elem_ampl', 5))
 
     if all_elem_ampl is None:
         all_elem_ampl = float(get_config_value(logger, config_info, 'Default', 'all_elems_ampl',
                                                1))
 
     # Check amplitudes
-    per_elem_limit = float(get_config_value(logger, config_info, 'Limit', 'per_elem_ampl', 15))
+    per_elem_limit = float(get_config_value(logger, config_info, 'Limit', 'per_elem_ampl', 10))
     all_elem_limit = float(get_config_value(logger, config_info, 'Limit', 'all_elems_ampl', 2.5))
     if amplitude > per_elem_limit:
         message = (f'Amplitude of {amplitude} [%] for firing all elements at once exceeds ' +
@@ -132,6 +128,12 @@ def perform_pcd_acquisition(picoscope_serial, transducer_serial, driving_system_
     pico_object, seq = _initialize_equipment(picoscope_serial, transducer_serial,
                                              driving_system_serial, pulse_dur, pulse_rep_int,
                                              all_elem_ampl)
+    
+    if acquisition_time is None:
+        acquisition_time = float(get_config_value(logger, config_info, 
+                                                  seq.transducer.serial, 
+                                                  'acquisition_time_us',
+                                                  150))
 
     is_exist = os.path.exists(output_dir)
     if not is_exist:
@@ -269,7 +271,7 @@ def _acquire_and_save_data(pcd_acq, seq, pico_object, output_dir, acquisition_ti
     speed_of_sound = float(get_config_value(logger, config_info, 'General',
                                             'Speed of sound water [m/s]', 1500))
 
-    time_of_flight_us = ((seq.transducer.natural_foc / 1000) / speed_of_sound) * 1e6
+    time_of_flight_us = 1.1 * ((seq.transducer.natural_foc / 1000) / speed_of_sound) * 1e6
 
     n_elem = seq.transducer.elements
     for i_elem in range(n_elem + 1):
@@ -368,7 +370,10 @@ def _plot_comparison_fig(time_us, raw_path, volt_data, title, output_path):
 
     if raw_path != '':
         # Compute the absolute max of both y-values
-        y_abs_max = max(abs(raw_baseline_data).max(), abs(volt_data).max())
+        y_abs_max = max(abs(raw_baseline_data).max(), abs(volt_data).max())*1.1
+    else:
+        # Compute the absolute max of both y-values
+        y_abs_max = abs(volt_data).max()*1.1
 
     # Define symmetric y-axis limits
     y_min, y_max = -y_abs_max, y_abs_max
@@ -404,8 +409,6 @@ def _plot_comparison_fig(time_us, raw_path, volt_data, title, output_path):
         ax3.plot(time_us, volt_data, color='r', alpha=0.5, label='Acquired')
         ax3.plot(time_us, diff, color='b', label='Difference')
 
-        ax3.axhline(y=base_rms, color='g', linestyle='--', label=f'Baseline RMS: {base_rms:.3f} V')
-        ax3.axhline(y=rms, color='r', linestyle=':', label=f'Acquired RMS: {rms:.3f} V')
         ax3.axhline(y=diff_rms, color='b', linestyle='-.', label=f'Diff RMS: {diff_rms:.3f} V')
 
         ax3.set_title('Comparison')
