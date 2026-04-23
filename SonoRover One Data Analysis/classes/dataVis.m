@@ -160,9 +160,8 @@ classdef dataVis
 
         end
 
-        function axialProfiles(obj,setNrs,xAxis,yAxis,NFD,normVal,focusPlot,singleView)
+        function axialProfiles(obj,setNrs,xAxis,yAxis,NFD,normVal,focusPlot,singleView, cc)
 
-            cc = 1; % counter for tiff composition
             cm = 1;
 
             if singleView
@@ -182,6 +181,9 @@ classdef dataVis
                     case 'Distance WRT exitplane [mm]'
 
                         x = obj.prepData.coordinates{i}(:,6) ; % z [mm]
+                    case 'Lateral [mm]'
+
+                        x = obj.prepData.coordinates{i}(:,4) ; % x [mm]
                 end
 
                 switch yAxis
@@ -201,12 +203,33 @@ classdef dataVis
 
                     case 'Raw & Filt pressure [MPa]'
                         if isnan(normVal(2))
+
+                            % Extract metrics and data
+                            fwhm         = obj.calcData.pressure{i}.amp.spatialFiltMetrics;
+                            filt_data = 1e-6 * obj.calcData.pressure{i}.amp.spatialFilt;
+                            raw_data  = 1e-6 * obj.calcData.pressure{i}.amp.raw;
+
+                            % Percentage difference relative to filtered (clean) reference
+                            pct_diff = abs(((raw_data - filt_data) ./ filt_data) * 100);
+
+                            % Max percentage difference within FWHM boundaries
+                            fwhm_idx        = find(x >= fwhm(3) & x <= fwhm(5));
+                            pct_diff_at_peak = max(pct_diff(fwhm_idx));
+
                             y = 1e-6*obj.calcData.pressure{i}.amp.spatialFilt;
                             yl = [0 1];
                             y2 = 1e-6*obj.calcData.pressure{i}.amp.raw;
                             yAxisl = yAxis;
                             ymax = max(y(:));
                             ymax2 = max(y2(:));
+
+                            % retreive metric information of profile
+                            M = obj.calcData.pressure{i}.amp.spatialFiltMetrics;
+                            M(1) = 1e-6*M(1);
+
+                            % FWHM and position
+                            text(M(4)-5,0.015+M(1)/2,sprintf('FWHM %2.1f mm @ z = %2.1f mm',M(5)-M(3),M(4)),'FontSize',7)
+
                         else
                             y = 1e-6*obj.calcData.pressure{i}.amp.spatialFilt/normVal(2)*100;
                             yl = [0 120];
@@ -359,20 +382,35 @@ classdef dataVis
                             leg = {'SonoRover One Filt','SonoRover One Raw'};
                         end
 
+                        % Add pct_diff on right y-axis
+                        yyaxis right
+                        plot(x, pct_diff, 'r:', 'LineWidth', 1);
+                        ylabel('Difference [%]')
+                        ylim([0 max(pct_diff)*1.2])   % only scale to valid (non-NaN) range
+                        yyaxis left  % switch back so FWHM lines/text go on the left axis
+
+                        % Add legend entry for pct_diff
+                        leg{end+1} = sprintf('|Diff| max FWHM = %.1f%%', pct_diff_at_peak);
+                        legend(leg, 'location', 'best');
+
                         if isequal(yAxis,'Pressure [MPa]')
-                            % retreive metric information of profile
-                            M = obj.calcData.pressure{i}.amp.spatialFiltMetrics;
-                            M(1) = 1e-6*M(1);
 
-                            % FWHM and position
-                            text(M(4)-5,0.015+M(1)/2,sprintf('FWHM %2.1f mm @ z = %2.1f mm',M(5)-M(3),M(4)),'FontSize',7)    
+                            if strcmp(xAxis, 'Distance WRT exitplane [mm]')
+                                % retreive metric information of profile
+                                M = obj.calcData.pressure{i}.amp.spatialFiltMetrics;
+                                M(1) = 1e-6*M(1);
 
+                                % FWHM and position
+                                text(M(4)-5,0.015+M(1)/2,sprintf('FWHM %2.1f mm @ z = %2.1f mm',M(5)-M(3),M(4)),'FontSize',7)
+                            end
                         elseif isequal(yAxis,'ISPPA [W/cm2]')
-                            % retreive metric information of profile
-                            M = obj.calcData.ISPPA{i}.amp.spatialFiltMetrics;
-                           
-                            % FWHM and position
-                            text(M(4)-5,1+M(1)/2,sprintf('FWHM %2.1f mm @ z = %2.1f mm',M(5)-M(3),M(4)),'FontSize',7)    
+                            if strcmp(xAxis, 'Distance WRT exitplane [mm]')
+                                % retreive metric information of profile
+                                M = obj.calcData.ISPPA{i}.amp.spatialFiltMetrics;
+
+                                % FWHM and position
+                                text(M(4)-5,1+M(1)/2,sprintf('FWHM %2.1f mm @ z = %2.1f mm',M(5)-M(3),M(4)),'FontSize',7)
+                            end
                         end
 
                         if exist('M','var')

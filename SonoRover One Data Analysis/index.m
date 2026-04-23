@@ -61,9 +61,8 @@ addpath(genpath('externalData'))
 
 % set default pathname t6o SonoRover One data
 pr.metrologySetup = 'SonoRover One';
-pr.defaultDataPath = '\\ru.nl\WrkGrp\FUS_Hub\Hydrophone measurements\Measurements\2025\Transducers';
-%pr.defaultDataPathTesting = 'SonoRover One\DPX\';
-pr.defaultDataPathTesting ='\\ru.nl\WrkGrp\FUS_Hub\Hydrophone measurements\Measurements\2024\Transducers\Imasonic_15287_1001\20241022 Imasonic characterization measurement\Output of T [Imasonic 10 ch. PCD15287_01001 ROC 75 mm] - DS [IGT 128 ch. - 1 x 10 ch.]\P[Axial__Characterization_Protocol2]';
+pr.defaultDataPath = '\\ru.nl\WrkGrp\FUS_Hub\Hydrophone measurements\Measurements\2026\Transducers';
+pr.defaultDataPathTesting = '\\ru.nl\WrkGrp\FUS_Hub\Hydrophone measurements\Measurements\2026\Transducers\Imasonic_15287_1001\20260407 K-Plan Measurements\Output of T [Imasonic 10 ch. PCD15287_01001 ROC 75 mm] - DS [IGT 32 ch. - 1 x 10 ch.]\P [KPlan_level_2]';
 
 % set the location of the NeuroFus data sheets
 pr.neuroFUSFolderLocation = 'C:\Users\sfekk\OneDrive\Radboud Universiteit\Radboud Universiteit\neuromod - hardware\24_NeuroFUS_steering_tables\';
@@ -160,15 +159,23 @@ ampEstMethod = 4;
 
 calcData = calcData.calcAmplitude(setNrs,ampEstMethod);
 
-% related to frequency, use different filtering (SCF param) for 500 kHz vs 250 kHz
-% compare with raw signal!
-% axial spatial filtering (butterworth) to mitigate of hydrophone reflection interference
-scf           = 0.2; % spatial cutoff frequecy [1/mm], used 0.1 to make the equalization curve which seems to harsh... 0.2 is better
-ripple        = 1;    % passband ripple [dB]
-passBandAtten = 40;   % stopband attentuation in [dB]
+for i = 1:setNrs(end)
 
-calcData = calcData.calcSpatialFiltering(setNrs,scf,ripple,passBandAtten);
+    if isequal(prepData.dim(i,:),[0 0 1])
+        % related to frequency, use different filtering (SCF param) for 500 kHz vs 250 kHz
+        % compare with raw signal!
+        % axial spatial filtering (butterworth) to mitigate of hydrophone reflection interference
+        scf           = 0.2; % spatial cutoff frequecy [1/mm], used 0.1 to make the equalization curve which seems to harsh... 0.2 is better
+        ripple        = 1;    % passband ripple [dB]
+        passBandAtten = 40;   % stopband attentuation in [dB]
 
+        calcData = calcData.calcSpatialFiltering(setNrs(i),scf,ripple,passBandAtten);
+    else
+        % Assumption that filtering isn't required in x- and y- dir if focus is
+        % high enough
+        calcData.spatialFilt{i} = calcData.ampEstimation{i};
+    end
+end
 % calculate Pressure and metrics
 calcData = calcData.calcPressure(setNrs);
 
@@ -179,7 +186,7 @@ calcData = calcData.calcIntensity(setNrs);
 calcData = calcData.calcISPPA(setNrs);
 
 % scale with NeuroFus data
-calcData = calcData.calcISPPA2NFscale(setNrs,NFD);
+%calcData = calcData.calcISPPA2NFscale(setNrs,NFD);
 
 if 0
     % calculate holography
@@ -235,23 +242,32 @@ if 0 % signal time series videos
     xAxis = {'Samples [#]','Time [mus]', 'Cycles [#]'};
     yAxis = {'Voltage [mV]','Pressure [MPa]'};
     NoF = []; % Number of Frames to record, [] = all frames available
-    dataVisual.pulseSelection([1],xAxis{2},yAxis{1},NoF);
+    dataVisual.pulseSelection([11:12],xAxis{2},yAxis{1},NoF);
 end
 %%
-if 0 % axial profiles plotting also used for charaterization   
+if 1 % axial profiles plotting also used for charaterization   
     % view all the axial profiles and compare them with the NeuroFUS data (
     % oiptionally, when available)
-   
-    xAxis = {'Distance WRT exitplane [mm]'};
-    yAxis = {'Voltage [mV]','Raw & Filt pressure [MPa]','Pressure [MPa]','ISPPA [W/cm2]','ISPPA scaled [W/cm2]'};
+    setNrs = [1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31, 33, 35, 37];
+    %setNrs = 31:40;
+    xAxis = {'Distance WRT exitplane [mm]', 'Lateral [mm]'};
+    yAxis = {'Raw & Filt pressure [MPa]'}; %{'Voltage [mV]','Raw & Filt pressure [MPa]','Pressure [MPa]','ISPPA [W/cm2]','ISPPA scaled [W/cm2]'};
     focusPlot = {'Set Focus wrt exitplane [mm]','Set Focus wrt midbowl [mm]'};
-    singleView = {true,false};
+    singleView = {true, false};
     normVal = [nan, nan, nan, nan, nan];
-    for sv = 2%:numel(singleView)
-        for y = 5%%1:numel(yAxis)
-            dataVisual.axialProfiles([setNrs],xAxis{1},yAxis{y},NFD,normVal,focusPlot{1},singleView{sv});
+    for sv = 2 %1:numel(singleView)
+        for i = 1:numel(setNrs)
+            if isequal(prepData.dim(setNrs(i),:),[0 0 1])
+                xNum = 1;
+            else
+                xNum = 2;
+            end
+
+            for y = 1:numel(yAxis)
+                dataVisual.axialProfiles(setNrs(i),xAxis{xNum},yAxis{y},NFD,normVal,focusPlot{1},singleView{sv}, i);
+            end
         end
-    end    
+    end
 end
 
 %%
@@ -280,7 +296,7 @@ end
 %%
 if 0 % Cross-sectional images XY of cSection
     % view
-        setNr = 21
+        setNr = 2
         xAxis = {'Lateral [mm]'};
         yAxis = {'Elevational [mm]'};
         value = {'Voltage [mV]','Pressure [MPa]','ISPPA [W/cm2]'};
@@ -365,10 +381,10 @@ end
 %% Export data
 expData = dataExp(prepData,calcData);
 
-if 0
+if 1
     % export pressure and ISPPA data
-    fileName = 'BableBrainV2';
-    setNrs = 2;
+    fileName = 'Verification_15278_1001';
+    setNrs = 31:40;
     localStorage = false;
     expData.press_ISPPA(setNrs,fileName,localStorage)
 end
