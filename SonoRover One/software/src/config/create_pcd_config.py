@@ -38,14 +38,15 @@ pcd_config = configparser.ConfigParser(interpolation=None)
 pcd_config['Default'] = {}
 pcd_config['Default']['output_dir'] = 'C:\\Temp\\PCD_acquisition_output'
 pcd_config['Default']['sampl_freq_multi'] = str(50)
+pcd_config['Default']['acquisition_time_us'] = str(150)
 pcd_config['Default']['pulse_dur_ms'] = str(0.025)
-pcd_config['Default']['pulse_rep_int_ms'] = str(0.180)
-pcd_config['Default']['per_elem_ampl'] = str(5)
+pcd_config['Default']['pulse_rep_int_ms'] = str(0.170)
+pcd_config['Default']['per_elem_ampl'] = str(10)
 pcd_config['Default']['all_elems_ampl'] = str(1)
 
 pcd_config['Limit'] = {}
 pcd_config['Limit']['all_elems_ampl'] = str(2.5)
-pcd_config['Limit']['per_elem_ampl'] = str(10)
+pcd_config['Limit']['per_elem_ampl'] = str(15)
 
 pcd_config['IS_PCD15287_01001'] = {}
 pcd_config['IS_PCD15287_01001']['Baseline path'] = "D:\\Users\pcd_measurements\Baseline measurements\Imasonic_15287_1001_R75"
@@ -102,17 +103,17 @@ pcd_config['IS_PCD15473_01003'] = {}
 pcd_config['IS_PCD15473_01003']['Baseline path'] = "D:\\Users\pcd_measurements\Baseline measurements\Imasonic_15473_1003_R100"
 pcd_config['IS_PCD15473_01003']['acquisition_time_us'] = str(115)
 pcd_config['IS_PCD15473_01003']['Baseline files'] = '\n'.join(
-    ['PCD_acquisition_2026-03-04_11-51-03_all_elems_of_IS_PCD15473_01003_IGT-32-ch_comb_1x10-ch.raw',
-     'PCD_acquisition_2026-03-04_11-51-05_elem_1_of_IS_PCD15473_01003_IGT-32-ch_comb_1x10-ch.raw',
-     'PCD_acquisition_2026-03-04_11-51-08_elem_2_of_IS_PCD15473_01003_IGT-32-ch_comb_1x10-ch.raw',
-     'PCD_acquisition_2026-03-04_11-51-10_elem_3_of_IS_PCD15473_01003_IGT-32-ch_comb_1x10-ch.raw',
-     'PCD_acquisition_2026-03-04_11-51-13_elem_4_of_IS_PCD15473_01003_IGT-32-ch_comb_1x10-ch.raw',
-     'PCD_acquisition_2026-03-04_11-51-16_elem_5_of_IS_PCD15473_01003_IGT-32-ch_comb_1x10-ch.raw',
-     'PCD_acquisition_2026-03-04_11-51-19_elem_6_of_IS_PCD15473_01003_IGT-32-ch_comb_1x10-ch.raw',
-     'PCD_acquisition_2026-03-04_11-51-21_elem_7_of_IS_PCD15473_01003_IGT-32-ch_comb_1x10-ch.raw',
-     'PCD_acquisition_2026-03-04_11-51-24_elem_8_of_IS_PCD15473_01003_IGT-32-ch_comb_1x10-ch.raw',
-     'PCD_acquisition_2026-03-04_11-51-26_elem_9_of_IS_PCD15473_01003_IGT-32-ch_comb_1x10-ch.raw',
-     'PCD_acquisition_2026-03-04_11-51-29_elem_10_of_IS_PCD15473_01003_IGT-32-ch_comb_1x10-ch.raw'
+    ['PCD_acquisition_2025-02-05_12-23-03_all_elems_of_IS_PCD15473_01003_IGT-32-ch_comb_1x10-ch.raw',
+     'PCD_acquisition_2025-02-05_12-23-06_elem_1_of_IS_PCD15473_01003_IGT-32-ch_comb_1x10-ch.raw',
+     'PCD_acquisition_2025-02-05_12-23-08_elem_2_of_IS_PCD15473_01003_IGT-32-ch_comb_1x10-ch.raw',
+     'PCD_acquisition_2025-02-05_12-23-11_elem_3_of_IS_PCD15473_01003_IGT-32-ch_comb_1x10-ch.raw',
+     'PCD_acquisition_2025-02-05_12-23-13_elem_4_of_IS_PCD15473_01003_IGT-32-ch_comb_1x10-ch.raw',
+     'PCD_acquisition_2025-02-05_12-23-16_elem_5_of_IS_PCD15473_01003_IGT-32-ch_comb_1x10-ch.raw',
+     'PCD_acquisition_2025-02-05_12-23-18_elem_6_of_IS_PCD15473_01003_IGT-32-ch_comb_1x10-ch.raw',
+     'PCD_acquisition_2025-02-05_12-23-21_elem_7_of_IS_PCD15473_01003_IGT-32-ch_comb_1x10-ch.raw',
+     'PCD_acquisition_2025-02-05_12-23-23_elem_8_of_IS_PCD15473_01003_IGT-32-ch_comb_1x10-ch.raw',
+     'PCD_acquisition_2025-02-05_12-23-26_elem_9_of_IS_PCD15473_01003_IGT-32-ch_comb_1x10-ch.raw',
+     'PCD_acquisition_2025-02-05_12-23-28_elem_10_of_IS_PCD15473_01003_IGT-32-ch_comb_1x10-ch.raw'
      ])
 
 with open(CONFIG_FILE, 'w') as configfile:

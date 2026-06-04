@@ -61,17 +61,17 @@ addpath(genpath('externalData'))
 
 % set default pathname t6o SonoRover One data
 pr.metrologySetup = 'SonoRover One';
-pr.defaultDataPath = '\\ru.nl\WrkGrp\FUS_Hub\Hydrophone measurements\Measurements\2025\Transducers';
-pr.defaultDataPathTesting = 'SonoRover One\DPX\';
+pr.defaultDataPath = '\\ru.nl\WrkGrp\FUS_Hub\Hydrophone measurements\Measurements\2026\Transducers';
+pr.defaultDataPathTesting = '\\ru.nl\WrkGrp\FUS_Hub\Hydrophone measurements\Measurements\2026\Transducers\Imasonic_15287_1001\20260407 K-Plan Measurements\Output of T [Imasonic 10 ch. PCD15287_01001 ROC 75 mm] - DS [IGT 32 ch. - 1 x 10 ch.]\P [KPlan_level_2]';
 
 % set the location of the NeuroFus data sheets
-pr.neuroFUSFolderLocation = 'C:\Users\sfekk\Radboud Universiteit\neuromod - equipment\24_NeuroFUS_steering_tables\';
+pr.neuroFUSFolderLocation = 'C:\Users\sfekk\OneDrive\Radboud Universiteit\Radboud Universiteit\neuromod - hardware\24_NeuroFUS_steering_tables\';
 
-%% Define input parameters
+% Define input parameters
 
 % mandatory
 pr.rereadNFD = false; % rereads and rebuilds the matlabs struct importing the xls data files provided by Sonic Concepts in case of new entries of transducer files
-pr.devMode   = true; % circumvents the dialog box and load the data directly as defined in the p.defaultDataPathTesting
+pr.devMode   = false; % circumvents the dialog box and load the data directly as defined in the p.defaultDataPathTesting
 
 % general plotting
 pl = 0;  
@@ -80,7 +80,7 @@ pl = 0;
 pr.optional = [];
 
 
-%% Import and prepare data
+%Import and prepare data
 
 % Initialize a flag to determine if the NeuroFUs calibration xls data
 % sheets profided by Sonic Concepts should be re-read from the source.
@@ -159,13 +159,23 @@ ampEstMethod = 4;
 
 calcData = calcData.calcAmplitude(setNrs,ampEstMethod);
 
-% axial spatial filtering (butterworth) to mitigate of hydrophone reflection interference
-scf           = 0.25; % spatial cutoff frequecy [1/mm]
-ripple        = 1;    % passband ripple [dB]
-passBandAtten = 40;   % stopband attentuation in [dB]
+for i = 1:setNrs(end)
 
-calcData = calcData.calcSpatialFiltering(setNrs,scf,ripple,passBandAtten);
+    if isequal(prepData.dim(i,:),[0 0 1])
+        % related to frequency, use different filtering (SCF param) for 500 kHz vs 250 kHz
+        % compare with raw signal!
+        % axial spatial filtering (butterworth) to mitigate of hydrophone reflection interference
+        scf           = 0.2; % spatial cutoff frequecy [1/mm], used 0.1 to make the equalization curve which seems to harsh... 0.2 is better
+        ripple        = 1;    % passband ripple [dB]
+        passBandAtten = 40;   % stopband attentuation in [dB]
 
+        calcData = calcData.calcSpatialFiltering(setNrs(i),scf,ripple,passBandAtten);
+    else
+        % Assumption that filtering isn't required in x- and y- dir if focus is
+        % high enough
+        calcData.spatialFilt{i} = calcData.ampEstimation{i};
+    end
+end
 % calculate Pressure and metrics
 calcData = calcData.calcPressure(setNrs);
 
@@ -176,51 +186,225 @@ calcData = calcData.calcIntensity(setNrs);
 calcData = calcData.calcISPPA(setNrs);
 
 % scale with NeuroFus data
-calcData = calcData.calcISPPA2NFscale(setNrs,NFD);
+%calcData = calcData.calcISPPA2NFscale(setNrs,NFD);
 
-% calculate holography
-ipf = 5; % interpolation factor of amplitude and phase data
-zv = [0:1:140]*1e-3; % [m' the vector in z-direction of the computed volume 
-calcData = calcData.calcHolography(setNrs,ipf,zv);
+if 0
+    % calculate holography
+    ipf = 5; % interpolation factor of amplitude and phase data [grid points]
+    zv = [0:1:140]*1e-3; % [m' the vector in z-direction of the computed volume
+    calcData = calcData.calcHolography(setNrs,ipf,zv);
+end
+
+if 0
+    % calculate equalization curve
+    nrs = [1:37]; % select which one to take into account
+    type = {'max','FWHMcenter'};
+    calcData = calcData.equalizationCurve(nrs,type{2});
+
+    % spline fitting of the equalization curve
+    xTransform = {'log','oneover','sqrt','none'};
+    p = 0; % ploiting curvefitting
+    calcData = calcData.equalizationCurveFit(xTransform([4]),p);
+
+    % calculate the set focus versus FWHM center distance wrt exit plane
+    nrs = [1:37];
+    calcData = calcData.focusCurve(nrs);
+
+    % splilefitting of the focus curve
+    xTransform = {'log','oneover','sqrt','none'};
+    p = 0; % plotting curvefitting
+    calcData = calcData.focusCurveFit(xTransform([4]),p);
+
+end
+
+
+if 0
+    % calculate the power curve with linear regression
+    nrs = [1:32]; % select which one to take into account and do the fitiing
+    calcData = calcData.powerCurve(nrs); % [1:20] = with attenuation [21:32] = without attenuation
+
+    % calculate regression fits  
+    xTransform = {'log','oneover','sqrt','none'};
+    p = 0; % ploiting curvefitting
+    calcData = calcData.powerCurveFit(xTransform([4]),p);
+end
+
 
 %% Visuals
 
 % initiate object and creates postprocessing folder in the same folder as
-% the raw data files
+%the raw data files
 dataVisual = dataVis(prepData,calcData);
 
-if 0
+% channel testing
+if 0 % signal time series videos
     % view the filtered pulse data and the pulse selection for amplitude estimation
     xAxis = {'Samples [#]','Time [mus]', 'Cycles [#]'};
     yAxis = {'Voltage [mV]','Pressure [MPa]'};
-    dataVisual.pulseSelection(setNrs,xAxis{2},yAxis{2});
+    NoF = []; % Number of Frames to record, [] = all frames available
+    dataVisual.pulseSelection([11:12],xAxis{2},yAxis{1},NoF);
 end
+%%
+if 1 % axial profiles plotting also used for charaterization   
+    % view all the axial profiles and compare them with the NeuroFUS data (
+    % oiptionally, when available)
+    setNrs = [1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31, 33, 35, 37];
+    %setNrs = 31:40;
+    xAxis = {'Distance WRT exitplane [mm]', 'Lateral [mm]'};
+    yAxis = {'Raw & Filt pressure [MPa]'}; %{'Voltage [mV]','Raw & Filt pressure [MPa]','Pressure [MPa]','ISPPA [W/cm2]','ISPPA scaled [W/cm2]'};
+    focusPlot = {'Set Focus wrt exitplane [mm]','Set Focus wrt midbowl [mm]'};
+    singleView = {true, false};
+    normVal = [nan, nan, nan, nan, nan];
+    for sv = 2 %1:numel(singleView)
+        for i = 1:numel(setNrs)
+            if isequal(prepData.dim(setNrs(i),:),[0 0 1])
+                xNum = 1;
+            else
+                xNum = 2;
+            end
 
-if 1
-    % view all the axial profiles and compare them with the NeuroFUS data
-    xAxis = {'Distance WRT exitplane [mm]'};
-    yAxis = {'Voltage [mV]','Raw & Filt pressure [MPa]','Pressure [MPa]','ISPPA [W/cm2]','ISPPA scaled [W/cm2]'};
-    singleView = {true,false};
-    for sv = 1:numel(singleView)
-        for y = 1:numel(yAxis)
-            dataVisual.axialProfiles(setNrs,xAxis{1},yAxis{y},NFD,singleView{sv});
+            for y = 1:numel(yAxis)
+                dataVisual.axialProfiles(setNrs(i),xAxis{xNum},yAxis{y},NFD,normVal,focusPlot{1},singleView{sv}, i);
+            end
         end
     end
 end
+
+%%
+if 0 % axial profiles for verification
+    selM(1,:) = 1:10;
+   % selM(2,:) = 11:20;
+   % selM(3,:) = 21:30;
+   % selM(4,:) = 31:40;
+    for j = 1:4
+        dataVisual = dataVis(prepData,calcData);
+        % view all the axial profiles and compare them with the NeuroFUS data
+        xAxis = {'Distance WRT exitplane [mm]'};
+        yAxis = {'Voltage [mV]','Raw & Filt pressure [MPa]','Pressure [MPa]','ISPPA [W/cm2]','ISPPA scaled [W/cm2]'};
+        focusPlot = {'Set Focus wrt exitplane [mm]','Set Focus wrt midbowl [mm]'};
+        singleView = {true,false};
+        normVal = [nan, nan, nan, nan, nan];
+        for sv = 1%:numel(singleView)
+            for y = 3%1:numel(yAxis)
+                dataVisual.axialProfiles(selM(j,:),xAxis{1},yAxis{y},NFD,normVal,focusPlot{1},singleView{sv});
+
+            end
+        end
+    end
+end
+
+%%
+if 0 % Cross-sectional images XY of cSection
+    % view
+        setNr = 2
+        xAxis = {'Lateral [mm]'};
+        yAxis = {'Elevational [mm]'};
+        value = {'Voltage [mV]','Pressure [MPa]','ISPPA [W/cm2]'};
+        normVal = [nan, nan, nan];%  = []; % MPa
+        scaleFac = 1;%65/30.58; % ISPPA scaleFatcor  
+        downsample = zeros([5,1]); % zeros is no downsalpling
+        closeFig = false;
+        colormapType = {'monotone','hot','default','viridis'}; % make other colormap! see mail
+        type = {'norm','dB','none'}
+        cl = [-50 0];
+
+    for i = 2:3
+        dataVisual.cSectionImages([setNr],xAxis{1},yAxis{1},value{i},normVal,scaleFac,downsample,colormapType{4},type{3},cl,closeFig);
+    end
+    dataVisual.cSectionImages([setNr],xAxis{1},yAxis{1},value{2},normVal,scaleFac,downsample,colormapType{4},type{2},cl,closeFig);
+end
+
+if 0 % Cross-sectional profiles
+    % view 
+    xAxis = {'Lateral [mm]'};
+    yAxis = {'Voltage [mV]','Pressure [MPa]','ISPPA [W/cm2]'};
+    normVal = [nan, nan, nan];
+    ylim  = [0 1]; %[0 0.55633]; % MPa
+    
+    for i = 0:4
+        dataVisual.cSectionProfiles(1,xAxis{1},yAxis{2},ylim,type{2},normVal);
+    end
+end
+
+if 0 % Sagital of ZX cross-section
+    % view
+    setNr = 19;
+    xAxis = {'Lateral [mm]'};
+    yAxis = {'Axial [mm]'};
+    value = {'Voltage [mV]','Pressure [MPa]','ISPPA [W/cm2]'};
+    normVal = [] %  = []; % MPa
+    scaleFac = 1;% 65/29.32; % ISPPA scaleFatcor  
+    type = {'norm','dB','none'};
+    closeFig = false;
+    diffIm = false;
+    colormapType = {'monotone','hot','default','viridis'}; % make other colormap! see mail
+
+    for i = 2:3
+        dataVisual.XZSectionImages([setNr],diffIm,xAxis{1},yAxis{1},value{i},normVal,scaleFac,colormapType{4},type{3},closeFig);
+    end
+    dataVisual.XZSectionImages([setNr],diffIm,xAxis{1},yAxis{1},value{3},normVal,scaleFac,colormapType{4},type{2},closeFig);
+end
+
+if 0
+    value = {'Pressure [MPa]','ISPPA [W/cm2]','dB'};
+    dataVisual.visualize(setNrs,value{1})
+
+
+end
+
+
 if 0
     % visualize 3D holography
-    transverseLoc = [1,20,65,100];
+    transverseLoc = [1,30,45,60];
     dataVisual.holography(transverseLoc,zv)
+end
+
+% visualize equalization curve
+if 0
+    dataVisual.equalizationCurve()
+    
+end
+
+% visualize focus curve
+if 0
+    dataVisual.focusCurve()
+end
+
+% visualize power curve
+if 0
+    % Note: Attenuated and non-attenuated power distinguision is hardcoded in
+    % powerCurve()!
+    dataVisual.powerCurve()
 end
 
 
 %% Export data
 expData = dataExp(prepData,calcData);
 
-% export pressure and ISPPA data
-fileName = 'DPX_Export';
-expData.press_ISPPA(fileName)
+if 1
+    % export pressure and ISPPA data
+    fileName = 'Verification_15278_1001';
+    setNrs = 31:40;
+    localStorage = false;
+    expData.press_ISPPA(setNrs,fileName,localStorage)
+end
 
+if 0 % export for characterization handshake 
+    % export the equalization curve fitting piece-wise polynomial fit
+    xTransform = {'log','oneover','sqrt','none'};
+    expData.equalizationCurve(xTransform{4});
 
+    % export the set focus versus FWHMcenter spline and linear fit
+    xTransform = {'log','oneover','sqrt','none'};
+    expData.focusCurve(xTransform{4});
+end
+if 0
+    % export the amplitude versus pressure curve linear fit
+    expData.powerCurve();
 
+end
 
+%% Generate Characterization Report
+if 0
+    generateCharacterizationReport(prepData,calcData)
+end
