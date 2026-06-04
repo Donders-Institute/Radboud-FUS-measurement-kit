@@ -103,17 +103,17 @@ if __name__ == '__main__':
         # print(ps.get_pico_serials())
         # PicoScope 5242D - embedded in IGT driving system (32 ch.)
         # PicoScope 5442A - embedded in IGT driving system (128 ch.)
-        picoscope_serial = '5442A'
+        picoscope_serial = '5242D'
 
         # to check available transducers:
         # from fus_driving_systems import transducer as td
         # print(td.get_tran_serials())
-        transducer_serial = 'IS_PCD15473_01002'
+        transducer_serial = 'IS_PCD15473_01003'
 
         # to check available driving systems:
         # from fus_driving_systems import driving_system as ds
         # print(ds.get_ds_serials())
-        driving_system_serial = 'IGT-128-ch_comb_1x10-ch'
+        driving_system_serial = 'IGT-32-ch_comb_1x10-ch'
 
         perform_pcd_acquisition(picoscope_serial, transducer_serial, driving_system_serial,
                                 output_dir)
