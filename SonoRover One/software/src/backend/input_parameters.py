@@ -865,6 +865,9 @@ class InputParameters:
         """
         driving_sys = ds.DrivingSystem()
         driving_sys.set_ds_info(cached_input['Input parameters']['Driving system.serial_number'])
+        
+        if driving_sys.manufact == config['Equipment.Manufacturer.SC']['Name'] or driving_sys.manufact == config['Equipment.Manufacturer.CITRUS']['Name']:
+            driving_sys.connect_info = cached_input['Input parameters']['Driving system.connect_info']
 
         return driving_sys
 

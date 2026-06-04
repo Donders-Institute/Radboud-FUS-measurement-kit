@@ -59,6 +59,7 @@ from frontend import check_dialogs
 
 from fus_driving_systems.igt import igt_ds as fds_igt
 from fus_driving_systems.sonic_concepts import sonic_concepts_ds as fds_sc
+from fus_driving_systems.citrus import citrus_ds as fds_citrus
 from fus_driving_systems.utils import get_config_value
 
 from config.config import config_info
@@ -186,11 +187,14 @@ class Acquisition:
                                         'C:\\Temp\\General output folder\\logs')
 
         add_message = ''
-        # Driving system of Sonic Concepts
+        # Driving system names
         sc_name = get_config_value(logger, config_info, 'Equipment.Manufacturer.SC', 'Name',
                                    'Sonic Concepts')
         igt_name = get_config_value(logger, config_info, 'Equipment.Manufacturer.IGT', 'Name',
                                     'IGT')
+        citrus_name = get_config_value(logger, config_info, 'Equipment.Manufacturer.CITRUS', 'Name',
+                                       'CITRUS')
+
         if ds_manufact == sc_name:
 
             add_message = get_config_value(logger, config_info, 'Equipment.Manufacturer.SC',
@@ -230,6 +234,10 @@ class Acquisition:
             self.equipment["ds"].connect(ds_connect_info,
                                          log_path,
                                          protocol_name)
+        elif ds_manufact == citrus_name:
+            self.equipment["ds"] = fds_citrus.CITRUS()
+
+            self.equipment["ds"].connect(ds_connect_info)
         else:
             message = f"Driving system manufacturer {ds_manufact} has not been implemented yet."
             logger.critical(message)
