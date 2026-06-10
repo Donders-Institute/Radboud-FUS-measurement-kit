@@ -136,7 +136,7 @@ class Acquisition:
             "coord_excel_data": None
             }
 
-        self.signal_a = None
+        self.signal = None
         self.output = {
             "outputRAW": None,
             "outputACD": None,
@@ -295,6 +295,7 @@ class Acquisition:
         # Convert string values to the corresponding Picoscope enums
         pico_resolution = getattr(pico.Resolution, pico_resolution_str, pico.Resolution.DR_14BIT)
         pico_channel = getattr(pico.Channel, pico_channel_str, pico.Channel.A)
+        self.equipment["scope"].chosen_channel = pico_channel
         pico_range = getattr(pico.Range, pico_range_str, pico.Range.RANGE_500mV)
         pico_coupling = getattr(pico.Coupling, pico_coupling_str.upper(), pico.Coupling.DC)
         pico_probe = getattr(pico.Probe, pico_probe_str.lower(), pico.Probe.x1)
@@ -933,9 +934,9 @@ class Acquisition:
                     self.acquire_data()
 
                     with open(self.output["outputRAW"], 'ab') as outraw:
-                        self.signal_a.tofile(outraw)
+                        self.signal.tofile(outraw)
 
-                    volt_data[i, j, k] = self.signal_a
+                    volt_data[i, j, k] = self.signal
 
                     dest_xyz_list[i, j, k] = dest_xyz
 
@@ -1052,12 +1053,12 @@ class Acquisition:
             self.acquire_data(attempt)
 
         # Transfer data from picoscope
-        self.signal_a = self.equipment["scope"].readVolts()[0]
+        self.signal = self.equipment["scope"].readVolts()[self.equipment["scope"].chosen_channel]
 
-        logger.debug(f'signal_a size: {self.signal_a.size}, ' +
-                     f'dtype: {self.signal_a.dtype}')
+        logger.debug(f'signal size: {self.signal.size}, ' +
+                     f'dtype: {self.signal.dtype}')
 
-        return self.signal_a
+        return self.signal
 
     def _save_data(self, vol_orien, relat_xyz, plane_orien, dest_xyz):
         """
@@ -1127,7 +1128,7 @@ class Acquisition:
         if not end:
             end = self.sample_count
         npoints = end-beg
-        phasor = np.dot(self.signal_a[beg:end], self.proces_param["eiwt"][beg:end])
+        phasor = np.dot(self.signal[beg:end], self.proces_param["eiwt"][beg:end])
         phase_a = cmath.phase(phasor)
         ampl_a = abs(phasor)*2.0/npoints
         logger.debug(f'ampl_a: {ampl_a:.3f}, phase_a: {math.degrees(phase_a):.3f}')
