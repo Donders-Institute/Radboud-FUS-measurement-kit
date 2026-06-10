@@ -368,7 +368,10 @@ def _plot_comparison_fig(time_us, raw_path, volt_data, title, output_path):
 
     if raw_path != '':
         # Compute the absolute max of both y-values
-        y_abs_max = max(abs(raw_baseline_data).max(), abs(volt_data).max())
+        y_abs_max = max(abs(raw_baseline_data).max(), abs(volt_data).max())*1.1
+    else:
+        # Compute the absolute max of both y-values
+        y_abs_max = abs(volt_data).max()*1.1
 
     # Define symmetric y-axis limits
     y_min, y_max = -y_abs_max, y_abs_max
