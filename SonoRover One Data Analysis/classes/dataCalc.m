@@ -89,9 +89,9 @@ classdef dataCalc
             hydrophone(2).sensitivity{1} = obj.readCalData(hydrophone(2).fileName{1});
 
             % HNR 0500 2439: calibration for low frequency by NPL calibration 30-04-2025
-            hydrophone(2).fileName{2} = '2024100030-1-Data.xlsx';
+            hydrophone(2).fileName{2} = 'HNR0500-2439_xxxxxx-xxxx-xx_xx_2025.txt';
             hydrophone(2).calDate{2} = datetime('2025-04-22'); % ADD XLS READ!
-            %hydrophone(2).sensitivity{2} = obj.readCalData(hydrophone(1).fileName{2});
+            hydrophone(2).sensitivity{2} = obj.readCalData(hydrophone(2).fileName{2});
 
             % HGL 0200 3030: Initial calibration 20-11-2024
             hydrophone(3).fileName{1} = 'HGL0200-3030_AG2010-1446-20_CA_20241120.txt';
@@ -416,7 +416,7 @@ classdef dataCalc
             %       obj    - Updated object with computed ISPPA values.
 
             for i = 1:size(obj.intensity,2)
-
+                
                 % calculate raw ISPPA
                 obj.ISPPA{i}.amp.raw          = obj.intensity{i}.amp.raw/2/100^2;
 
