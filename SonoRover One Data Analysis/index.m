@@ -65,7 +65,7 @@ pr.defaultDataPath = '\\ru.nl\WrkGrp\FUS_Hub\Hydrophone measurements\Measurement
 pr.defaultDataPathTesting = '\\ru.nl\WrkGrp\FUS_Hub\Hydrophone measurements\Measurements\2026\Transducers\Imasonic_15287_1001\20260407 K-Plan Measurements\Output of T [Imasonic 10 ch. PCD15287_01001 ROC 75 mm] - DS [IGT 32 ch. - 1 x 10 ch.]\P [KPlan_level_2]';
 
 % set the location of the NeuroFus data sheets
-pr.neuroFUSFolderLocation = 'C:\Users\sfekk\OneDrive\Radboud Universiteit\Radboud Universiteit\neuromod - hardware\24_NeuroFUS_steering_tables\';
+pr.neuroFUSFolderLocation = 'C:\Users\marge\Radboud Universiteit\neuromod - equipment\24_NeuroFUS_steering_tables\';
 
 % Define input parameters
 
@@ -110,14 +110,14 @@ end
 %% Data selection
 
 % adapt setNrs
-% setNrs = [1:3,4];
+%setNrs = [3, 4, 7, 8];
 
 % 5. Estimate the arrival of the pulse at the hydrophone and corresponding selection window
 ringUpcycles     = 25;   % number of periods to exclude from the onset of the pulse, (skipping ring up phase)
 selectionCycles  = 5;    % the number of periods to take for amplitude estimation
 time             = 80;   % a certain time microseconds from the start of pulse [micro seconds]  
 threshold        = 0.1;  % 10% of normalized amplitude
-EPoffset         = 7.3;  % the length between the center of the membrane and the exit plane (specific for each transducer type)
+EPoffset         = 10.56;  % the length between the center of the membrane and the exit plane (specific for each transducer type)
 
 %  Exit plane    Hydrophone position
 %  Trigger       Start Pulse                                                 End Pulse    End of measurement
@@ -159,23 +159,72 @@ ampEstMethod = 4;
 
 calcData = calcData.calcAmplitude(setNrs,ampEstMethod);
 
-for i = 1:setNrs(end)
+% ── STEP 1: ensure axial scans are filtered first ──────────────────────
+% Build ordered indices correctly
+dims = prepData.dim(setNrs, :);   % only look at the sets we care about
 
-    if isequal(prepData.dim(i,:),[0 0 1])
-        % related to frequency, use different filtering (SCF param) for 500 kHz vs 250 kHz
-        % compare with raw signal!
-        % axial spatial filtering (butterworth) to mitigate of hydrophone reflection interference
-        scf           = 0.2; % spatial cutoff frequecy [1/mm], used 0.1 to make the equalization curve which seems to harsh... 0.2 is better
-        ripple        = 1;    % passband ripple [dB]
-        passBandAtten = 40;   % stopband attentuation in [dB]
+% Sort set numbers so [0 0 1] scans are processed before [1 0 0] / [0 1 0]
+idx_axial = setNrs(all(dims == [0 0 1], 2));   % Butterworth + reference
+idx_rest  = setNrs(any(dims ~= [0 0 1], 2));   % projection-based correction
 
-        calcData = calcData.calcSpatialFiltering(setNrs(i),scf,ripple,passBandAtten);
-    else
-        % Assumption that filtering isn't required in x- and y- dir if focus is
-        % high enough
-        calcData.spatialFilt{i} = calcData.ampEstimation{i};
-    end
+orderedSetNrs = [idx_axial, idx_rest];
+
+% ── STEP 2: Apply Butterworth to axial scans, build focus lookup ────────
+axialIndex = containers.Map('KeyType','double','ValueType','double');
+
+for i = idx_axial
+    % related to frequency, use different filtering (SCF param) for 500 kHz vs 250 kHz
+    % compare with raw signal!
+    % axial spatial filtering (butterworth) to mitigate of hydrophone reflection interference
+    scf           = 0.15; % spatial cutoff frequecy [1/mm], used 0.1 to make the equalization curve which seems to harsh... 0.2 is better
+    ripple        = 1;    % passband ripple [dB]
+    passBandAtten = 40;   % stopband attentuation in [dB]
+
+    calcData = calcData.calcSpatialFiltering(i, scf, ripple, passBandAtten);
+    focus = prepData.p{i}.TD.Focus;
+    axialIndex(focus) = i;
 end
+
+% ── STEP 3: Apply projection-based correction to all remaining scans ────
+for i = idx_rest
+    focus = prepData.p{i}.TD.Focus;
+
+    % Check if matching axial reference exists
+    if ~isKey(axialIndex, focus)
+        warning(['No [0 0 1] axial scan found for focus=%.1f mm, ' ...
+                 'set %d — skipping filtering.'], focus, i);
+        calcData.spatialFilt{i} = calcData.ampEstimation{i};
+        continue
+    end
+
+    refIdx  = axialIndex(focus);
+    z_ax    = prepData.coordinates{refIdx}(:,6);   % axial positions [mm]
+    amp_ax  = calcData.ampEstimation{refIdx}.amp;  % raw axial amplitude
+    filt_ax = calcData.spatialFilt{refIdx}.amp;    % filtered axial amplitude
+
+    % Correction ratio along axial axis
+    ratio_ax = filt_ax ./ amp_ax;
+
+    % Euclidean distance of each point from origin
+    coords   = prepData.coordinates{i};            % Nx6
+    euc_dist = sqrt(coords(:,4).^2 + coords(:,5).^2 + coords(:,6).^2);
+
+    % Warn if any points fall outside axial scan range
+    outOfRange = euc_dist < min(z_ax) | euc_dist > max(z_ax);
+    if any(outOfRange)
+        warning(['Set %d: %d point(s) have Euclidean distance outside ' ...
+                 'axial scan range [%.1f, %.1f] mm — clamping.'], ...
+                 i, sum(outOfRange), min(z_ax), max(z_ax));
+    end
+
+    % Interpolate ratio at each point's Euclidean distance
+    euc_dist_clamped = max(min(euc_dist, max(z_ax)), min(z_ax));
+    ratio_interp     = interp1(z_ax, ratio_ax, euc_dist_clamped, 'linear');
+
+    % Apply multiplicative correction
+    calcData.spatialFilt{i}.amp = calcData.ampEstimation{i}.amp .* ratio_interp';
+end
+
 % calculate Pressure and metrics
 calcData = calcData.calcPressure(setNrs);
 
@@ -242,7 +291,8 @@ if 0 % signal time series videos
     xAxis = {'Samples [#]','Time [mus]', 'Cycles [#]'};
     yAxis = {'Voltage [mV]','Pressure [MPa]'};
     NoF = []; % Number of Frames to record, [] = all frames available
-    dataVisual.pulseSelection([11:12],xAxis{2},yAxis{1},NoF);
+    used_setNrs = [1];
+    dataVisual.pulseSelection(used_setNrs,xAxis{2},yAxis{1},NoF);
 end
 %%
 if 1 % axial profiles plotting also used for charaterization   
@@ -261,10 +311,15 @@ if 1 % axial profiles plotting also used for charaterization
                 xNum = 1;
             else
                 xNum = 2;
+            elseif isequal(prepData.dim(used_setNrs(i),:),[0 1 0])
+                xNum = 3;
+            else
+                fprintf('Acoustic axis: %i\n', i);
+                xNum = 1; 
             end
 
             for y = 1:numel(yAxis)
-                dataVisual.axialProfiles(setNrs(i),xAxis{xNum},yAxis{y},NFD,normVal,focusPlot{1},singleView{sv}, i);
+                dataVisual.axialProfiles(used_setNrs(i),xAxis{xNum},yAxis{y},NFD,normVal,focusPlot{1},singleView{sv}, i);
             end
         end
     end
@@ -276,17 +331,18 @@ if 0 % axial profiles for verification
    % selM(2,:) = 11:20;
    % selM(3,:) = 21:30;
    % selM(4,:) = 31:40;
-    for j = 1:4
-        dataVisual = dataVis(prepData,calcData);
+   used_setNrs = 9:20;
+    for j = 1:numel(used_setNrs)
+        %dataVisual = dataVis(prepData,calcData);
         % view all the axial profiles and compare them with the NeuroFUS data
         xAxis = {'Distance WRT exitplane [mm]'};
         yAxis = {'Voltage [mV]','Raw & Filt pressure [MPa]','Pressure [MPa]','ISPPA [W/cm2]','ISPPA scaled [W/cm2]'};
         focusPlot = {'Set Focus wrt exitplane [mm]','Set Focus wrt midbowl [mm]'};
         singleView = {true,false};
         normVal = [nan, nan, nan, nan, nan];
-        for sv = 1%:numel(singleView)
-            for y = 3%1:numel(yAxis)
-                dataVisual.axialProfiles(selM(j,:),xAxis{1},yAxis{y},NFD,normVal,focusPlot{1},singleView{sv});
+        for sv = 2%:numel(singleView)
+            for y = 2:5%1:numel(yAxis)
+                dataVisual.axialProfiles(used_setNrs(j),xAxis{1},yAxis{y},NFD,normVal,focusPlot{1},singleView{sv}, j);
 
             end
         end
@@ -296,12 +352,12 @@ end
 %%
 if 0 % Cross-sectional images XY of cSection
     % view
-        setNr = 2
+        used_setNr = [7];
         xAxis = {'Lateral [mm]'};
         yAxis = {'Elevational [mm]'};
         value = {'Voltage [mV]','Pressure [MPa]','ISPPA [W/cm2]'};
         normVal = [nan, nan, nan];%  = []; % MPa
-        scaleFac = 1;%65/30.58; % ISPPA scaleFatcor  
+        scaleFac = 70/30;%65/30.58; % ISPPA scaleFatcor  
         downsample = zeros([5,1]); % zeros is no downsalpling
         closeFig = false;
         colormapType = {'monotone','hot','default','viridis'}; % make other colormap! see mail
@@ -309,9 +365,9 @@ if 0 % Cross-sectional images XY of cSection
         cl = [-50 0];
 
     for i = 2:3
-        dataVisual.cSectionImages([setNr],xAxis{1},yAxis{1},value{i},normVal,scaleFac,downsample,colormapType{4},type{3},cl,closeFig);
+        dataVisual.cSectionImages(used_setNr,xAxis{1},yAxis{1},value{i},normVal,scaleFac,downsample,colormapType{4},type{3},cl,closeFig);
     end
-    dataVisual.cSectionImages([setNr],xAxis{1},yAxis{1},value{2},normVal,scaleFac,downsample,colormapType{4},type{2},cl,closeFig);
+    dataVisual.cSectionImages(used_setNr,xAxis{1},yAxis{1},value{2},normVal,scaleFac,downsample,colormapType{4},type{2},cl,closeFig);
 end
 
 if 0 % Cross-sectional profiles
@@ -328,21 +384,21 @@ end
 
 if 0 % Sagital of ZX cross-section
     % view
-    setNr = 19;
+    used_setNr = [8];
     xAxis = {'Lateral [mm]'};
     yAxis = {'Axial [mm]'};
     value = {'Voltage [mV]','Pressure [MPa]','ISPPA [W/cm2]'};
     normVal = [] %  = []; % MPa
-    scaleFac = 1;% 65/29.32; % ISPPA scaleFatcor  
+    scaleFac = 70/30;% 65/29.32; % ISPPA scaleFatcor  
     type = {'norm','dB','none'};
     closeFig = false;
     diffIm = false;
     colormapType = {'monotone','hot','default','viridis'}; % make other colormap! see mail
 
     for i = 2:3
-        dataVisual.XZSectionImages([setNr],diffIm,xAxis{1},yAxis{1},value{i},normVal,scaleFac,colormapType{4},type{3},closeFig);
+        dataVisual.XZSectionImages(used_setNr,diffIm,xAxis{1},yAxis{1},value{i},normVal,scaleFac,colormapType{4},type{3},closeFig);
     end
-    dataVisual.XZSectionImages([setNr],diffIm,xAxis{1},yAxis{1},value{3},normVal,scaleFac,colormapType{4},type{2},closeFig);
+    dataVisual.XZSectionImages(used_setNr,diffIm,xAxis{1},yAxis{1},value{3},normVal,scaleFac,colormapType{4},type{2},closeFig);
 end
 
 if 0
@@ -383,8 +439,8 @@ expData = dataExp(prepData,calcData);
 
 if 1
     % export pressure and ISPPA data
-    fileName = 'Verification_15278_1001';
-    setNrs = 31:40;
+    fileName = 'CTX500_026-TPO_105_010_f68.7';
+    setNrs = [5,6];
     localStorage = false;
     expData.press_ISPPA(setNrs,fileName,localStorage)
 end

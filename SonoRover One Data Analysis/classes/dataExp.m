@@ -239,9 +239,9 @@ classdef dataExp    %DATACALC Summary of this class goes here
             D.powerCurvature      = obj.calcData.powerCurvature;
             pFit                  = obj.calcData.powerCurvatureFit.quadraticFit.data.fit;
            
-            D.FitParams.coefs(1)  = pFit(3);
+            D.FitParams.coefs(1)  = pFit(1);
             D.FitParams.coefs(2)  = pFit(2);
-            D.FitParams.coefs(3)  = pFit(1);
+            D.FitParams.coefs(3)  = pFit(3);
 
             % same structure as the ppf but now for a linear inter val
             D.FitParams.breaks(1) = 0;

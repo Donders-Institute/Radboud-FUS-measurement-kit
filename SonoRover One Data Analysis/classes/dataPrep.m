@@ -565,6 +565,15 @@ classdef dataPrep
                     end
                 end
                 s.amp.maxPressureUnit = 'MPa';
+            elseif isequal(S.Equipment.drivingSystem_manufact, 'CITRUS')
+                try
+                    s.amp.power = S.Sequence.voltage_v_;
+                catch
+                    s.amp.power = S.Sequence.citrus_voltage_v_;
+                end
+                s.amp.powerUnit = 'V';
+            else
+                error('Unknown manufacturer')
             end
 
             % Transducer information: name, ID, frequency, and focal properties
