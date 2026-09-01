@@ -68,21 +68,31 @@ This project is facilitated by the Radboud Focused Ultrasound Initiative. For mo
 
 ## 👥 Authors <a name="authors"></a>
 
-👤 **[Stein Fekkes](https://www.ru.nl/en/people/fekkes-s), [FUS Initiative](https://www.ru.nl/en/donders-institute/research/research-facilities/focused-ultrasound-initiative-fus), Radboud University***
-
-- GitHub: [@StefFek-GIT](https://github.com/StefFek-GIT)
-- [LinkedIn](https://linkedin.com/in/sfekkes)
-
-👤 **[Margely Cornelissen](https://www.ru.nl/en/people/cornelissen-m), [FUS Initiative](https://www.ru.nl/en/donders-institute/research/research-facilities/focused-ultrasound-initiative-fus), Radboud University***
+👤 **[Margely Cornelissen](https://www.ru.nl/en/people/cornelissen-m), [FUS Centre](https://www.ru.nl/en/donders-institute/research/research-facilities/focused-ultrasound-initiative-fus), Radboud University**
 
 - GitHub: [@MaCuinea](https://github.com/MaCuinea)
 - [LinkedIn](https://linkedin.com/in/margely-cornelissen)
 
+👤 **[Stein Fekkes](https://www.ru.nl/en/people/fekkes-s), [FUS Centre](https://www.ru.nl/en/donders-institute/research/research-facilities/focused-ultrasound-initiative-fus), Radboud University**
+
+- GitHub: [@StefFek-GIT](https://github.com/StefFek-GIT)
+- [LinkedIn](https://linkedin.com/in/sfekkes)
+
 👤 **Erik Dumont, [Image Guided Therapy (IGT)](http://www.imageguidedtherapy.com/)**
 - GitHub: [@erikdumontigt](https://github.com/erikdumontigt)
 - [LinkedIn](https://linkedin.com/in/erik-dumont-986a814)
-  
-*These authors contributed equally.
+
+👤 **Twan de Bruin, Technical Support Group, Donders Centre for Cognition, Radboud University**
+
+👤 **Sibrecht Bouwstra, Technical Support Group, Donders Centre for Cognition, Radboud University**
+
+👤 **Jan Menssen, Medical Ultrasound Imaging Center, Radboud University Medical Center**
+
+👤 **Norbert Hermesdorf, Technical Support Group, Donders Centre for Cognition, Radboud University**
+
+👤 **Eleanor Martin, Department of Medical Physics and Biomedical Engineering, University College London**
+
+👤 **Lennart Verhagen, [FUS Centre](https://www.ru.nl/en/donders-institute/research/research-facilities/focused-ultrasound-initiative-fus), Radboud University**
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -90,9 +100,7 @@ This project is facilitated by the Radboud Focused Ultrasound Initiative. For mo
 
 If you use this kit in your research or project, please cite it as follows:
 
-Stein Fekkes*, Margely Cornelissen* (Radboud University, Nijmegen, The Netherlands) & Erik Dumont (Image Guided Therapy, Pessac, France) (2024-2025), Radboud FUS measurement kit (version 1.3), https://doi.org/10.17605/OSF.IO/CG3AQ
-
-*These authors contributed equally.
+Margely Cornelissen, Stein Fekkes (FUS Centre, Radboud University, Nijmegen, The Netherlands), Erik Dumont (Image Guided Therapy, Pessac, France), Twan de Bruin, Sibrecht Bouwstra (Technical Support Group, Donders Centre for Cognition, Radboud University, Nijmegen, The Netherlands), Jan Menssen (Medical Ultrasound Imaging Center, Radboud University Medical Center, Nijmegen, The Netherlands), Norbert Hermesdorf (Technical Support Group, Donders Centre for Cognition, Radboud University, Nijmegen, The Netherlands), Eleanor Martin (Department of Medical Physics and Biomedical Engineering, University College London, London, United Kingdom) & Lennart Verhagen (FUS Centre, Radboud University, Nijmegen, The Netherlands) (2024-2026), Radboud FUS measurement kit (version 1.3), https://doi.org/10.17605/OSF.IO/CG3AQ
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -694,4 +702,3 @@ We'd love to hear from you.
 This project is [MIT](./LICENSE) licensed.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
-
