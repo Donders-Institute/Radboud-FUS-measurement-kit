@@ -100,7 +100,7 @@ This project is facilitated by the Radboud Focused Ultrasound Initiative. For mo
 
 If you use this kit in your research or project, please cite it as follows:
 
-Margely Cornelissen, Stein Fekkes (FUS Centre, Radboud University, Nijmegen, The Netherlands), Erik Dumont (Image Guided Therapy, Pessac, France), Twan de Bruin, Sibrecht Bouwstra (Technical Support Group, Donders Centre for Cognition, Radboud University, Nijmegen, The Netherlands), Jan Menssen (Medical Ultrasound Imaging Center, Radboud University Medical Center, Nijmegen, The Netherlands), Norbert Hermesdorf (Technical Support Group, Donders Centre for Cognition, Radboud University, Nijmegen, The Netherlands), Eleanor Martin (Department of Medical Physics and Biomedical Engineering, University College London, London, United Kingdom) & Lennart Verhagen (FUS Centre, Radboud University, Nijmegen, The Netherlands) (2024-2026), Radboud FUS measurement kit (version 1.3), https://doi.org/10.17605/OSF.IO/CG3AQ
+Margely Cornelissen, Stein Fekkes, Erik Dumont, Twan de Bruin, Sibrecht Bouwstra, Jan Menssen, Norbert Hermesdorf, Eleanor Martin & Lennart Verhagen (2024-2026), Radboud FUS measurement kit (version 1.3), https://doi.org/10.17605/OSF.IO/CG3AQ
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
